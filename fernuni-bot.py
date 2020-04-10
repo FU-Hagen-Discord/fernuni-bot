@@ -7,7 +7,8 @@ from dotenv import load_dotenv
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD = int(os.getenv('DISCORD_GUILD'))
-client = discord.Client()
+activity = discord.Game("ein Rollenspiel")
+client = discord.Client(activity=activity)
 
 
 # Returns an guild object, that matches the id specified in GUILD.
@@ -163,6 +164,9 @@ async def on_message(message):
         await fu_modify_roles(message, add=True)
     elif msg.startswith("=fu-remove-roles"):
         await fu_modify_roles(message, add=False)
+    elif msg == "=fu-link":
+        await message.channel.send(
+            "Um andere auf diesen Discord einzuladen, nutze bitte folgenden Link: http://fernuni-discord.dnns01.de")
 
 
 client.run(TOKEN)
