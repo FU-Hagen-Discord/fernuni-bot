@@ -7,9 +7,9 @@ from dotenv import load_dotenv
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD = int(os.getenv('DISCORD_GUILD'))
+ACTIVITY = os.getenv('DISCORD_ACTIVITY')
 PIN_EMOJI = "📌"
-activity = discord.Game("ein Test-Rollenspiel")
-client = discord.Client(activity=activity)
+client = discord.Client(activity=discord.Game(ACTIVITY))
 
 
 # Returns an guild object, that matches the id specified in GUILD.
