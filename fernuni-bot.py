@@ -7,7 +7,8 @@ from dotenv import load_dotenv
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD = int(os.getenv('DISCORD_GUILD'))
-activity = discord.Game("ein Rollenspiel")
+PIN_EMOJI = "📌"
+activity = discord.Game("ein Test-Rollenspiel")
 client = discord.Client(activity=activity)
 
 
@@ -63,6 +64,16 @@ def get_members_roles(user):
     return None
 
 
+# Returns the reaction, that is equal to the specified PIN_EMOJI,
+# or if that reaction does not exist in list of reactions, None will be returned
+def get_reaction(reactions):
+    for reaction in reactions:
+        if reaction.emoji == PIN_EMOJI:
+            return reaction
+
+    return None
+
+
 # Send DM to a user/member
 async def send_dm(user, message):
     if type(user) is discord.User or type(user) is discord.Member:
@@ -79,10 +90,13 @@ async def fu_help(message):
     answer += f'`=fu-help` - Zeigt diesen Hilfetext an\n'
     answer += f'`=fu-all-roles` - Zeigt alle verfügbaren Rollen an, die ich dir zuweisen/entfernen kann.\n'
     answer += f'`=fu-my-roles` - Zeigt alle Rollen an, die dir momentan zugewiesen sind.\n'
-    answer += f'`=fu-add-roles` - Mit diesem Kommando, gefolgt von einer Liste von Rollen, weise ich dir diese Rollen zu.\n'
-    answer += f'`=fu-remove roles` - Mit diesem Kommendo, gefolgt von einer Liste von Rollen, entferne ich dir diese Rollen.\n\n'
+    answer += f'`=fu-add-roles` - Mit diesem Kommando, gefolgt von einer Liste von Rollen, ' \
+              f'weise ich dir diese Rollen zu.\n'
+    answer += f'`=fu-remove roles` - Mit diesem Kommendo, gefolgt von einer Liste von Rollen, ' \
+              f'entferne ich dir diese Rollen.\n\n'
     answer += f'Hinweise für die Nutzung der Kommandos zum Zuweisen/Entfernen von Rollen:\n'
-    answer += f'In der Liste der verfügbaren Rollen siehst du in eckigen Klammern  einen Schlüssel für die jeweilige Rolle, die für diese Kommandos zu verwenden ist. \n'
+    answer += f'In der Liste der verfügbaren Rollen siehst du in eckigen Klammern  einen Schlüssel für die jeweilige ' \
+              f'Rolle, die für diese Kommandos zu verwenden ist. \n'
     answer += f'Beispiel: \n[BI] B.Sc. Informatik \n[MM] M.Sc. Mathematik \n'
     answer += f'`=fu-add-roles BI` fügt die Rolle B.Sc. Informatik hinzu. \n'
     answer += f'`=fu-remove-roles BI MM` entfernt die Rollen B.Sc. Informatik und M.Sc Mathematik. \n'
@@ -142,6 +156,20 @@ async def fu_modify_roles(message, add):
                             await send_dm(message.author, f'Fehler bei der Entfernung der Rolle {role.name}')
 
 
+# Pin the given message, if it is not already pinned
+async def pin_message(message):
+    if not message.pinned:
+        await message.pin()
+
+
+# Unpin the given message, if it is pinned, and it has no pin reaction remaining.
+async def unpin_message(message):
+    if message.pinned:
+        reaction = get_reaction(message.reactions)
+        if reaction is None:
+            await message.unpin()
+
+
 @client.event
 async def on_ready():
     print("Client started!")
@@ -167,6 +195,22 @@ async def on_message(message):
     elif msg == "=fu-link":
         await message.channel.send(
             "Um andere auf diesen Discord einzuladen, nutze bitte folgenden Link: http://fernuni-discord.dnns01.de")
+
+
+@client.event
+async def on_raw_reaction_add(payload):
+    if payload.emoji.name == PIN_EMOJI:
+        channel = await client.fetch_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
+        await pin_message(message)
+
+
+@client.event
+async def on_raw_reaction_remove(payload):
+    if payload.emoji.name == PIN_EMOJI:
+        channel = await client.fetch_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
+        await unpin_message(message)
 
 
 client.run(TOKEN)
