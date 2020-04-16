@@ -58,7 +58,7 @@ def get_guild_roles():
 # Get all roles assigned to a member.
 def get_members_roles(user):
     guild = get_guild()
-    if type(user) is discord.User and guild is not None:
+    if (type(user) is discord.User or type(user) is discord.Member) and guild is not None:
         return guild.get_member(user.id).roles
 
     return None
@@ -124,6 +124,8 @@ async def fu_my_roles(message):
             key = get_key(role)
             if key is not None:
                 answer += f'[{key}] {role.name} \n'
+            else:
+                answer += f'{role.name} \n'
 
     await send_dm(message.author, answer)
 
