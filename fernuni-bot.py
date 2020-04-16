@@ -124,8 +124,6 @@ async def fu_my_roles(message):
             key = get_key(role)
             if key is not None:
                 answer += f'[{key}] {role.name} \n'
-            else:
-                answer += f'{role.name} \n'
 
     await send_dm(message.author, answer)
 
