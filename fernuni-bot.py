@@ -38,18 +38,8 @@ def get_key(role):
         return "MM"
     elif role.name == "M.Sc. Wirtschaftsinformatik":
         return "MWI"
-    elif role.name == "Pink":
-        return "PNK"
-    elif role.name == "Türkis":
-        return "TKS"
-    elif role.name == "Orange":
-        return "ONG"
-    elif role.name == "Lila":
-        return "LLA"
-    elif role.name == "Grün":
-        return "GRN"
-    elif role.name == "Blau":
-        return "BLU"
+    elif role.name.startswith("Farbe-"):
+        return role.name[6:9]
 
 
 # Get all roles that are available at the guild.
