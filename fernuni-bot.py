@@ -30,6 +30,8 @@ def get_key(role):
         return "BM"
     elif role.name == "B.Sc. Wirtschaftsinformatik":
         return "BWI"
+    elif role.name == "B.Sc. Mathematisch-Technische Softwareentwicklung":
+        return "BMTS"
     elif role.name == "M.Sc. Informatik":
         return "MI"
     elif role.name == "M.Sc. Praktische Informatik":
