@@ -89,19 +89,19 @@ async def send_dm(user, message):
 async def fu_help(message):
     answer = f'Ich bin der Fernuni-Bot. Ich kann Rollen zuweisen/entfernen. \n\n'
     answer += f'Folgende Kommandos stehen zur verfügung:\n'
-    answer += f'`=fu-help` - Zeigt diesen Hilfetext an\n'
-    answer += f'`=fu-all-roles` - Zeigt alle verfügbaren Rollen an, die ich dir zuweisen/entfernen kann.\n'
-    answer += f'`=fu-my-roles` - Zeigt alle Rollen an, die dir momentan zugewiesen sind.\n'
-    answer += f'`=fu-add-roles` - Mit diesem Kommando, gefolgt von einer Liste von Rollen, ' \
+    answer += f'`!help` - Zeigt diesen Hilfetext an\n'
+    answer += f'`!all-roles` - Zeigt alle verfügbaren Rollen an, die ich dir zuweisen/entfernen kann.\n'
+    answer += f'`!my-roles` - Zeigt alle Rollen an, die dir momentan zugewiesen sind.\n'
+    answer += f'`!add-roles` - Mit diesem Kommando, gefolgt von einer Liste von Rollen, ' \
               f'weise ich dir diese Rollen zu.\n'
-    answer += f'`=fu-remove roles` - Mit diesem Kommendo, gefolgt von einer Liste von Rollen, ' \
+    answer += f'`!remove-roles` - Mit diesem Kommendo, gefolgt von einer Liste von Rollen, ' \
               f'entferne ich dir diese Rollen.\n\n'
     answer += f'Hinweise für die Nutzung der Kommandos zum Zuweisen/Entfernen von Rollen:\n'
     answer += f'In der Liste der verfügbaren Rollen siehst du in eckigen Klammern  einen Schlüssel für die jeweilige ' \
               f'Rolle, die für diese Kommandos zu verwenden ist. \n'
     answer += f'Beispiel: \n[BI] B.Sc. Informatik \n[MM] M.Sc. Mathematik \n'
-    answer += f'`=fu-add-roles BI` fügt die Rolle B.Sc. Informatik hinzu. \n'
-    answer += f'`=fu-remove-roles BI MM` entfernt die Rollen B.Sc. Informatik und M.Sc Mathematik. \n'
+    answer += f'`!add-roles BI` fügt die Rolle B.Sc. Informatik hinzu. \n'
+    answer += f'`!remove-roles BI MM` entfernt die Rollen B.Sc. Informatik und M.Sc Mathematik. \n'
 
     await send_dm(message.author, answer)
 
@@ -184,17 +184,17 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    if msg.startswith("=fu-help"):
+    if msg.startswith("!help"):
         await fu_help(message)
-    elif msg.startswith("=fu-all-roles"):
+    elif msg.startswith("!all-roles"):
         await fu_all_roles(message)
-    elif msg.startswith("=fu-my-roles"):
+    elif msg.startswith("!my-roles"):
         await fu_my_roles(message)
-    elif msg.startswith("=fu-add-roles"):
+    elif msg.startswith("!add-roles"):
         await fu_modify_roles(message, add=True)
-    elif msg.startswith("=fu-remove-roles"):
+    elif msg.startswith("!remove-roles"):
         await fu_modify_roles(message, add=False)
-    elif msg == "=fu-link":
+    elif msg == "!link":
         await message.channel.send(
             "Um andere auf diesen Discord einzuladen, nutze bitte folgenden Link: http://fernuni-discord.dnns01.de")
 
