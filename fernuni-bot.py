@@ -91,7 +91,9 @@ async def send_dm(user, message):
 async def fu_help(message):
     answer = f'Ich bin der Fernuni-Bot. Ich kann Rollen zuweisen/entfernen. \n\n'
     answer += f'Folgende Kommandos stehen zur verfügung:\n'
-    answer += f'`!help` - Zeigt diesen Hilfetext an\n'
+    answer += f'`!help` - Zeigt diesen Hilfetext an.\n'
+    answer += f'`!link` - Zeigt den Einladungslink für diesen Discord-Server an.\n'
+    answer += f'`!stats` - Gibt ein paar kleine Statistiken aus.\n'
     answer += f'`!all-roles` - Zeigt alle verfügbaren Rollen an, die ich dir zuweisen/entfernen kann.\n'
     answer += f'`!my-roles` - Zeigt alle Rollen an, die dir momentan zugewiesen sind.\n'
     answer += f'`!add-roles` - Mit diesem Kommando, gefolgt von einer Liste von Rollen, ' \
@@ -160,6 +162,28 @@ async def fu_modify_roles(message, add):
                             await send_dm(message.author, f'Fehler bei der Entfernung der Rolle {role.name}')
 
 
+# Sends link to invite others to Discord server in Chat.
+async def fu_link(message):
+    await message.channel.send("Benutze bitte folgenden Link, um andere Studierende auf unseren Discord einzuladen: " \
+                               "http://fernuni-discord.dnns01.de")
+
+
+# Sends stats in Chat.
+async def fu_stats(message):
+    guild = get_guild()
+    members = await guild.fetch_members().flatten()
+    roles = get_guild_roles()
+    answer = f'Wir haben aktuell {len(members)} Mitglieder auf diesem Server.'
+    answer += f'\n\nVerteilt auf Rollen: '
+
+    for key, role in roles.items():
+        role_members = role.members
+        if len(role_members) > 0 and not role.name.startswith("Farbe"):
+            answer += f'\n{role.name}: {len(role_members)} Mitglieder'
+
+    await message.channel.send(answer)
+
+
 # Pin the given message, if it is not already pinned
 async def pin_message(message):
     if not message.pinned:
@@ -197,8 +221,9 @@ async def on_message(message):
     elif msg.startswith("!remove-roles"):
         await fu_modify_roles(message, add=False)
     elif msg == "!link":
-        await message.channel.send(
-            "Um andere auf diesen Discord einzuladen, nutze bitte folgenden Link: http://fernuni-discord.dnns01.de")
+        await fu_link(message)
+    elif msg == "!stats":
+        await fu_stats(message)
 
 
 @client.event
