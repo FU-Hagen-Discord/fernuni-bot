@@ -164,8 +164,8 @@ async def fu_modify_roles(message, add):
 
 # Sends link to invite others to Discord server in Chat.
 async def fu_link(message):
-    await message.channel.send("Benutze bitte folgenden Link, um andere Studierende auf unseren Discord einzuladen: " \
-                               "http://fernuni-discord.dnns01.de")
+    await message.channel.send('Benutze bitte folgenden Link, um andere Studierende auf unseren Discord einzuladen: '
+                               'http://fernuni-discord.dnns01.de')
 
 
 # Sends stats in Chat.
@@ -181,6 +181,15 @@ async def fu_stats(message):
         if len(role_members) > 0 and not role.name.startswith("Farbe"):
             answer += f'\n{role.name}: {len(role_members)} Mitglieder'
 
+    no_role = 0
+    for member in members:
+        if len(member.roles) == 1:
+            no_role += 1
+        else:
+            print(member.roles)
+
+    answer += f'\n\n{no_role} Mitglieder ohne Rolle'
+
     await message.channel.send(answer)
 
 
@@ -188,6 +197,7 @@ async def fu_stats(message):
 async def pin_message(message):
     if not message.pinned:
         await message.pin()
+        await message.channel.send(f'Folgende Nachricht wurde gerade angepinnt: {message.jump_url}')
 
 
 # Unpin the given message, if it is pinned, and it has no pin reaction remaining.
@@ -196,6 +206,7 @@ async def unpin_message(message):
         reaction = get_reaction(message.reactions)
         if reaction is None:
             await message.unpin()
+            await message.channel.send(f'Folgende Nachricht wurde gerade losgelöst: {message.jump_url}')
 
 
 @client.event
