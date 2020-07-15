@@ -79,35 +79,42 @@ def get_reaction(reactions):
 
 
 # Send DM to a user/member
-async def send_dm(user, message):
+async def send_dm(user, message, embed=None):
     if type(user) is discord.User or type(user) is discord.Member:
         if user.dm_channel is None:
             await user.create_dm()
 
-        await user.dm_channel.send(message)
+        await user.dm_channel.send(message, embed=embed)
 
 
 # Send help message as DM
 async def fu_help(message):
-    answer = f'Ich bin der Fernuni-Bot. Ich kann Rollen zuweisen/entfernen. \n\n'
-    answer += f'Folgende Kommandos stehen zur verfügung:\n'
-    answer += f'`!help` - Zeigt diesen Hilfetext an.\n'
-    answer += f'`!link` - Zeigt den Einladungslink für diesen Discord-Server an.\n'
-    answer += f'`!stats` - Gibt ein paar kleine Statistiken aus.\n'
-    answer += f'`!all-roles` - Zeigt alle verfügbaren Rollen an, die ich dir zuweisen/entfernen kann.\n'
-    answer += f'`!my-roles` - Zeigt alle Rollen an, die dir momentan zugewiesen sind.\n'
-    answer += f'`!add-roles` - Mit diesem Kommando, gefolgt von einer Liste von Rollen, ' \
-              f'weise ich dir diese Rollen zu.\n'
-    answer += f'`!remove-roles` - Mit diesem Kommendo, gefolgt von einer Liste von Rollen, ' \
-              f'entferne ich dir diese Rollen.\n\n'
-    answer += f'Hinweise für die Nutzung der Kommandos zum Zuweisen/Entfernen von Rollen:\n'
-    answer += f'In der Liste der verfügbaren Rollen siehst du in eckigen Klammern  einen Schlüssel für die jeweilige ' \
-              f'Rolle, die für diese Kommandos zu verwenden ist. \n'
-    answer += f'Beispiel: \n[BI] B.Sc. Informatik \n[MM] M.Sc. Mathematik \n'
-    answer += f'`!add-roles BI` fügt die Rolle B.Sc. Informatik hinzu. \n'
-    answer += f'`!remove-roles BI MM` entfernt die Rollen B.Sc. Informatik und M.Sc Mathematik. \n'
+    embed = discord.Embed(title="Fernuni-Bot Hilfe",
+                          description="Mit mir kannst du auf folgende Weise interagieren:",
+                          color=0x004c97)
+    # embed.from_dict(commands)
+    embed.set_thumbnail(
+        url="https://cdn.discordapp.com/avatars/697842294279241749/c7d3063f39d33862e9b950f72ab71165.webp?size=1024")
+    embed.add_field(name="!help", value='Hilfe anzeigen', inline=False)
+    embed.add_field(name="!link", value='Einladungslink für diesen Discord-Server anzeigen.', inline=False)
+    embed.add_field(name="!stats", value='Nutzerstatistik anzeigen', inline=False)
+    embed.add_field(name="!all-roles", value='Alle verfügbaren Rollen anzeigen', inline=False)
+    embed.add_field(name="!my-roles", value='Dir zugewiesene Rollen anzeigen', inline=False)
+    embed.add_field(name="!add-roles ROLE1 ...", value='Eine oder mehrere Rollen hinzufügen', inline=False)
+    embed.add_field(name="!remove-roles ROLE1 ...", value='Eine oder mehrere zugewiesene Rollen entfernen',
+                    inline=False)
+    embed.add_field(name='\u200B', value='\u200B', inline=False)
+    embed.add_field(name="Benutzung Rollenbezogener Kommandos",
+                    value='Der Aufruf von `!all-roles` oder `!my-roles` gibt eine Liste der Rollen aus, die '
+                          'folgendermaßen aufgebaut ist: `[KEY] ROLLENNAME`. \u000ABeispiel: \u000A'
+                          '[BWI] B.Sc. Wirtschaftsinformatik \u000A[BM] B.Sc. Mathematik \u000A'
+                          '[BI] B.Sc. Informatik \u000A\u000ABei der Verwendung von `!add-roles` und `!remove-roles` '
+                          'kann nun eine Liste von Keys übergeben werden, um sich selbst diese Rollen hinzuzufügen, '
+                          'oder zu entfernen. Möchte man sich also nun selbst die Rollen B.Sc. Informatik und '
+                          'B.Sc. Mathematik hinzufügen, gibt man folgendes kommando ein: `!add-roles BI BM`',
+                    inline=False)
 
-    await send_dm(message.author, answer)
+    await send_dm(message.author, "", embed=embed)
 
 
 # Send all available roles that can be assigned to a member by this bot as DM
