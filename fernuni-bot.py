@@ -92,7 +92,7 @@ async def fu_help(message):
     embed = discord.Embed(title="Fernuni-Bot Hilfe",
                           description="Mit mir kannst du auf folgende Weise interagieren:",
                           color=0x004c97)
-    # embed.from_dict(commands)
+
     embed.set_thumbnail(
         url="https://cdn.discordapp.com/avatars/697842294279241749/c7d3063f39d33862e9b950f72ab71165.webp?size=1024")
     embed.add_field(name="!help", value='Hilfe anzeigen', inline=False)
@@ -192,8 +192,6 @@ async def fu_stats(message):
     for member in members:
         if len(member.roles) == 1:
             no_role += 1
-        else:
-            print(member.roles)
 
     answer += f'\n\n{no_role} Mitglieder ohne Rolle'
 
