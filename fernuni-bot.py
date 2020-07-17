@@ -1,6 +1,7 @@
 import os
 
 import discord
+from discord.ext import commands
 from dotenv import load_dotenv
 
 # .env file is necessary in the same directory, that contains Token and guild.
@@ -9,13 +10,13 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD = int(os.getenv('DISCORD_GUILD'))
 ACTIVITY = os.getenv('DISCORD_ACTIVITY')
 PIN_EMOJI = "📌"
-client = discord.Client(activity=discord.Game(ACTIVITY))
+bot = commands.Bot(command_prefix='!', help_command=None, activity=discord.Game(ACTIVITY))
 
 
 # Returns an guild object, that matches the id specified in GUILD.
 # This guild is the FU Hagen Informatik/Mathematik guild.
 def get_guild():
-    for guild in client.guilds:
+    for guild in bot.guilds:
         if guild.id == GUILD:
             return guild
 
@@ -53,18 +54,25 @@ def get_guild_roles():
             role_key = get_key(role)
             if role_key is not None:
                 roles[role_key] = role
-
         return roles
+    return None
 
+
+def get_member(user):
+    if type(user) is discord.Member:
+        return user
+    elif type(user) is discord.User:
+        guild = get_guild()
+        if guild is not None:
+            return guild.get_member(user.id)
     return None
 
 
 # Get all roles assigned to a member.
 def get_members_roles(user):
-    guild = get_guild()
-    if (type(user) is discord.User or type(user) is discord.Member) and guild is not None:
-        return guild.get_member(user.id).roles
-
+    member = get_member(user)
+    if member is not None:
+        return member.roles
     return None
 
 
@@ -74,7 +82,6 @@ def get_reaction(reactions):
     for reaction in reactions:
         if reaction.emoji == PIN_EMOJI:
             return reaction
-
     return None
 
 
@@ -88,7 +95,8 @@ async def send_dm(user, message, embed=None):
 
 
 # Send help message as DM
-async def fu_help(message):
+@bot.command(name="help")
+async def fu_help(ctx):
     embed = discord.Embed(title="Fernuni-Bot Hilfe",
                           description="Mit mir kannst du auf folgende Weise interagieren:",
                           color=0x004c97)
@@ -114,10 +122,11 @@ async def fu_help(message):
                           'B.Sc. Mathematik hinzufügen, gibt man folgendes kommando ein: `!add-roles BI BM`',
                     inline=False)
 
-    await send_dm(message.author, "", embed=embed)
+    await send_dm(ctx.author, "", embed=embed)
 
 
 # Send all available roles that can be assigned to a member by this bot as DM
+@bot.command(name="all-roles")
 async def fu_all_roles(message):
     roles = get_guild_roles()
     answer = "Verfügbare Rollen: \n"
@@ -128,6 +137,7 @@ async def fu_all_roles(message):
 
 
 # Send the roles assigned to a member as DM.
+@bot.command(name="my-roles")
 async def fu_my_roles(message):
     my_roles = get_members_roles(message.author)
     answer = "Dir zugewiesene Rollen:\n"
@@ -141,41 +151,52 @@ async def fu_my_roles(message):
     await send_dm(message.author, answer)
 
 
+@bot.command(name="add-roles")
+async def fu_add_roles(ctx, *args):
+    if len(args) > 0:
+        await modify_roles(ctx, True, args)
+
+
+@bot.command(name="remove-roles")
+async def fu_remove_roles(ctx, *args):
+    if len(args):
+        await modify_roles(ctx, False, args)
+
+
 # Add or remove roles assigned to a member. Multiple roles can be added with one command, or removed.
-async def fu_modify_roles(message, add):
-    msg = message.content
-    splitted_msg = msg.split(" ")
+async def modify_roles(ctx, add, args):
     guild = get_guild()
 
     if guild is not None:
-        member = guild.get_member(message.author.id)
+        member = get_member(ctx.author)
 
-        if len(splitted_msg) > 1:
-            roles = get_guild_roles()
-            for key in splitted_msg[1:]:
-                if key in roles:
-                    role = roles[key]
-                    if add:
-                        try:
-                            await member.add_roles(role)
-                            await send_dm(message.author, f'Dir wurde die Rolle {role.name} hinzugefügt')
-                        except Exception:
-                            await send_dm(message.author, f'Fehler bei der Zuweisung der Rolle {role.name}')
-                    else:
-                        try:
-                            await member.remove_roles(role)
-                            await send_dm(message.author, f'Dir wurde die Rolle {role.name} entfernt')
-                        except Exception:
-                            await send_dm(message.author, f'Fehler bei der Entfernung der Rolle {role.name}')
+        roles = get_guild_roles()
+        for key in args:
+            if key in roles:
+                role = roles[key]
+                if add:
+                    try:
+                        await member.add_roles(role)
+                        await send_dm(ctx.author, f'Dir wurde die Rolle {role.name} hinzugefügt')
+                    except Exception:
+                        await send_dm(ctx.author, f'Fehler bei der Zuweisung der Rolle {role.name}')
+                else:
+                    try:
+                        await member.remove_roles(role)
+                        await send_dm(ctx.author, f'Dir wurde die Rolle {role.name} entfernt')
+                    except Exception:
+                        await send_dm(ctx.author, f'Fehler bei der Entfernung der Rolle {role.name}')
 
 
 # Sends link to invite others to Discord server in Chat.
+@bot.command(name="link")
 async def fu_link(message):
     await message.channel.send('Benutze bitte folgenden Link, um andere Studierende auf unseren Discord einzuladen: '
                                'http://fernuni-discord.dnns01.de')
 
 
 # Sends stats in Chat.
+@bot.command(name="stats")
 async def fu_stats(message):
     guild = get_guild()
     members = await guild.fetch_members().flatten()
@@ -214,48 +235,27 @@ async def unpin_message(message):
             await message.channel.send(f'Folgende Nachricht wurde gerade losgelöst: {message.jump_url}')
 
 
-@client.event
+@bot.event
 async def on_ready():
     print("Client started!")
 
 
-@client.event
-async def on_message(message):
-    msg = message.content
-
-    if message.author == client.user:
-        return
-
-    if msg.startswith("!help"):
-        await fu_help(message)
-    elif msg.startswith("!all-roles"):
-        await fu_all_roles(message)
-    elif msg.startswith("!my-roles"):
-        await fu_my_roles(message)
-    elif msg.startswith("!add-roles"):
-        await fu_modify_roles(message, add=True)
-    elif msg.startswith("!remove-roles"):
-        await fu_modify_roles(message, add=False)
-    elif msg == "!link":
-        await fu_link(message)
-    elif msg == "!stats":
-        await fu_stats(message)
-
-
-@client.event
+@bot.event
 async def on_raw_reaction_add(payload):
     if payload.emoji.name == PIN_EMOJI:
-        channel = await client.fetch_channel(payload.channel_id)
+        channel = await bot.fetch_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
         await pin_message(message)
 
 
-@client.event
+#
+#
+@bot.event
 async def on_raw_reaction_remove(payload):
     if payload.emoji.name == PIN_EMOJI:
-        channel = await client.fetch_channel(payload.channel_id)
+        channel = await bot.fetch_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
         await unpin_message(message)
 
 
-client.run(TOKEN)
+bot.run(TOKEN)
