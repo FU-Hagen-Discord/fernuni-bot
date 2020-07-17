@@ -1,3 +1,4 @@
+import json
 import os
 
 import discord
@@ -9,8 +10,11 @@ load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD = int(os.getenv('DISCORD_GUILD'))
 ACTIVITY = os.getenv('DISCORD_ACTIVITY')
+OWNER = int(os.getenv('DISCORD_OWNER'))
+ROLES_FILE = os.getenv('DISCORD_ROLES_FILE')
 PIN_EMOJI = "📌"
-bot = commands.Bot(command_prefix='!', help_command=None, activity=discord.Game(ACTIVITY))
+bot = commands.Bot(command_prefix='!', help_command=None, activity=discord.Game(ACTIVITY), owner_id=OWNER)
+assignable_roles = {}
 
 
 # Returns an guild object, that matches the id specified in GUILD.
@@ -25,24 +29,9 @@ def get_guild():
 
 # Get the key for a given role. This role is used for adding or removing a role from a user.
 def get_key(role):
-    if role.name == "B.Sc. Informatik":
-        return "BI"
-    elif role.name == "B.Sc. Mathematik":
-        return "BM"
-    elif role.name == "B.Sc. Wirtschaftsinformatik":
-        return "BWI"
-    elif role.name == "B.Sc. Mathematisch-Technische Softwareentwicklung":
-        return "BMTS"
-    elif role.name == "M.Sc. Informatik":
-        return "MI"
-    elif role.name == "M.Sc. Praktische Informatik":
-        return "MPI"
-    elif role.name == "M.Sc. Mathematik":
-        return "MM"
-    elif role.name == "M.Sc. Wirtschaftsinformatik":
-        return "MWI"
-    elif role.name.startswith("Farbe-"):
-        return role.name[6:9]
+    for key, role_name in assignable_roles.items():
+        if role_name == role.name:
+            return key
 
 
 # Get all roles that are available at the guild.
@@ -163,6 +152,25 @@ async def fu_remove_roles(ctx, *args):
         await modify_roles(ctx, False, args)
 
 
+@bot.command(name="add-role")
+@commands.is_owner()
+async def fu_add_role(ctx, key, role):
+    assignable_roles[key] = role
+    roles_file = open(ROLES_FILE, mode='w')
+    json.dump(assignable_roles, roles_file)
+
+    if key in assignable_roles:
+        await send_dm(ctx.author, f"Rolle {role} wurde hinzugefügt")
+    else:
+        await send_dm(ctx.author, f"Fehler beim Hinzufügen der Rolle {role}")
+
+
+def fu_load_roles():
+    global assignable_roles
+    roles_file = open(ROLES_FILE, mode='r')
+    assignable_roles = json.load(roles_file)
+
+
 # Add or remove roles assigned to a member. Multiple roles can be added with one command, or removed.
 async def modify_roles(ctx, add, args):
     guild = get_guild()
@@ -238,6 +246,8 @@ async def unpin_message(message):
 @bot.event
 async def on_ready():
     print("Client started!")
+    fu_load_roles()
+    print(assignable_roles)
 
 
 @bot.event
@@ -248,8 +258,6 @@ async def on_raw_reaction_add(payload):
         await pin_message(message)
 
 
-#
-#
 @bot.event
 async def on_raw_reaction_remove(payload):
     if payload.emoji.name == PIN_EMOJI:
