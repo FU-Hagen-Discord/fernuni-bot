@@ -115,3 +115,4 @@ GitHub.sublime-settings
 !.vscode/extensions.json 
 .history
 /roles.json
+/help.json
