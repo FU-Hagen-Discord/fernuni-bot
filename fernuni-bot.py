@@ -38,20 +38,6 @@ def get_key(role):
             return key
 
 
-def get_guild_roles():
-    """ Get all roles that are available at the guild. """
-
-    guild = get_guild()
-    if guild is not None:
-        roles = {}
-        for role in guild.roles:
-            role_key = get_key(role)
-            if role_key is not None:
-                roles[role_key] = role
-        return roles
-    return None
-
-
 def get_member(user):
     if type(user) is discord.Member:
         return user
@@ -62,13 +48,26 @@ def get_member(user):
     return None
 
 
-def get_members_roles(user):
-    """ Get all roles assigned to a member. """
+def get_roles(user=None):
+    """ Get all roles assigned to a member, or all roles available on the discord server
+    (in both cases only roles are returned, that are defined in roles.json). """
+    roles_list = []
+    roles_dict = {}
 
-    member = get_member(user)
-    if member is not None:
-        return member.roles
-    return None
+    if user is not None:
+        member = get_member(user)
+        if member is not None:
+            roles_list = member.roles
+    else:
+        guild = get_guild()
+        if guild is not None:
+            roles_list = guild.roles
+
+    for role in roles_list:
+        role_key = get_key(role)
+        if role_key is not None:
+            roles_dict[role_key] = role
+    return roles_dict
 
 
 def get_reaction(reactions):
@@ -92,7 +91,7 @@ async def send_dm(user, message, embed=None):
 
 
 @bot.command(name="help")
-async def fu_help(ctx):
+async def cmd_help(ctx):
     """ Send help message as DM """
 
     help_file = open(HELP_FILE, mode='r')
@@ -101,49 +100,54 @@ async def fu_help(ctx):
     await send_dm(ctx.author, "", embed=embed)
 
 
+def get_role_embed(title, roles):
+    """ Returns an embed that represents all the roles that are passed to this function """
+
+    embed = discord.Embed(title=title,
+                          description="Bei jeder Rolle siehst du oben in Fett den Key der Rolle und "
+                                      "darunter den Namen der Rolle",
+                          color=19607)
+    embed.add_field(name="\u200B", value="\u200B", inline=False)
+
+    for key, role in roles.items():
+        embed.add_field(name=key, value=role.name, inline=False)
+
+    return embed
+
+
 @bot.command(name="all-roles")
-async def fu_all_roles(message):
+async def cmd_all_roles(message):
     """ Send all available roles that can be assigned to a member by this bot as DM """
 
-    roles = get_guild_roles()
-    answer = "Verfügbare Rollen: \n"
-    for key, role in roles.items():
-        answer += f'[{key}] {role.name}\n'
-
-    await send_dm(message.author, answer)
+    roles = get_roles()
+    embed = get_role_embed("Alle verfügbaren Rollen", roles)
+    await send_dm(message.author, "", embed=embed)
 
 
 @bot.command(name="my-roles")
-async def fu_my_roles(message):
+async def cmd_my_roles(message):
     """ Send the roles assigned to a member as DM. """
 
-    my_roles = get_members_roles(message.author)
-    answer = "Dir zugewiesene Rollen:\n"
-
-    if my_roles is not None:
-        for role in my_roles:
-            key = get_key(role)
-            if key is not None:
-                answer += f'[{key}] {role.name} \n'
-
-    await send_dm(message.author, answer)
+    roles = get_roles(message.author)
+    embed = get_role_embed("Dir zugewiesene Rollen", roles)
+    await send_dm(message.author, "", embed=embed)
 
 
 @bot.command(name="add-roles")
-async def fu_add_roles(ctx, *args):
+async def cmd_add_roles(ctx, *args):
     if len(args) > 0:
         await modify_roles(ctx, True, args)
 
 
 @bot.command(name="remove-roles")
-async def fu_remove_roles(ctx, *args):
+async def cmd_remove_roles(ctx, *args):
     if len(args):
         await modify_roles(ctx, False, args)
 
 
 @bot.command(name="add-role")
 @commands.is_owner()
-async def fu_add_role(ctx, key, role):
+async def cmd_add_role(ctx, key, role):
     assignable_roles[key] = role
     roles_file = open(ROLES_FILE, mode='w')
     json.dump(assignable_roles, roles_file)
@@ -154,7 +158,7 @@ async def fu_add_role(ctx, key, role):
         await send_dm(ctx.author, f"Fehler beim Hinzufügen der Rolle {role}")
 
 
-def fu_load_roles():
+def load_roles():
     global assignable_roles
     roles_file = open(ROLES_FILE, mode='r')
     assignable_roles = json.load(roles_file)
@@ -168,7 +172,7 @@ async def modify_roles(ctx, add, args):
     if guild is not None:
         member = get_member(ctx.author)
 
-        roles = get_guild_roles()
+        roles = get_roles()
         for key in args:
             if key in roles:
                 role = roles[key]
@@ -187,7 +191,7 @@ async def modify_roles(ctx, add, args):
 
 
 @bot.command(name="link")
-async def fu_link(message):
+async def cmd_link(message):
     """ Sends link to invite others to Discord server in Chat. """
 
     await message.channel.send('Benutze bitte folgenden Link, um andere Studierende auf unseren Discord einzuladen: '
@@ -195,28 +199,30 @@ async def fu_link(message):
 
 
 @bot.command(name="stats")
-async def fu_stats(message):
+async def cmd_stats(message):
     """ Sends stats in Chat. """
 
     guild = get_guild()
     members = await guild.fetch_members().flatten()
-    roles = get_guild_roles()
-    answer = f'Wir haben aktuell {len(members)} Mitglieder auf diesem Server.'
-    answer += f'\n\nVerteilt auf Rollen: '
-
+    roles = get_roles()
+    answer = f''
+    embed = discord.Embed(title="Statistiken",
+                          description=f'Wir haben aktuell {len(members)} Mitglieder auf diesem Server, verteilt auf folgende Rollen:')
     for key, role in roles.items():
         role_members = role.members
         if len(role_members) > 0 and not role.name.startswith("Farbe"):
-            answer += f'\n{role.name}: {len(role_members)} Mitglieder'
+            embed.add_field(name=role.name, value=f'{len(role_members)} Mitglieder', inline=False)
 
     no_role = 0
     for member in members:
+        # ToDo Search for study roles only!
         if len(member.roles) == 1:
             no_role += 1
 
-    answer += f'\n\n{no_role} Mitglieder ohne Rolle'
+    embed.add_field(name="\u200B", value="\u200b", inline=False)
+    embed.add_field(name="Mitglieder ohne Rolle", value=str(no_role), inline=False)
 
-    await message.channel.send(answer)
+    await message.channel.send(answer, embed=embed)
 
 
 async def pin_message(message):
@@ -240,7 +246,7 @@ async def unpin_message(message):
 @bot.event
 async def on_ready():
     print("Client started!")
-    fu_load_roles()
+    load_roles()
 
 
 @bot.event
