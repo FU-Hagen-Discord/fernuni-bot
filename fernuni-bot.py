@@ -5,6 +5,8 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
+from poll import Poll
+
 # .env file is necessary in the same directory, that contains several strings.
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -158,6 +160,11 @@ async def cmd_add_role(ctx, key, role):
         await send_dm(ctx.author, f"Fehler beim Hinzufügen der Rolle {role}")
 
 
+@bot.command(name="poll")
+async def cmd_poll(ctx, question, *answers):
+    await Poll(bot, question, answers, ctx.author.id).send_poll(ctx)
+
+
 def load_roles():
     global assignable_roles
     roles_file = open(ROLES_FILE, mode='r')
@@ -251,10 +258,23 @@ async def on_ready():
 
 @bot.event
 async def on_raw_reaction_add(payload):
+    if payload.user_id == bot.user.id:
+        return
+
     if payload.emoji.name == PIN_EMOJI:
         channel = await bot.fetch_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
         await pin_message(message)
+    elif payload.emoji.name in ["🗑️", "🛑"]:
+        channel = await bot.fetch_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
+        if len(message.embeds) > 0 and message.embeds[0].title == "Umfrage":
+            poll = Poll(bot, message=message)
+            if str(payload.user_id) == poll.author:
+                if payload.emoji.name == "🗑️":
+                    await poll.delete_poll()
+                else:
+                    await poll.close_poll()
 
 
 @bot.event
