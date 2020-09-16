@@ -29,7 +29,8 @@ class Poll:
             title += " Ergebnis"
 
         if len(self.answers) > 10:
-            channel.send("Fehler beim Erstellen der Umfrage! Es werden derzeit nicht mehr als 10 Optionen unterstützt!")
+            await channel.send(
+                "Fehler beim Erstellen der Umfrage! Es werden derzeit nicht mehr als 10 Optionen unterstützt!")
             return
 
         embed = discord.Embed(title=title, description=self.question)
