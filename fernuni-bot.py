@@ -15,10 +15,12 @@ ACTIVITY = os.getenv('DISCORD_ACTIVITY')
 OWNER = int(os.getenv('DISCORD_OWNER'))
 ROLES_FILE = os.getenv('DISCORD_ROLES_FILE')
 HELP_FILE = os.getenv('DISCORD_HELP_FILE')
+TOPS_FILE = os.getenv('DISCORD_TOPS_FILE')
 
 PIN_EMOJI = "📌"
 bot = commands.Bot(command_prefix='!', help_command=None, activity=discord.Game(ACTIVITY), owner_id=OWNER)
 assignable_roles = {}
+tops = {}
 
 
 def get_guild():
@@ -41,6 +43,8 @@ def get_key(role):
 
 
 def get_member(user):
+    """ Get Member from passed user """
+
     if type(user) is discord.Member:
         return user
     elif type(user) is discord.User:
@@ -137,12 +141,16 @@ async def cmd_my_roles(message):
 
 @bot.command(name="add-roles")
 async def cmd_add_roles(ctx, *args):
+    """ Add yourself one or more roles """
+
     if len(args) > 0:
         await modify_roles(ctx, True, args)
 
 
 @bot.command(name="remove-roles")
 async def cmd_remove_roles(ctx, *args):
+    """ Remove roles assigned to you """
+
     if len(args):
         await modify_roles(ctx, False, args)
 
@@ -150,6 +158,8 @@ async def cmd_remove_roles(ctx, *args):
 @bot.command(name="add-role")
 @commands.is_owner()
 async def cmd_add_role(ctx, key, role):
+    """ Add a Role to be assignable (Admin-Command only) """
+
     assignable_roles[key] = role
     roles_file = open(ROLES_FILE, mode='w')
     json.dump(assignable_roles, roles_file)
@@ -162,13 +172,93 @@ async def cmd_add_role(ctx, key, role):
 
 @bot.command(name="poll")
 async def cmd_poll(ctx, question, *answers):
+    """ Create poll """
+
     await Poll(bot, question, answers, ctx.author.id).send_poll(ctx)
 
 
+@bot.command(name="add-top")
+async def cmd_add_top(ctx, top):
+    """ Add TOP to a channel """
+
+    channel = ctx.channel
+
+    if str(channel.id) not in tops:
+        tops[str(channel.id)] = []
+
+    channel_tops = tops.get(str(channel.id))
+    channel_tops.append(top)
+
+    tops_file = open(TOPS_FILE, mode='w')
+    json.dump(tops, tops_file)
+
+
+@bot.command(name="remove-top")
+async def cmd_remove_top(ctx, top):
+    """ Remove TOP from a channel """
+    channel = ctx.channel
+
+    if not top.isnumeric():
+        await ctx.send("Fehler! Der übergebene Parameter muss eine Zahl sein")
+    else:
+        if str(channel.id) in tops:
+            channel_tops = tops.get(str(channel.id))
+
+            if 0 < int(top) <= len(channel_tops):
+                del channel_tops[int(top) - 1]
+
+            if len(channel_tops) == 0:
+                tops.pop(str(channel.id))
+
+            tops_file = open(TOPS_FILE, mode='w')
+            json.dump(tops, tops_file)
+
+
+@bot.command(name="clear-tops")
+async def cmd_clear_tops(ctx):
+    """ Clear all TOPs from a channel """
+
+    channel = ctx.channel
+
+    if str(channel.id) in tops:
+        tops.pop(str(channel.id))
+        tops_file = open(TOPS_FILE, mode='w')
+        json.dump(tops, tops_file)
+
+
+@bot.command(name="tops")
+async def cmd_tops(ctx):
+    """ Get all TOPs from a channel """
+
+    channel = ctx.channel
+
+    embed = discord.Embed(title="Tagesordnungspunkte",
+                          color=19607)
+    embed.add_field(name="\u200B", value="\u200B", inline=False)
+
+    if str(channel.id) in tops:
+        channel_tops = tops.get(str(channel.id))
+
+        for i in range(0, len(channel_tops)):
+            embed.add_field(name=f"TOP {i + 1}", value=channel_tops[i], inline=False)
+    else:
+        embed.add_field(name="Keine Tagesordnungspunkte vorhanden", value="\u200B", inline=False)
+
+    await ctx.send(embed=embed)
+
+
 def load_roles():
+    """ Loads all assignable roles from ROLES_FILE """
     global assignable_roles
     roles_file = open(ROLES_FILE, mode='r')
     assignable_roles = json.load(roles_file)
+
+
+def load_tops():
+    """ Loads all TOPs from TOPS_FILE """
+    global tops
+    tops_file = open(TOPS_FILE, mode='r')
+    tops = json.load(tops_file)
 
 
 async def modify_roles(ctx, add, args):
@@ -254,6 +344,7 @@ async def unpin_message(message):
 async def on_ready():
     print("Client started!")
     load_roles()
+    load_tops()
 
 
 @bot.event
