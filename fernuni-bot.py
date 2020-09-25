@@ -1,10 +1,12 @@
 import json
 import os
+import re
 
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
+from appointments_cog import AppointmentsCog
 from poll import Poll
 
 # .env file is necessary in the same directory, that contains several strings.
@@ -16,9 +18,13 @@ OWNER = int(os.getenv('DISCORD_OWNER'))
 ROLES_FILE = os.getenv('DISCORD_ROLES_FILE')
 HELP_FILE = os.getenv('DISCORD_HELP_FILE')
 TOPS_FILE = os.getenv('DISCORD_TOPS_FILE')
+APPOINTMENTS_FILE = os.getenv("DISCORD_APPOINTMENTS_FILE")
+DATE_TIME_FORMAT = os.getenv("DISCORD_DATE_TIME_FORMAT")
 
 PIN_EMOJI = "📌"
 bot = commands.Bot(command_prefix='!', help_command=None, activity=discord.Game(ACTIVITY), owner_id=OWNER)
+appointments_cog = AppointmentsCog(bot, DATE_TIME_FORMAT, APPOINTMENTS_FILE)
+bot.add_cog(appointments_cog)
 assignable_roles = {}
 tops = {}
 
@@ -198,7 +204,7 @@ async def cmd_remove_top(ctx, top):
     """ Remove TOP from a channel """
     channel = ctx.channel
 
-    if not top.isnumeric():
+    if not re.match(r'^-?\d+$', top):
         await ctx.send("Fehler! Der übergebene Parameter muss eine Zahl sein")
     else:
         if str(channel.id) in tops:
@@ -366,6 +372,9 @@ async def on_raw_reaction_add(payload):
                     await poll.delete_poll()
                 else:
                     await poll.close_poll()
+        elif payload.emoji.name == "🗑️" and len(message.embeds) > 0 and \
+                message.embeds[0].title == "Neuer Termin hinzugefügt!":
+            await appointments_cog.handle_reactions(payload)
 
 
 @bot.event
