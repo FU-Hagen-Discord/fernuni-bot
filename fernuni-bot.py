@@ -106,7 +106,13 @@ async def send_dm(user, message, embed=None):
 @bot.command(name="motivation")
 async def cmd_motivation(ctx):
     texts = ["Leb' deinen Traum, denn er wird wahr. Geh deinen Weg, stelle dich der Gefahr...",
-             "Alles was wichtig ist wirst du erkennen wenn die Zeit gekommen ist."]
+             "Alles was wichtig ist, wirst du erkennen wenn, die Zeit gekommen ist.",
+             "\"Tue es oder tue es nicht.Es gibt kein Versuchen.\" – Meister Yoda",
+             "\"Wissen Sie noch, wie damals unser Leitspruch war?\" "
+             "\"Immer ein Ding der Unmöglichkeit nach dem ander'n\" STAR TREK PICARD",
+             "Are you kidding me?! JUST - DO - IT!",
+             "Manchmal braucht man einfach mal eine Pause.: person_shrugging:"
+             ]
 
     text = random.choice(texts)
     await ctx.send(text)
