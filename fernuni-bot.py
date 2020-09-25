@@ -102,6 +102,11 @@ async def send_dm(user, message, embed=None):
         await user.dm_channel.send(message, embed=embed)
 
 
+@bot.command(name="sinn")
+async def cmd_sinn(ctx):
+    await ctx.send("42 :robot:")
+
+
 @bot.command(name="help")
 async def cmd_help(ctx):
     """ Send help message as DM """
