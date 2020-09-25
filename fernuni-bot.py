@@ -1,5 +1,6 @@
 import json
 import os
+import random
 import re
 
 import discord
@@ -100,6 +101,15 @@ async def send_dm(user, message, embed=None):
             await user.create_dm()
 
         await user.dm_channel.send(message, embed=embed)
+
+
+@bot.command(name="motivation")
+async def cmd_motivation(ctx):
+    texts = ["Leb' deinen Traum, denn er wird wahr. Geh deinen Weg, stelle dich der Gefahr...",
+             "Alles was wichtig ist wirst du erkennen wenn die Zeit gekommen ist."]
+
+    text = random.choice(texts)
+    await ctx.send(text)
 
 
 @bot.command(name="sinn")
