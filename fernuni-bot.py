@@ -22,6 +22,7 @@ TOPS_FILE = os.getenv('DISCORD_TOPS_FILE')
 APPOINTMENTS_FILE = os.getenv("DISCORD_APPOINTMENTS_FILE")
 TEXT_COMMANDS_FILE = os.getenv("DISCORD_TEXT_COMMANDS_FILE")
 DATE_TIME_FORMAT = os.getenv("DISCORD_DATE_TIME_FORMAT")
+CATEGORY_LERNGRUPPEN = os.getenv("DISCORD_CATEGORY_LERNGRUPPEN")
 
 PIN_EMOJI = "📌"
 bot = commands.Bot(command_prefix='!', help_command=None, activity=discord.Game(ACTIVITY), owner_id=OWNER)
@@ -384,6 +385,19 @@ async def on_raw_reaction_remove(payload):
         channel = await bot.fetch_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
         await unpin_message(message)
+
+
+@bot.event
+async def on_voice_state_update(member, before, after):
+    if before.channel != after.channel and after.channel and "Lerngruppen-Voice" in after.channel.name:
+        category = await bot.fetch_channel(CATEGORY_LERNGRUPPEN)
+        voice_channels = category.voice_channels
+
+        for voice_channel in voice_channels:
+            if len(voice_channel.members) == 0:
+                return
+
+        await category.create_voice_channel(f"Lerngruppen-Voice-{len(voice_channels) + 1}")
 
 
 bot.run(TOKEN)
