@@ -149,3 +149,4 @@ class TextCommandsCog(commands.Cog):
         ctx = await self.bot.get_context(message)
 
         await self.cmd_add_text_command(ctx, "!motivation", text)
+        await message.delete()
