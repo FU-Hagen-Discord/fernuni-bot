@@ -1,6 +1,5 @@
 import json
 import os
-import random
 import re
 
 import discord
@@ -9,6 +8,7 @@ from dotenv import load_dotenv
 
 from appointments_cog import AppointmentsCog
 from poll import Poll
+from text_commands_cog import TextCommandsCog
 
 # .env file is necessary in the same directory, that contains several strings.
 load_dotenv()
@@ -20,12 +20,15 @@ ROLES_FILE = os.getenv('DISCORD_ROLES_FILE')
 HELP_FILE = os.getenv('DISCORD_HELP_FILE')
 TOPS_FILE = os.getenv('DISCORD_TOPS_FILE')
 APPOINTMENTS_FILE = os.getenv("DISCORD_APPOINTMENTS_FILE")
+TEXT_COMMANDS_FILE = os.getenv("DISCORD_TEXT_COMMANDS_FILE")
 DATE_TIME_FORMAT = os.getenv("DISCORD_DATE_TIME_FORMAT")
 
 PIN_EMOJI = "📌"
 bot = commands.Bot(command_prefix='!', help_command=None, activity=discord.Game(ACTIVITY), owner_id=OWNER)
 appointments_cog = AppointmentsCog(bot, DATE_TIME_FORMAT, APPOINTMENTS_FILE)
+text_commands_cog = TextCommandsCog(bot, TEXT_COMMANDS_FILE)
 bot.add_cog(appointments_cog)
+bot.add_cog(text_commands_cog)
 assignable_roles = {}
 tops = {}
 
@@ -101,32 +104,6 @@ async def send_dm(user, message, embed=None):
             await user.create_dm()
 
         await user.dm_channel.send(message, embed=embed)
-
-
-@bot.command(name="motivation")
-async def cmd_motivation(ctx):
-    texts = ["Leb' deinen Traum, denn er wird wahr. Geh deinen Weg, stelle dich der Gefahr...",
-             "Alles, was, wichtig, ist, wirst, du, erkennen, wenn, die, Zeit, gekommen, ist.,",
-             "\"Tue es oder tue es nicht.Es gibt kein Versuchen.\" – Meister Yoda",
-             "\"Wissen Sie noch, wie damals unser Leitspruch war?\" "
-             "\"Immer ein Ding der Unmöglichkeit nach dem ander'n\" STAR TREK PICARD",
-             "Are you kidding me?! JUST - DO - IT!",
-             "Manchmal braucht man einfach mal eine Pause. :person_shrugging:",
-             "Ich habe diese Leier doch schon mal gehört, hat eine Spitzenposition in den Charts der alten, aber guten "
-             "Leiern und kommt kurz nach dem beliebten Stück: \"Scheitert und ich werde euch töten!\". Oder vielleicht "
-             "handelt es sich in diesem Fall, um die interessante Coverversion, die von dem berüchtigten Ogerbarden "
-             "Chumba – Khan eingespielt wurde: \"Scheitert und ich werde euch fressen!\" Natürlich könnten wir doch "
-             "auch einfach gehen.",
-             "Am Morgen ein Bier und der Tag gehört dir."
-             ]
-
-    text = random.choice(texts)
-    await ctx.send(text)
-
-
-@bot.command(name="sinn")
-async def cmd_sinn(ctx):
-    await ctx.send("42 :robot:")
 
 
 @bot.command(name="help")
@@ -320,14 +297,6 @@ async def modify_roles(ctx, add, args):
                         await send_dm(ctx.author, f'Fehler bei der Entfernung der Rolle {role.name}')
 
 
-@bot.command(name="link")
-async def cmd_link(message):
-    """ Sends link to invite others to Discord server in Chat. """
-
-    await message.channel.send('Benutze bitte folgenden Link, um andere Studierende auf unseren Discord einzuladen: '
-                               'http://fernuni-discord.dnns01.de')
-
-
 @bot.command(name="stats")
 async def cmd_stats(message):
     """ Sends stats in Chat. """
@@ -402,6 +371,11 @@ async def on_raw_reaction_add(payload):
         elif payload.emoji.name == "🗑️" and len(message.embeds) > 0 and \
                 message.embeds[0].title == "Neuer Termin hinzugefügt!":
             await appointments_cog.handle_reactions(payload)
+    elif payload.emoji.name in ["👍"]:
+        channel = await bot.fetch_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
+        if len(message.embeds) > 0 and message.embeds[0].title == "Neuer Motivations Text":
+            await text_commands_cog.motivation_approved(message)
 
 
 @bot.event
