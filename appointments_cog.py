@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import json
+import os
 import re
 
 import discord
@@ -8,17 +9,13 @@ from discord.ext import tasks, commands
 
 
 class AppointmentsCog(commands.Cog):
-    def __init__(self, bot, fmt, APPOINTMENTS_FILE):
+    def __init__(self, bot):
         self.bot = bot
-        self.fmt = fmt
+        self.fmt = os.getenv("DISCORD_DATE_TIME_FORMAT")
         self.timer.start()
         self.appointments = {}
-        self.app_file = APPOINTMENTS_FILE
+        self.app_file = os.getenv("DISCORD_APPOINTMENTS_FILE")
         self.load_appointments()
-
-    def cog_unload(self):
-        print("unload")
-        self.timer.cancel()
 
     def load_appointments(self):
         """ Loads all appointments from APPOINTMENTS_FILE """
@@ -156,3 +153,14 @@ class AppointmentsCog(commands.Cog):
                     channel_appointments.pop(str(payload.message_id))
 
         self.save_appointments()
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        if payload.user_id == self.bot.user.id:
+            return
+
+        if payload.emoji.name in ["🗑️"]:
+            channel = await self.bot.fetch_channel(payload.channel_id)
+            message = await channel.fetch_message(payload.message_id)
+            if len(message.embeds) > 0 and message.embeds[0].title == "Neuer Termin hinzugefügt!":
+                await self.handle_reactions(payload)

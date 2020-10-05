@@ -5,12 +5,14 @@ import random
 import discord
 from discord.ext import commands
 
+import utils
+
 
 class TextCommandsCog(commands.Cog):
-    def __init__(self, bot, TEXT_COMMANDS_FILE):
+    def __init__(self, bot):
         self.bot = bot
         self.text_commands = {}
-        self.cmd_file = TEXT_COMMANDS_FILE
+        self.cmd_file = os.getenv("DISCORD_TEXT_COMMANDS_FILE")
         self.load_text_commands()
 
     def load_text_commands(self):
@@ -22,16 +24,6 @@ class TextCommandsCog(commands.Cog):
     def save_text_commands(self):
         text_commands_file = open(self.cmd_file, mode='w')
         json.dump(self.text_commands, text_commands_file)
-
-    def is_mod(ctx):
-        author = ctx.author
-        roles = author.roles
-
-        for role in roles:
-            if role.id == int(os.getenv("DISCORD_MOD_ROLE")):
-                return True
-
-        return False
 
     @commands.Cog.listener(name="on_message")
     async def process_text_commands(self, message):
@@ -45,7 +37,7 @@ class TextCommandsCog(commands.Cog):
             await message.channel.send(random.choice(texts))
 
     @commands.command(name="add-text-command")
-    @commands.check(is_mod)
+    @commands.check(utils.is_mod)
     async def cmd_add_text_command(self, ctx, cmd, text):
         texts = self.text_commands.get(cmd)
 
@@ -59,7 +51,7 @@ class TextCommandsCog(commands.Cog):
         await ctx.send(f"[{cmd}] => [{text}] erfolgreich hinzugefügt.")
 
     @commands.command(name="text-commands")
-    @commands.check(is_mod)
+    @commands.check(utils.is_mod)
     async def cmd_text_commands(self, ctx):
         answer = f"Text Commands:\n"
 
@@ -71,7 +63,7 @@ class TextCommandsCog(commands.Cog):
         await ctx.send(answer)
 
     @commands.command(name="texts")
-    @commands.check(is_mod)
+    @commands.check(utils.is_mod)
     async def cmd_texts(self, ctx, cmd):
         texts = self.text_commands.get(cmd)
         answer = f"Für {cmd} hinterlegte Texte: \n"
@@ -87,7 +79,7 @@ class TextCommandsCog(commands.Cog):
         await ctx.send(answer)
 
     @commands.command(name="edit-text")
-    @commands.check(is_mod)
+    @commands.check(utils.is_mod)
     async def cmd_edit_text(self, ctx, cmd, id, text):
         texts = self.text_commands.get(cmd)
 
@@ -103,7 +95,7 @@ class TextCommandsCog(commands.Cog):
             await ctx.send("Command {cmd} nicht vorhanden!")
 
     @commands.command(name="remove-text")
-    @commands.check(is_mod)
+    @commands.check(utils.is_mod)
     async def cmd_remove_text(self, ctx, cmd, id):
         texts = self.text_commands.get(cmd)
 
@@ -123,7 +115,7 @@ class TextCommandsCog(commands.Cog):
             await ctx.send("Command {cmd} nicht vorhanden!")
 
     @commands.command(name="remove-text-command")
-    @commands.check(is_mod)
+    @commands.check(utils.is_mod)
     async def cmd_remove_text_command(self, ctx, cmd):
         if cmd in self.text_commands:
             self.text_commands.pop(cmd)
@@ -150,3 +142,14 @@ class TextCommandsCog(commands.Cog):
 
         await self.cmd_add_text_command(ctx, "!motivation", text)
         await message.delete()
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        if payload.user_id == self.bot.user.id:
+            return
+
+        if payload.emoji.name in ["👍"]:
+            channel = await self.bot.fetch_channel(payload.channel_id)
+            message = await channel.fetch_message(payload.message_id)
+            if len(message.embeds) > 0 and message.embeds[0].title == "Neuer Motivations Text":
+                await self.motivation_approved(message)

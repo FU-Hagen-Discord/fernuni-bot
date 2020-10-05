@@ -1,7 +1,35 @@
 import discord
+from discord.ext import commands
 
 OPTIONS = ["\u0031\u20E3", "\u0032\u20E3", "\u0033\u20E3", "\u0034\u20E3", "\u0035\u20E3", "\u0036\u20E3",
            "\u0037\u20E3", "\u0038\u20E3", "\u0039\u20E3", "\u0040\u20E3"]
+
+
+class PollCog(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    @commands.command(name="poll")
+    async def cmd_poll(self, ctx, question, *answers):
+        """ Create poll """
+
+        await Poll(self.bot, question, answers, ctx.author.id).send_poll(ctx)
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        if payload.user_id == self.bot.user.id:
+            return
+
+        if payload.emoji.name in ["🗑️", "🛑"]:
+            channel = await self.bot.fetch_channel(payload.channel_id)
+            message = await channel.fetch_message(payload.message_id)
+            if len(message.embeds) > 0 and message.embeds[0].title == "Umfrage":
+                poll = Poll(self.bot, message=message)
+                if str(payload.user_id) == poll.author:
+                    if payload.emoji.name == "🗑️":
+                        await poll.delete_poll()
+                    else:
+                        await poll.close_poll()
 
 
 class Poll:
