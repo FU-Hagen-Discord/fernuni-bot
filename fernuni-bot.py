@@ -25,7 +25,9 @@ DATE_TIME_FORMAT = os.getenv("DISCORD_DATE_TIME_FORMAT")
 CATEGORY_LERNGRUPPEN = os.getenv("DISCORD_CATEGORY_LERNGRUPPEN")
 
 PIN_EMOJI = "📌"
-bot = commands.Bot(command_prefix='!', help_command=None, activity=discord.Game(ACTIVITY), owner_id=OWNER)
+intents = discord.Intents.default()
+intents.members = True
+bot = commands.Bot(command_prefix='!', help_command=None, activity=discord.Game(ACTIVITY), owner_id=OWNER, intents=intents)
 appointments_cog = AppointmentsCog(bot, DATE_TIME_FORMAT, APPOINTMENTS_FILE)
 text_commands_cog = TextCommandsCog(bot, TEXT_COMMANDS_FILE)
 bot.add_cog(appointments_cog)
