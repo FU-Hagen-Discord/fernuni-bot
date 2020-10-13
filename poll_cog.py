@@ -78,8 +78,14 @@ class Poll:
                     async for user in reaction.users():
                         if self.bot.user == user:
                             continue
+                        ping = f'<@!{str(user.id)}> '
 
-                        value += f'<@!{str(user.id)}> '
+                        if len(value) + len(ping) > 1024:
+                            embed.add_field(name=name, value=value, inline=False)
+                            answer = f''
+                            name = "\u200b"
+
+                        value += ping
 
             embed.add_field(name=name, value=value, inline=False)
             option_ctr += 1
