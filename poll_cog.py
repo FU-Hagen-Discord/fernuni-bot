@@ -73,19 +73,20 @@ class Poll:
                 reaction = self.get_reaction(OPTIONS[i])
                 if reaction:
                     name += f' : {reaction.count - 1}'
-                    value += f'\nStimmen: '
+                    # value += f'\nStimmen: '
 
-                    async for user in reaction.users():
-                        if self.bot.user == user:
-                            continue
-                        ping = f'<@!{str(user.id)}> '
-
-                        if len(value) + len(ping) > 1024:
-                            embed.add_field(name=name, value=value, inline=False)
-                            answer = f''
-                            name = "\u200b"
-
-                        value += ping
+                    # async for user in reaction.users():
+                    #     if self.bot.user == user:
+                    #         continue
+                    #     ping = f'<@!{str(user.id)}> '
+                    #
+                    #     if len(value) + len(ping) > 1024:
+                    #         embed.add_field(name=name, value=value, inline=False)
+                    #         answer = f''
+                    #         name = "\u200b"
+                    #     elif
+                    #
+                    #     value += ping
 
             embed.add_field(name=name, value=value, inline=False)
             option_ctr += 1
