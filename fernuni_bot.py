@@ -24,7 +24,9 @@ HELP_FILE = os.getenv('DISCORD_HELP_FILE')
 CATEGORY_LERNGRUPPEN = os.getenv("DISCORD_CATEGORY_LERNGRUPPEN")
 PIN_EMOJI = "📌"
 
-bot = commands.Bot(command_prefix='!', help_command=None, activity=discord.Game(ACTIVITY), owner_id=OWNER)
+intents = discord.Intents.default()
+intents.members = True
+bot = commands.Bot(command_prefix='!', help_command=None, activity=discord.Game(ACTIVITY), owner_id=OWNER, intents=intents)
 poll_cog = PollCog(bot)
 appointments_cog = AppointmentsCog(bot)
 text_commands_cog = TextCommandsCog(bot)
