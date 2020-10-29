@@ -11,6 +11,9 @@ class RolesCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.roles_file = os.getenv("DISCORD_ROLES_FILE")
+        self.channel_id = int(os.getenv("DISCORD_ROLLEN_CHANNEL"))
+        self.degree_program_message_id = int(os.getenv("DISCORD_DEGREE_PROGRAM_MSG"))
+        self.color_message_id = int(os.getenv("DISCORD_COLOR_MSG"))
         self.assignable_roles = {}
         self.load_roles()
 
@@ -20,15 +23,36 @@ class RolesCog(commands.Cog):
         roles_file = open(self.roles_file, mode='r')
         self.assignable_roles = json.load(roles_file)
 
-    def get_guild(self):
-        """ Returns an guild object, that matches the id specified in GUILD.
-        This guild is the FU Hagen Informatik/Mathematik guild."""
+    def get_degree_program_emojis(self):
+        """ Creates a dict for degree program emojis """
 
-        for guild in self.bot.guilds:
-            if guild.id == int(os.getenv('DISCORD_GUILD')):
-                return guild
+        tmp_emojis = {}
+        emojis = {}
+        degree_program_assignable = self.assignable_roles[0]
 
-        return None
+        # start with getting all emojis that are used in those roles as a dict
+        for emoji in self.bot.emojis:
+            if emoji.name in degree_program_assignable:
+                tmp_emojis[emoji.name] = emoji
+
+        # bring them in desired order
+        for key in degree_program_assignable.keys():
+            emojis[key] = tmp_emojis.get(key)
+
+        return emojis
+
+    def get_color_emojis(self):
+        """ Creates a dict for degree program emojis """
+
+        emojis = {}
+        color_assignable = self.assignable_roles[1]
+
+        # start with getting all emojis that are used in those roles as a dict
+        for emoji in self.bot.emojis:
+            if emoji.name in color_assignable:
+                emojis[emoji.name] = emoji
+
+        return emojis
 
     def get_key(self, role):
         """ Get the key for a given role. This role is used for adding or removing a role from a user. """
@@ -36,83 +60,6 @@ class RolesCog(commands.Cog):
         for key, role_name in self.assignable_roles.items():
             if role_name == role.name:
                 return key
-
-    def get_member(self, user):
-        """ Get Member from passed user """
-
-        if type(user) is discord.Member:
-            return user
-        elif type(user) is discord.User:
-            guild = self.get_guild()
-            if guild is not None:
-                return guild.get_member(user.id)
-        return None
-
-    def get_roles(self, user=None):
-        """ Get all roles assigned to a member, or all roles available on the discord server
-        (in both cases only roles are returned, that are defined in roles.json). """
-        roles_list = []
-        roles_dict = {}
-
-        if user is not None:
-            member = self.get_member(user)
-            if member is not None:
-                roles_list = member.roles
-        else:
-            guild = self.get_guild()
-            if guild is not None:
-                roles_list = guild.roles
-
-        for role in roles_list:
-            role_key = self.get_key(role)
-            if role_key is not None:
-                roles_dict[role_key] = role
-        return roles_dict
-
-    @staticmethod
-    def get_role_embed(title, roles):
-        """ Returns an embed that represents all the roles that are passed to this function """
-
-        embed = discord.Embed(title=title,
-                              description="Bei jeder Rolle siehst du oben in Fett den Key der Rolle und "
-                                          "darunter den Namen der Rolle",
-                              color=19607)
-        embed.add_field(name="\u200B", value="\u200B", inline=False)
-
-        for key, role in roles.items():
-            embed.add_field(name=key, value=role.name, inline=False)
-
-        return embed
-
-    @commands.command(name="all-roles")
-    async def cmd_all_roles(self, message):
-        """ Send all available roles that can be assigned to a member by this bot as DM """
-
-        roles = self.get_roles()
-        embed = self.get_role_embed("Alle verfügbaren Rollen", roles)
-        await utils.send_dm(message.author, "", embed=embed)
-
-    @commands.command(name="my-roles")
-    async def cmd_my_roles(self, message):
-        """ Send the roles assigned to a member as DM. """
-
-        roles = self.get_roles(message.author)
-        embed = self.get_role_embed("Dir zugewiesene Rollen", roles)
-        await utils.send_dm(message.author, "", embed=embed)
-
-    @commands.command(name="add-roles")
-    async def cmd_add_roles(self, ctx, *args):
-        """ Add yourself one or more roles """
-
-        for arg in args:
-            await self.modify_roles(ctx.author, True, arg)
-
-    @commands.command(name="remove-roles")
-    async def cmd_remove_roles(self, ctx, *args):
-        """ Remove roles assigned to you """
-
-        for arg in args:
-            await self.modify_roles(ctx.author, False, arg)
 
     @commands.command(name="add-role")
     @commands.is_owner()
@@ -128,41 +75,19 @@ class RolesCog(commands.Cog):
         else:
             await utils.send_dm(ctx.author, f"Fehler beim Hinzufügen der Rolle {role}")
 
-    async def modify_roles(self, author, add, key):
-        """ Add or remove roles assigned to a member. Multiple roles can be added with one command, or removed. """
-
-        guild = self.get_guild()
-
-        if guild is not None:
-            member = self.get_member(author)
-
-            roles = self.get_roles()
-            if key in roles:
-                role = roles[key]
-                if add:
-                    try:
-                        await member.add_roles(role)
-                        await utils.send_dm(author, f'Dir wurde die Rolle {role.name} hinzugefügt')
-                    except Exception:
-                        await utils.send_dm(author, f'Fehler bei der Zuweisung der Rolle {role.name}')
-                else:
-                    try:
-                        await member.remove_roles(role)
-                        await utils.send_dm(author, f'Dir wurde die Rolle {role.name} entfernt')
-                    except Exception:
-                        await utils.send_dm(author, f'Fehler bei der Entfernung der Rolle {role.name}')
-
     @commands.command(name="stats")
     async def cmd_stats(self, ctx):
         """ Sends stats in Chat. """
 
-        guild = self.get_guild()
+        guild = ctx.guild
         members = await guild.fetch_members().flatten()
-        roles = self.get_roles()
         answer = f''
         embed = discord.Embed(title="Statistiken",
                               description=f'Wir haben aktuell {len(members)} Mitglieder auf diesem Server, verteilt auf folgende Rollen:')
-        for key, role in roles.items():
+
+        for role in guild.roles:
+            if not self.get_key(role):
+                continue
             role_members = role.members
             if len(role_members) > 0 and not role.name.startswith("Farbe"):
                 embed.add_field(name=role.name, value=f'{len(role_members)} Mitglieder', inline=False)
@@ -177,3 +102,83 @@ class RolesCog(commands.Cog):
         embed.add_field(name="Mitglieder ohne Rolle", value=str(no_role), inline=False)
 
         await ctx.channel.send(answer, embed=embed)
+
+    @commands.command("update-degree-program")
+    @commands.check(utils.is_mod)
+    async def cmd_update_degree_program(self, ctx):
+        channel = await self.bot.fetch_channel(self.channel_id)
+        message = await channel.fetch_message(self.degree_program_message_id)
+        degree_program_emojis = self.get_degree_program_emojis()
+
+        embed = discord.Embed(title="Vergabe von Studiengangs-Rollen",
+                              description="Durch klicken auf die entsprechende Reaktion kannst du dir die damit assoziierte Rolle zuweisen, oder entfernen. Dies funktioniert so, dass ein Klick auf die Reaktion die aktuelle Zuordnung dieser Rolle ändert. Das bedeutet, wenn du die Rolle, die mit :St: assoziiert ist, schon hast, aber die Reaktion noch nicht ausgewählt hast, dann wird dir bei einem Klick auf die Reaktion diese Rolle wieder weggenommen. ")
+
+        value = f""
+        for key, emoji in degree_program_emojis.items():
+            if emoji:
+                value += f"<:{key}:{emoji.id}> : {self.assignable_roles[0].get(key)}\n"
+
+        embed.add_field(name="Rollen",
+                        value=value,
+                        inline=False)
+
+        await message.edit(content="", embed=embed)
+        await message.clear_reactions()
+
+        for emoji in degree_program_emojis.values():
+            if emoji:
+                await message.add_reaction(emoji)
+
+    @commands.command("update-color")
+    @commands.check(utils.is_mod)
+    async def cmd_update_color(self, ctx):
+        channel = await self.bot.fetch_channel(self.channel_id)
+        message = await channel.fetch_message(self.color_message_id)
+        color_emojis = self.get_color_emojis()
+
+        embed = discord.Embed(title="Vergabe von Farb-Rollen",
+                              description="Durch klicken auf die entsprechende Reaktion kannst du dir die damit assoziierte Rolle zuweisen, oder entfernen. Dies funktioniert so, dass ein Klick auf die Reaktion die aktuelle Zuordnung dieser Rolle ändert. Das bedeutet, wenn du die Rolle, die mit :St: assoziiert ist, schon hast, aber die Reaktion noch nicht ausgewählt hast, dann wird dir bei einem Klick auf die Reaktion diese Rolle wieder weggenommen. ")
+
+        await message.edit(content="", embed=embed)
+        await message.clear_reactions()
+
+        for emoji in color_emojis.values():
+            if emoji:
+                await message.add_reaction(emoji)
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        await self.toggle_role_assignment(payload)
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_remove(self, payload):
+        await self.toggle_role_assignment(payload)
+
+    async def toggle_role_assignment(self, payload):
+        if payload.user_id == self.bot.user.id or payload.message_id not in [self.degree_program_message_id,
+                                                                             self.color_message_id]:
+            return
+
+        if payload.emoji.name not in self.assignable_roles[0] and payload.emoji.name not in self.assignable_roles[1]:
+            return
+
+        role_name = ""
+        guild = await self.bot.fetch_guild(payload.guild_id)
+        member = await guild.fetch_member(payload.user_id)
+        roles = member.roles
+
+        if payload.emoji.name in self.assignable_roles[0]:
+            role_name = self.assignable_roles[0].get(payload.emoji.name)
+        else:
+            role_name = self.assignable_roles[1].get(payload.emoji.name)
+
+        for role in roles:
+            if role.name == role_name:
+                await member.remove_roles(role)
+                break
+        else:
+            guild_roles = guild.roles
+
+            for role in guild_roles:
+                if role.name == role_name:
+                    await member.add_roles(role)

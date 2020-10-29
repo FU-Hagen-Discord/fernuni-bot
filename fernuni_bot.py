@@ -12,6 +12,7 @@ from poll_cog import PollCog
 from roles_cog import RolesCog
 from text_commands_cog import TextCommandsCog
 from tops_cog import TopsCog
+from welcome_cog import WelcomeCog
 
 # .env file is necessary in the same directory, that contains several strings.
 load_dotenv()
@@ -32,12 +33,13 @@ appointments_cog = AppointmentsCog(bot)
 text_commands_cog = TextCommandsCog(bot)
 tops_cog = TopsCog(bot)
 roles_cog = RolesCog(bot)
-# welcome_cog = WelcomeCog(bot)
+welcome_cog = WelcomeCog(bot)
 bot.add_cog(appointments_cog)
 bot.add_cog(text_commands_cog)
 bot.add_cog(poll_cog)
 bot.add_cog(tops_cog)
 bot.add_cog(roles_cog)
+bot.add_cog(welcome_cog)
 
 
 # bot.add_cog(welcome_cog)

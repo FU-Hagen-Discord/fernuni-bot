@@ -9,8 +9,8 @@ import utils
 class WelcomeCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.channel_id = 731078162334875689
-        self.message_id = 761317936262414378
+        self.channel_id = int(os.getenv("DISCORD_WELCOME_CHANNEL"))
+        self.message_id = int(os.getenv("DISCORD_WELCOME_MSG"))
 
     @commands.command("update-welcome")
     @commands.check(utils.is_mod)
@@ -21,13 +21,13 @@ class WelcomeCog(commands.Cog):
         embed = discord.Embed(title="Herzlich Willkommen auf dem Discord von Studierenden für Studierende.",
                               description="Disclaimer: Das hier ist kein offizieller Kanal der Fernuni. Hier findet auch keine offizielle Betreuung durch die Fernuni statt. Dieser Discord dient zum Austausch unter Studierenden über einzelne Kurse, um sich gegenseitig helfen zu können, aber auch um über andere Themen in einen Austausch zu treten. Es soll KEIN Ersatz für die Kanäle der Lehrgebiete sein, wie die Newsgroups, Moodle-Foren und was es noch so gibt. Der Discord soll die Möglichkeit bieten, feste Lerngruppen zu finden und sich in diesen gegenseitig zu helfen und zu treffen. Zudem soll er durch den Austausch in den Kanälen auch eine Art flexible Lerngruppe zu einzelnen Kursen ermöglichen. Daher ist unser Apell an euch: Nutzt bitte auch die Betreuungsangebote der entsprechenden Kurse, in die ihr eingeschrieben seid. ")
         embed.set_thumbnail(
-            url="https://cdn.discordapp.com/avatars/697842294279241749/c7d3063f39d33862e9b950f72ab71165.webp?size=1024")
+            url="https://cdn.discordapp.com/avatars/697842294279241749/c7d3063f39d33862e9b950f72ab71165.webp")
         embed.add_field(name="Lerngruppen",
                         value="Wenn ihr eine feste Lerngruppe gründen möchtet, dann könnt ihr dafür gerne einen eigenen Textchannel bekommen. Sagt einfach bescheid, dann kann dieser erstellt werden. Ihr könnt dann auch entscheiden, ob nur ihr Zugang zu diesem Channel haben möchtet, oder ob dieser für alle zugänglich sein soll.",
                         inline=False)
 
         embed.add_field(name="Vorstellung",
-                        value="Es gibt einen <#731078162334875693>. Wir würden uns freuen, wenn ihr euch kurz vorstellen würdet. So ist es möglich, Gemeinsamkeiten zu entdecken und man weiß ungefähr, mit wem man es zu tun hat. Hier soll auch gar nicht der komplette Lebenslauf stehen, schreibt einfach das, was ihr so über euch mitteilen möchtet.",
+                        value=f"Es gibt einen <#{os.getenv('DISCORD_VORSTELLUNGSCHANNEL')}>. Wir würden uns freuen, wenn ihr euch kurz vorstellen würdet. So ist es möglich, Gemeinsamkeiten zu entdecken und man weiß ungefähr, mit wem man es zu tun hat. Hier soll auch gar nicht der komplette Lebenslauf stehen, schreibt einfach das, was ihr so über euch mitteilen möchtet.",
                         inline=False)
 
         embed.add_field(name="Regeln",
@@ -39,18 +39,7 @@ class WelcomeCog(commands.Cog):
                         inline=False)
 
         embed.add_field(name="Rollen",
-                        value="Außerdem haben wir Rollen für die einzelnen Studiengänge. Das soll es in bestimmten Situationen vereinfachen, zu identifizieren, in welchem Studiengang man eingeschrieben ist. Dadurch lassen sich bestimmte Nachrichten und Fragen besser im Kontext zuordnen und die Fragen können passend zum Studiengang präziser beantwortet werden. Die Rollen, die hierfür derzeit zur Verfügung stehen sind:\nB.Sc. Informatik, B.Sc. Mathematik, B.Sc. Wirtschaftsinformatik, B.Sc. Mathematisch-Technische Softwareentwicklung,\nM.Sc. Informatik, M.Sc. Praktische Informatik, M.Sc. Mathematik, M.Sc. Wirtschaftsinformatik. ",
+                        value=f"Es gibt verschiedene Rollen hier. Derzeit sind das zum einen Rollen zu den verschiedenen Studiengängen unserer Fakultät (sowie allgemeinere Rollen), oder Farbrollen. Wirf doch mal einen Blick in <#{os.getenv('DISCORD_ROLLEN_CHANNEL')}>",
                         inline=False)
 
         await message.edit(content="", embed=embed)
-
-        guild = await self.bot.fetch_guild(int(os.getenv('DISCORD_GUILD')))
-        roles_cog = self.bot.get_cog("RolesCog")
-
-        print(roles_cog.assignable_roles)
-
-        for emoji in guild.emojis:
-            if emoji.name in roles_cog.assignable_roles.keys():
-                await message.add_reaction(emoji)
-
-            print(emoji)
