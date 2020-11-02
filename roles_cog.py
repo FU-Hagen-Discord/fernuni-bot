@@ -7,6 +7,16 @@ from discord.ext import commands
 import utils
 
 
+def get_student_role(guild):
+    student_role_id = int(os.getenv("DISCORD_STUDENTIN_ROLE"))
+
+    for role in guild.roles:
+        if role.id == student_role_id:
+            return role
+
+    return None
+
+
 class RolesCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -163,12 +173,14 @@ class RolesCog(commands.Cog):
             return
 
         role_name = ""
+        student_role = None
         guild = await self.bot.fetch_guild(payload.guild_id)
         member = await guild.fetch_member(payload.user_id)
         roles = member.roles
 
         if payload.emoji.name in self.assignable_roles[0]:
             role_name = self.assignable_roles[0].get(payload.emoji.name)
+            student_role = get_student_role(guild)
         else:
             role_name = self.assignable_roles[1].get(payload.emoji.name)
 
@@ -182,3 +194,5 @@ class RolesCog(commands.Cog):
             for role in guild_roles:
                 if role.name == role_name:
                     await member.add_roles(role)
+                    if student_role:
+                        await member.add_roles(student_role)
