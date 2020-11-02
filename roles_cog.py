@@ -186,7 +186,9 @@ class RolesCog(commands.Cog):
 
         for role in roles:
             if role.name == role_name:
-                await member.remove_roles(role)
+                if not role == student_role:
+                    await member.remove_roles(role)
+                    await utils.send_dm(member, f"Rolle \"{role.name}\" erfolgreich entfernt")
                 break
         else:
             guild_roles = guild.roles
@@ -194,5 +196,6 @@ class RolesCog(commands.Cog):
             for role in guild_roles:
                 if role.name == role_name:
                     await member.add_roles(role)
-                    if student_role:
+                    await utils.send_dm(member, f"Rolle \"{role.name}\" erfolgreich hinzugefügt")
+                    if student_role and not role == student_role:
                         await member.add_roles(student_role)
