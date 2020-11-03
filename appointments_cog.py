@@ -64,7 +64,8 @@ class AppointmentsCog(commands.Cog):
 
             if len(delete) > 0:
                 for key in delete:
-                    channel_appointments.pop(key)
+                    if channel_appointments.get(key):
+                        channel_appointments.pop(key)
                 self.save_appointments()
 
     @timer.before_loop
