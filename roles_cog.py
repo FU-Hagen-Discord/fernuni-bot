@@ -67,7 +67,7 @@ class RolesCog(commands.Cog):
     def get_key(self, role):
         """ Get the key for a given role. This role is used for adding or removing a role from a user. """
 
-        for key, role_name in self.assignable_roles.items():
+        for key, role_name in self.assignable_roles[0].items():
             if role_name == role.name:
                 return key
 
