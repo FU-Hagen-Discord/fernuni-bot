@@ -158,13 +158,6 @@ class RolesCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
-        await self.toggle_role_assignment(payload)
-
-    @commands.Cog.listener()
-    async def on_raw_reaction_remove(self, payload):
-        await self.toggle_role_assignment(payload)
-
-    async def toggle_role_assignment(self, payload):
         if payload.user_id == self.bot.user.id or payload.message_id not in [self.degree_program_message_id,
                                                                              self.color_message_id]:
             return
@@ -176,7 +169,11 @@ class RolesCog(commands.Cog):
         student_role = None
         guild = await self.bot.fetch_guild(payload.guild_id)
         member = await guild.fetch_member(payload.user_id)
+        channel = await self.bot.fetch_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
         roles = member.roles
+
+        await message.remove_reaction(payload.emoji, member)
 
         if payload.emoji.name in self.assignable_roles[0]:
             role_name = self.assignable_roles[0].get(payload.emoji.name)
