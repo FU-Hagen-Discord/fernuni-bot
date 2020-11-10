@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 # from welcome_cog import WelcomeCog
 import utils
 from appointments_cog import AppointmentsCog
+from christmas_cog import ChristmasCog
 from poll_cog import PollCog
 from roles_cog import RolesCog
 from text_commands_cog import TextCommandsCog
@@ -34,12 +35,14 @@ text_commands_cog = TextCommandsCog(bot)
 tops_cog = TopsCog(bot)
 roles_cog = RolesCog(bot)
 welcome_cog = WelcomeCog(bot)
+christmas_cog = ChristmasCog(bot)
 bot.add_cog(appointments_cog)
 bot.add_cog(text_commands_cog)
 bot.add_cog(poll_cog)
 bot.add_cog(tops_cog)
 bot.add_cog(roles_cog)
 bot.add_cog(welcome_cog)
+bot.add_cog(christmas_cog)
 
 
 # bot.add_cog(welcome_cog)
