@@ -11,6 +11,7 @@ from appointments_cog import AppointmentsCog
 from christmas_cog import ChristmasCog
 from poll_cog import PollCog
 from roles_cog import RolesCog
+from support_cog import SupportCog
 from text_commands_cog import TextCommandsCog
 from tops_cog import TopsCog
 from welcome_cog import WelcomeCog
@@ -43,6 +44,7 @@ bot.add_cog(tops_cog)
 bot.add_cog(roles_cog)
 bot.add_cog(welcome_cog)
 bot.add_cog(christmas_cog)
+bot.add_cog(SupportCog(bot))
 
 
 # bot.add_cog(welcome_cog)
