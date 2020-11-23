@@ -196,3 +196,17 @@ class RolesCog(commands.Cog):
                     await utils.send_dm(member, f"Rolle \"{role.name}\" erfolgreich hinzugefügt")
                     if student_role and not role == student_role:
                         await member.add_roles(student_role)
+
+    @commands.Cog.listener()
+    async def on_member_update(self, before, after):
+        if len(before.roles) != len(after.roles):
+            roles_before = before.roles
+            roles_after = after.roles
+            for role in roles_before:
+                if role in roles_after:
+                    roles_after.remove(role)
+
+            if len(roles_after) > 0:
+                if roles_after[0].id == int(os.getenv("DISCORD_STUDENTIN_ROLE")):
+                    channel = await self.bot.fetch_channel(int(os.getenv("DISCORD_GREETING_CHANNEL")))
+                    await channel.send(f"Herzlich Willkommen <@!{before.id}> im Kreise der Studentinnen :wave:")
