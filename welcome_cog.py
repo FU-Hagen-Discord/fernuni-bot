@@ -43,3 +43,12 @@ class WelcomeCog(commands.Cog):
                         inline=False)
 
         await message.edit(content="", embed=embed)
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+        await utils.send_dm(member,
+                            f"Herzlich Willkommen auf diesem Discord-Server. Wir hoffen sehr, dass du dich hier wohl fühlst. Alle notwendigen Informationen, die du für den Einstieg brauchst, findest du in <#{self.channel_id}>\n"
+                            f"Wir würden uns sehr freuen, wenn du dich in <#{os.getenv('DISCORD_VORSTELLUNGSCHANNEL')}> allen kurz vorstellen würdest. Es gibt nicht viele Regeln zu beachten, doch die Regeln, die aufgestellt sind, findest du hier:  https://discordapp.com/channels/353315134678106113/697729059173433344/709475694157234198 .\n"
+                            f"Dir dürfte außerdem schon aufgefallen sein, dass du derzeit nur drei Channels siehst. Wir haben natürlich mehr als diese drei. Um die restlichen Channels angezeigt zu bekommen, müsstest du dir lediglich eine Studiengangs-Rolle im Channel <#{os.getenv('DISCORD_ROLLEN_CHANNEL')}> zuweisen. Wir würden uns natürlich am meisten darüber freuen, wenn du dir die Rolle, die zu deinem Studiengang passt zuweisen würdest, falls du das aber nicht möchtest, ist mindestens die Rolle Studentin notwendig.\n\n"
+                            f"Abschließend bleibt mir nur noch, dir hier viel Spaß zu wünschen, und falls du bei etwas hilfe brauchen solltest, schreib mir doch eine private Nachricht, das Moderatoren Team wird sich dann darum kümmern.")
+        print(member)
