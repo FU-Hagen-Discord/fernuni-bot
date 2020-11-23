@@ -12,6 +12,10 @@ class SupportCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        if message.author == self.bot.user:
+            print("hmmm")
+            return
+
         if type(message.channel) is discord.DMChannel:
             channel = await self.bot.fetch_channel(self.channel_id)
             files = []
