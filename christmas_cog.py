@@ -19,7 +19,6 @@ class ChristmasCog(commands.Cog):
         self.advent_calendar = json.load(advent_calendar_file)
 
     @commands.command("story")
-    @commands.check(utils.is_mod)
     async def cmd_update_welcome(self, ctx, *args):
         channel = await self.bot.fetch_channel(self.channel_id)
         message = f"Einreichung von <@!{ctx.author.id}>:\n"
