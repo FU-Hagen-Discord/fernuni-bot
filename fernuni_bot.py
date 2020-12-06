@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 import utils
 from appointments_cog import AppointmentsCog
 from christmas_cog import ChristmasCog
+from news_cog import NewsCog
 from poll_cog import PollCog
 from roles_cog import RolesCog
 from support_cog import SupportCog
@@ -45,9 +46,7 @@ bot.add_cog(roles_cog)
 bot.add_cog(welcome_cog)
 bot.add_cog(christmas_cog)
 bot.add_cog(SupportCog(bot))
-
-
-# bot.add_cog(welcome_cog)
+bot.add_cog(NewsCog(bot))
 
 
 def get_reaction(reactions):
