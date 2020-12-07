@@ -3,8 +3,7 @@ import os
 import discord
 from discord.ext import commands
 
-OPTIONS = ["\u0031\u20E3", "\u0032\u20E3", "\u0033\u20E3", "\u0034\u20E3", "\u0035\u20E3", "\u0036\u20E3",
-           "\u0037\u20E3", "\u0038\u20E3", "\u0039\u20E3", "\u0040\u20E3"]
+OPTIONS = ["🇦", "🇧", "🇨", "🇩", "🇪", "🇫", "🇬", "🇭", "🇮", "🇯", "🇰", "🇱", "🇲", "🇳", "🇴", "🇵", "🇶", "🇷"]
 
 
 class PollCog(commands.Cog):
@@ -69,9 +68,9 @@ class Poll:
         if result:
             title += " Ergebnis"
 
-        if len(self.answers) > 10:
+        if len(self.answers) > len(OPTIONS):
             await channel.send(
-                "Fehler beim Erstellen der Umfrage! Es werden derzeit nicht mehr als 10 Optionen unterstützt!")
+                f"Fehler beim Erstellen der Umfrage! Es werden nicht mehr als {len(OPTIONS)} Optionen unterstützt!")
             return
 
         embed = discord.Embed(title=title, description=self.question)
@@ -83,7 +82,7 @@ class Poll:
             value = f'{self.answers[i]}'
 
             if result:
-                reaction = self.get_reaction(OPTIONS[i])
+                reaction = self.get_reaction(name)
                 if reaction:
                     name += f' : {reaction.count - 1}'
                     # value += f'\nStimmen: '
