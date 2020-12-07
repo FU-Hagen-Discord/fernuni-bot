@@ -1,3 +1,5 @@
+import os
+
 import discord
 from discord.ext import commands
 
@@ -8,6 +10,17 @@ OPTIONS = ["\u0031\u20E3", "\u0032\u20E3", "\u0033\u20E3", "\u0034\u20E3", "\u00
 class PollCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.poll_sugg_channel = int(os.getenv("DISCORD_POLL_SUGG_CHANNEL"))
+
+    @commands.command(name="add-poll")
+    async def cmd_add_poll(self, ctx, question, *answers):
+        channel = await self.bot.fetch_channel(self.poll_sugg_channel)
+        msg = f"<@!{ctx.author.id}> hat folgende Umfrage vorgeschlagen:\nFrage:{question}\n\nAntwortoptionen:\n"
+
+        for answer in answers:
+            msg += f"{answer}"
+
+        await channel.send(msg)
 
     @commands.command(name="poll")
     async def cmd_poll(self, ctx, question, *answers):
