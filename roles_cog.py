@@ -24,6 +24,7 @@ class RolesCog(commands.Cog):
         self.channel_id = int(os.getenv("DISCORD_ROLLEN_CHANNEL"))
         self.degree_program_message_id = int(os.getenv("DISCORD_DEGREE_PROGRAM_MSG"))
         self.color_message_id = int(os.getenv("DISCORD_COLOR_MSG"))
+        self.special_message_id = int(os.getenv("DISCORD_SPECIAL_MSG"))
         self.assignable_roles = {}
         self.load_roles()
 
@@ -34,7 +35,7 @@ class RolesCog(commands.Cog):
         self.assignable_roles = json.load(roles_file)
 
     def get_degree_program_emojis(self):
-        """ Creates a dict for degree program emojis """
+        """ Creates a dict for degree program role emojis """
 
         tmp_emojis = {}
         emojis = {}
@@ -52,7 +53,7 @@ class RolesCog(commands.Cog):
         return emojis
 
     def get_color_emojis(self):
-        """ Creates a dict for degree program emojis """
+        """ Creates a dict for color role emojis """
 
         emojis = {}
         color_assignable = self.assignable_roles[1]
@@ -63,6 +64,11 @@ class RolesCog(commands.Cog):
                 emojis[emoji.name] = emoji
 
         return emojis
+
+    def get_special_emojis(self):
+        """ Creates a dict for special role emojis """
+
+        return self.assignable_roles[2]
 
     def get_key(self, role):
         """ Get the key for a given role. This role is used for adding or removing a role from a user. """
@@ -156,13 +162,39 @@ class RolesCog(commands.Cog):
             if emoji:
                 await message.add_reaction(emoji)
 
+    @commands.command("update-special")
+    @commands.check(utils.is_mod)
+    async def cmd_update_special(self, ctx):
+        channel = await self.bot.fetch_channel(self.channel_id)
+        message = await channel.fetch_message(self.special_message_id)
+        special_emojis = self.get_special_emojis()
+
+        embed = discord.Embed(title="Vergabe von Spezial-Rollen",
+                              description="Durch klicken auf die entsprechende Reaktion kannst du dir die damit assoziierte Rolle zuweisen, oder entfernen. Dies funktioniert so, dass ein Klick auf die Reaktion die aktuelle Zuordnung dieser Rolle ändert. Das bedeutet, wenn du die Rolle, die mit <:FarbeGruen:771451407916204052> assoziiert ist, schon hast, aber die Reaktion noch nicht ausgewählt hast, dann wird dir bei einem Klick auf die Reaktion diese Rolle wieder weggenommen. ")
+
+        value = f""
+        for emoji, role in special_emojis.items():
+            value += f"{emoji} : {role}\n"
+
+        embed.add_field(name="Rollen",
+                        value=value,
+                        inline=False)
+
+        await message.edit(content="", embed=embed)
+        await message.clear_reactions()
+
+        for emoji in special_emojis.keys():
+            await message.add_reaction(emoji)
+
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         if payload.user_id == self.bot.user.id or payload.message_id not in [self.degree_program_message_id,
-                                                                             self.color_message_id]:
+                                                                             self.color_message_id,
+                                                                             self.special_message_id]:
             return
 
-        if payload.emoji.name not in self.assignable_roles[0] and payload.emoji.name not in self.assignable_roles[1]:
+        if payload.emoji.name not in self.assignable_roles[0] and payload.emoji.name not in self.assignable_roles[
+            1] and payload.emoji.name not in self.assignable_roles[2]:
             return
 
         role_name = ""
@@ -178,8 +210,10 @@ class RolesCog(commands.Cog):
         if payload.emoji.name in self.assignable_roles[0]:
             role_name = self.assignable_roles[0].get(payload.emoji.name)
             student_role = get_student_role(guild)
-        else:
+        elif payload.emoji.name in self.assignable_roles[1]:
             role_name = self.assignable_roles[1].get(payload.emoji.name)
+        else:
+            role_name = self.assignable_roles[2].get(payload.emoji.name)
 
         for role in roles:
             if role.name == role_name:
