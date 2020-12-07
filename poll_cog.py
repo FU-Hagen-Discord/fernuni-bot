@@ -3,6 +3,8 @@ import os
 import discord
 from discord.ext import commands
 
+import utils
+
 OPTIONS = ["🇦", "🇧", "🇨", "🇩", "🇪", "🇫", "🇬", "🇭", "🇮", "🇯", "🇰", "🇱", "🇲", "🇳", "🇴", "🇵", "🇶", "🇷"]
 
 
@@ -20,6 +22,19 @@ class PollCog(commands.Cog):
             msg += f"{answer}"
 
         await channel.send(msg)
+
+    @commands.command(name="edit-poll")
+    @commands.check(utils.is_mod)
+    async def cmd_edit_poll(self, ctx, message_id, question, *answers):
+        message = await ctx.fetch_message(message_id)
+        if message:
+            if message.embeds[0].title == "Umfrage":
+                old_poll = Poll(self.bot, message=message)
+                new_poll = Poll(self.bot, question=question, answers=answers, author=old_poll.author)
+                await new_poll.send_poll(ctx.channel, message=message)
+        else:
+            ctx.send("Fehler! Umfrage nicht gefunden!")
+        pass
 
     @commands.command(name="poll")
     async def cmd_poll(self, ctx, question, *answers):
@@ -61,7 +76,7 @@ class Poll:
             for i in range(2, len(embed.fields)):
                 self.answers.append(embed.fields[i].value)
 
-    async def send_poll(self, channel, result=False):
+    async def send_poll(self, channel, result=False, message=None):
         option_ctr = 0
         title = "Umfrage"
 
@@ -103,11 +118,20 @@ class Poll:
             embed.add_field(name=name, value=value, inline=False)
             option_ctr += 1
 
-        message = await channel.send("", embed=embed)
+        if message:
+            await message.edit(embed=embed)
+        else:
+            message = await channel.send("", embed=embed)
+
+        await message.clear_reaction("🗑️")
+        await message.clear_reaction("🛑")
 
         if not result:
             for i in range(0, len(self.answers)):
                 await message.add_reaction(OPTIONS[i])
+
+            for i in range(len(self.answers), len(OPTIONS)):
+                await message.clear_reaction(OPTIONS[i])
 
             await message.add_reaction("🗑️")
             await message.add_reaction("🛑")
