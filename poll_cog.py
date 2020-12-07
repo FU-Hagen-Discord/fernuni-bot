@@ -19,7 +19,7 @@ class PollCog(commands.Cog):
         msg = f"<@!{ctx.author.id}> hat folgende Umfrage vorgeschlagen:\nFrage:{question}\n\nAntwortoptionen:\n"
 
         for answer in answers:
-            msg += f"{answer}"
+            msg += f"{answer}\n"
 
         await channel.send(msg)
 

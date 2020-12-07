@@ -10,6 +10,7 @@ class NewsCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.channel_id = int(os.getenv("DISCORD_NEWS_CHANNEL"))
+        self.news_role = int(os.getenv("DISCORD_NEWS_ROLE"))
         self.url = "https://www.fernuni-hagen.de/mi/studium/aktuelles/index.shtml"
         self.news = {}
         self.load_news()
@@ -39,7 +40,8 @@ class NewsCog(commands.Cog):
 
             if not self.news.get(link):
                 self.news[link] = date
-                await channel.send(f":loudspeaker: Neues aus der Fakultät vom {date} :loudspeaker: \n{title} \n{link}")
+                await channel.send(
+                    f":loudspeaker: <@&{self.news_role}> Neues aus der Fakultät vom {date} :loudspeaker: \n{title} \n{link}")
             else:
                 prev_date = self.news[link]
                 if date != prev_date:
