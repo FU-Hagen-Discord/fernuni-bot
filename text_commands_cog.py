@@ -166,3 +166,7 @@ class TextCommandsCog(commands.Cog):
         await channel.send(random.choice(texts))
 
         self.motivation_loop.change_interval(hours=1 + (random.random() * 12))
+
+    @motivation_loop.before_loop
+    async def before_motivation_loop(self):
+        await self.bot.wait_until_ready()
