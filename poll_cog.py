@@ -123,15 +123,21 @@ class Poll:
         else:
             message = await channel.send("", embed=embed)
 
-        await message.clear_reaction("🗑️")
-        await message.clear_reaction("🛑")
+        reactions = []
+        for reaction in message.reactions:
+            reactions.append(reaction.emoji)
 
         if not result:
-            for i in range(0, len(self.answers)):
-                await message.add_reaction(OPTIONS[i])
+            await message.clear_reaction("🗑️")
+            await message.clear_reaction("🛑")
 
-            for i in range(len(self.answers), len(OPTIONS)):
-                await message.clear_reaction(OPTIONS[i])
+            for reaction in reactions:
+                if reaction not in OPTIONS[:len(self.answers) - 1]:
+                    await message.clear_reaction(reaction)
+
+            for i in range(0, len(self.answers)):
+                if OPTIONS[i] not in reactions:
+                    await message.add_reaction(OPTIONS[i])
 
             await message.add_reaction("🗑️")
             await message.add_reaction("🛑")
