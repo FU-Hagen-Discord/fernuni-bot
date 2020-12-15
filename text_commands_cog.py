@@ -137,12 +137,20 @@ class TextCommandsCog(commands.Cog):
 
         message = await mod_channel.send(embed=embed)
         await message.add_reaction("👍")
+        await utils.send_dm(ctx.author,
+                            "Dein Motivationstext wurde den Mods zur Genehmigung vorgelegt. Sobald er angenommen wurde, erhältst du eine Benachrichtigung.")
 
     async def motivation_approved(self, message):
         embed = message.embeds[0]
         text = embed.fields[0].value
+        description = embed.description
         ctx = await self.bot.get_context(message)
+        member_id = description[3:21]
+        guild = message.guild
+        member = await guild.fetch_member(member_id)
 
+        await utils.send_dm(member,
+                            f"Herzlichen Glückwunsch, dein Vorschlag für einen neuen Motivationstext wurde angenommen.\n\n{text}")
         await self.cmd_add_text_command(ctx, "!motivation", text)
         await message.delete()
 
