@@ -14,7 +14,6 @@ from poll_cog import PollCog
 from roles_cog import RolesCog
 from support_cog import SupportCog
 from text_commands_cog import TextCommandsCog
-from tops_cog import TopsCog
 from welcome_cog import WelcomeCog
 
 # .env file is necessary in the same directory, that contains several strings.
@@ -30,21 +29,14 @@ PIN_EMOJI = "📌"
 
 intents = discord.Intents.default()
 intents.members = True
-bot = commands.Bot(command_prefix='!', help_command=None, activity=discord.Game(ACTIVITY), owner_id=OWNER, intents=intents)
-poll_cog = PollCog(bot)
-appointments_cog = AppointmentsCog(bot)
-text_commands_cog = TextCommandsCog(bot)
-tops_cog = TopsCog(bot)
-roles_cog = RolesCog(bot)
-welcome_cog = WelcomeCog(bot)
-christmas_cog = ChristmasCog(bot)
-bot.add_cog(appointments_cog)
-bot.add_cog(text_commands_cog)
-bot.add_cog(poll_cog)
-bot.add_cog(tops_cog)
-bot.add_cog(roles_cog)
-bot.add_cog(welcome_cog)
-bot.add_cog(christmas_cog)
+bot = commands.Bot(command_prefix='!', help_command=None, activity=discord.Game(ACTIVITY), owner_id=OWNER,
+                   intents=intents)
+bot.add_cog(AppointmentsCog(bot))
+bot.add_cog(TextCommandsCog(bot))
+bot.add_cog(PollCog(bot))
+bot.add_cog(RolesCog(bot))
+bot.add_cog(WelcomeCog(bot))
+bot.add_cog(ChristmasCog(bot))
 bot.add_cog(SupportCog(bot))
 bot.add_cog(NewsCog(bot))
 

@@ -128,12 +128,12 @@ class TextCommandsCog(commands.Cog):
             await ctx.send(f"Text Command {cmd} nicht vorhanden")
 
     @commands.command(name="add-motivation")
-    async def cmd_add_motivation(self, ctx, text):
+    async def cmd_add_motivation(self, ctx, *text):
         mod_channel = await self.bot.fetch_channel(int(os.getenv("DISCORD_MOD_CHANNEL")))
 
         embed = discord.Embed(title="Neuer Motivations Text",
                               description=f"<@!{ctx.author.id}> Möchte folgenden Motivationstext hinzufügen:")
-        embed.add_field(name="\u200b", value=f"{text}")
+        embed.add_field(name="\u200b", value=f'{" ".join(text)}')
 
         message = await mod_channel.send(embed=embed)
         await message.add_reaction("👍")

@@ -77,20 +77,6 @@ class RolesCog(commands.Cog):
             if role_name == role.name:
                 return key
 
-    @commands.command(name="add-role")
-    @commands.is_owner()
-    async def cmd_add_role(self, ctx, key, role):
-        """ Add a Role to be assignable (Admin-Command only) """
-
-        self.assignable_roles[key] = role
-        roles_file = open(self.roles_file, mode='w')
-        json.dump(self.assignable_roles, roles_file)
-
-        if key in self.assignable_roles:
-            await utils.send_dm(ctx.author, f"Rolle {role} wurde hinzugefügt")
-        else:
-            await utils.send_dm(ctx.author, f"Fehler beim Hinzufügen der Rolle {role}")
-
     @commands.command(name="stats")
     async def cmd_stats(self, ctx):
         """ Sends stats in Chat. """
