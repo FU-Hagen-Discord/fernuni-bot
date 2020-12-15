@@ -24,29 +24,32 @@ class NewsCog(commands.Cog):
         news_file = open("news.json", mode="w")
         json.dump(self.news, news_file)
 
-    @tasks.loop(minutes=1)
+    @tasks.loop(hours=1)
     async def news_loop(self):
-        req = requests.get(self.url)
-        soup = BeautifulSoup(req.content, "html.parser")
-        channel = await self.bot.fetch_channel(self.channel_id)
+        try:
+            req = requests.get(self.url)
+            soup = BeautifulSoup(req.content, "html.parser")
+            channel = await self.bot.fetch_channel(self.channel_id)
 
-        for news in soup.find("ul", attrs={"class": "fu-link-list"}).find_all("li"):
-            date = news.span.text
-            title = str(news.a.text)
-            link = news.a['href']
+            for news in soup.find("ul", attrs={"class": "fu-link-list"}).find_all("li"):
+                date = news.span.text
+                title = str(news.a.text)
+                link = news.a['href']
 
-            if link[0] == "/":
-                link = f"https://www.fernuni-hagen.de" + link
+                if link[0] == "/":
+                    link = f"https://www.fernuni-hagen.de" + link
 
-            if not self.news.get(link):
-                self.news[link] = date
-                await channel.send(
-                    f":loudspeaker: <@&{self.news_role}> Neues aus der Fakultät vom {date} :loudspeaker: \n{title} \n{link}")
-            else:
-                prev_date = self.news[link]
-                if date != prev_date:
-                    self.news[link] = date
+                if not self.news.get(link):
                     await channel.send(
-                        f":loudspeaker: Neues aus der Fakultät vom {date} :loudspeaker: \n{title} \n{link}")
+                        f":loudspeaker: <@&{self.news_role}> Neues aus der Fakultät vom {date} :loudspeaker: \n{title} \n{link}")
+                    self.news[link] = date
+                else:
+                    prev_date = self.news[link]
+                    if date != prev_date:
+                        await channel.send(
+                            f":loudspeaker: <@&{self.news_role}> Neues aus der Fakultät vom {date} :loudspeaker: \n{title} \n{link}")
+                        self.news[link] = date
 
-        self.save_news()
+            self.save_news()
+        except:
+            pass

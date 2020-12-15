@@ -7,7 +7,7 @@ from discord.ext import commands, tasks
 
 import utils
 
-motivation_channels = [566329830682132502, 666937772879249409, 693194667075960875]
+motivation_channels = [731078162334875692, 731078162695454760, 731078162695454765]
 
 
 class TextCommandsCog(commands.Cog):
