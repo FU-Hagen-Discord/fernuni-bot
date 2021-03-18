@@ -7,8 +7,6 @@ from discord.ext import commands, tasks
 
 import utils
 
-motivation_channels = [731078162334875692, 731078162695454760, 731078162695454765]
-
 
 class TextCommandsCog(commands.Cog):
     def __init__(self, bot):
@@ -16,7 +14,6 @@ class TextCommandsCog(commands.Cog):
         self.text_commands = {}
         self.cmd_file = os.getenv("DISCORD_TEXT_COMMANDS_FILE")
         self.load_text_commands()
-        self.motivation_loop.start()
 
     def load_text_commands(self):
         """ Loads all appointments from APPOINTMENTS_FILE """
@@ -164,17 +161,3 @@ class TextCommandsCog(commands.Cog):
             message = await channel.fetch_message(payload.message_id)
             if len(message.embeds) > 0 and message.embeds[0].title == "Neuer Motivations Text":
                 await self.motivation_approved(message)
-
-    @tasks.loop(hours=1 + (random.random() * 24))
-    async def motivation_loop(self):
-        channel_id = random.choice(motivation_channels)
-        channel = await self.bot.fetch_channel(channel_id)
-        texts = self.text_commands.get("!motivation")
-
-        await channel.send(random.choice(texts))
-
-        self.motivation_loop.change_interval(hours=1 + (random.random() * 12))
-
-    @motivation_loop.before_loop
-    async def before_motivation_loop(self):
-        await self.bot.wait_until_ready()
