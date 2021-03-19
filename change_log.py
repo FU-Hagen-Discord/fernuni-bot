@@ -14,9 +14,8 @@ class ChangeLogCog(commands.Cog):
             return
 
         channel = await self.bot.fetch_channel(self.channel_id)
-        await channel.send(f"Message edited by <@!{before.author.id}>:")
-        msg = await channel.send(before.content)
-        await msg.delete()
+        await channel.send(f"Message edited by <@!{before.author.id}> in <#{before.channel.id}>:")
+        await channel.send(before.content)
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
@@ -24,5 +23,5 @@ class ChangeLogCog(commands.Cog):
             return
 
         channel = await self.bot.fetch_channel(self.channel_id)
-        await channel.send(f"Message deleted by <@!{message.author.id}>:")
+        await channel.send(f"Message deleted by <@!{message.author.id}>  in <#{message.channel.id}>:")
         await channel.send(message.content)
