@@ -47,7 +47,7 @@ class EasterCog(commands.Cog):
     @commands.command(name="leaderboard")
     async def cmd_leaderboard(self, ctx):
         leaderboard = self.data["leaderboard"]
-        place = 8
+        place = 0
         max = 10
         ready = False
         message = "```fix\nEgg-Hunt Leaderboard\n\n"
