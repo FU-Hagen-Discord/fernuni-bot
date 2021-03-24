@@ -7,16 +7,6 @@ from discord.ext import commands
 import utils
 
 
-def get_student_role(guild):
-    student_role_id = int(os.getenv("DISCORD_STUDENTIN_ROLE"))
-
-    for role in guild.roles:
-        if role.id == student_role_id:
-            return role
-
-    return None
-
-
 class RolesCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -184,7 +174,6 @@ class RolesCog(commands.Cog):
             return
 
         role_name = ""
-        student_role = None
         guild = await self.bot.fetch_guild(payload.guild_id)
         member = await guild.fetch_member(payload.user_id)
         channel = await self.bot.fetch_channel(payload.channel_id)
@@ -195,7 +184,6 @@ class RolesCog(commands.Cog):
 
         if payload.emoji.name in self.assignable_roles[0]:
             role_name = self.assignable_roles[0].get(payload.emoji.name)
-            student_role = get_student_role(guild)
         elif payload.emoji.name in self.assignable_roles[1]:
             role_name = self.assignable_roles[1].get(payload.emoji.name)
         else:
@@ -203,9 +191,8 @@ class RolesCog(commands.Cog):
 
         for role in roles:
             if role.name == role_name:
-                if not role == student_role:
-                    await member.remove_roles(role)
-                    await utils.send_dm(member, f"Rolle \"{role.name}\" erfolgreich entfernt")
+                await member.remove_roles(role)
+                await utils.send_dm(member, f"Rolle \"{role.name}\" erfolgreich entfernt")
                 break
         else:
             guild_roles = guild.roles
@@ -214,19 +201,3 @@ class RolesCog(commands.Cog):
                 if role.name == role_name:
                     await member.add_roles(role)
                     await utils.send_dm(member, f"Rolle \"{role.name}\" erfolgreich hinzugefügt")
-                    if student_role and not role == student_role:
-                        await member.add_roles(student_role)
-
-    @commands.Cog.listener()
-    async def on_member_update(self, before, after):
-        if len(before.roles) != len(after.roles):
-            roles_before = before.roles
-            roles_after = after.roles
-            for role in roles_before:
-                if role in roles_after:
-                    roles_after.remove(role)
-
-            if len(roles_after) > 0:
-                if roles_after[0].id == int(os.getenv("DISCORD_STUDENTIN_ROLE")):
-                    channel = await self.bot.fetch_channel(int(os.getenv("DISCORD_GREETING_CHANNEL")))
-                    await channel.send(f"Herzlich Willkommen <@!{before.id}> im Kreise der Studentinnen :wave:")
