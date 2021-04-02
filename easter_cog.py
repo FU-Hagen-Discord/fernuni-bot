@@ -90,7 +90,7 @@ class EasterCog(commands.Cog):
 
         for message in self.messages:
             if random.random() < 0.6:
-                if random.random() < 0.75:
+                if random.random() < 0.85:
                     await message.add_reaction(random.choice(self.data["reactions_add"]))
                 else:
                     await message.add_reaction(random.choice(self.data["reactions_remove"]))
