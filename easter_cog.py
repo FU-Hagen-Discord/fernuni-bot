@@ -59,7 +59,7 @@ class EasterCog(commands.Cog):
         embed = discord.Embed(title="Egg-Hunt Leaderboard", description="Wer hat bisher die meisten Eier gefunden???")
         embed.set_thumbnail(url="https://www.planet-wissen.de/kultur/religion/ostern/tempxostereiergjpg100~_v-gseagaleriexl.jpg")
 
-        places = scores = ""
+        places = scores = "\u200b"
         place = 0
         max = 0 if all == "all" else 10
         ready = False
