@@ -61,7 +61,7 @@ class EasterCog(commands.Cog):
 
         places = scores = ""
         place = 0
-        max = 0 if all == "all" else 1
+        max = 0 if all == "all" else 10
         ready = False
         for key, value in sorted(leaderboard.items(), key=lambda item: item[1], reverse=True):
             try:
