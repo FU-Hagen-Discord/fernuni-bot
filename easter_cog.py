@@ -1,17 +1,19 @@
 import json
 import random
-from discord.ext import commands
+import discord
+from discord.ext import commands, tasks
 
 
 class EasterCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.data = None
-        self.load_data()
+        self.data = self.load_data()
+        self.messages = []
+        self.reaction_timer.start()
 
     def load_data(self):
         data_file = open("easter.json", mode="r")
-        self.data = json.load(data_file)
+        return json.load(data_file)
 
     def save_data(self):
         data_file = open("easter.json", mode="w")
@@ -19,55 +21,85 @@ class EasterCog(commands.Cog):
 
     @commands.Cog.listener(name="on_message")
     async def hide(self, message):
+        if message.author == self.bot.user:
+            return
+
         if message.channel.id in self.data["channels"]:
-            if random.choice(self.data["probability"]):
-                await message.add_reaction(random.choice(self.data["reactions"]))
+            if random.random() < self.data["probability"]:
+                self.messages.append(message)
 
     @commands.Cog.listener(name="on_raw_reaction_add")
     async def seek(self, payload):
-        if payload.emoji.name in self.data["reactions"]:
-            channel = await self.bot.fetch_channel(payload.channel_id)
-            message = await channel.fetch_message(payload.message_id)
-            for reaction in message.reactions:
-                if reaction.emoji == payload.emoji.name:
-                    async for user in reaction.users():
-                        if user == self.bot.user and reaction.count > 1:
-                            self.add_leaderboard(payload.user_id)
-                            await message.clear_reaction(reaction)
-                            break
 
-    def add_leaderboard(self, user_id):
-        if score:= self.data["leaderboard"].get(str(user_id)):
-            self.data["leaderboard"][str(user_id)] = score + 1
+        if payload.member == self.bot.user or payload.message_id not in self.data["message_ids"]:
+            return
+
+        self.data["message_ids"].remove(payload.message_id)
+
+        modifier = 1 if payload.emoji.name in self.data["reactions_add"] else -1 if payload.emoji.name in self.data[
+            "reactions_remove"] else 0
+        self.modify_leaderboard(payload.user_id, modifier)
+
+        channel = await self.bot.fetch_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
+        await message.clear_reaction(payload.emoji.name)
+        self.save_data()
+
+    def modify_leaderboard(self, user_id, modifier):
+        if score := self.data["leaderboard"].get(str(user_id)):
+            self.data["leaderboard"][str(user_id)] = score + modifier
         else:
-            self.data["leaderboard"][str(user_id)] = 1
+            self.data["leaderboard"][str(user_id)] = modifier
 
         self.save_data()
 
     @commands.command(name="leaderboard")
-    async def cmd_leaderboard(self, ctx):
+    async def cmd_leaderboard(self, ctx, all=None):
         leaderboard = self.data["leaderboard"]
+        embed = discord.Embed(title="Egg-Hunt Leaderboard", description="Wer hat bisher die meisten Eier gefunden???")
+        embed.set_thumbnail(url="https://www.planet-wissen.de/kultur/religion/ostern/tempxostereiergjpg100~_v-gseagaleriexl.jpg")
+
+        places = scores = ""
         place = 0
-        max = 10
+        max = 0 if all == "all" else 1
         ready = False
-        message = "```fix\nEgg-Hunt Leaderboard\n\n"
-        message += " {:^3} | {:^37} | {:^6}\n".format("#", "Name", "Punkte")
-        message += "-----|---------------------------------------|--------\n"
         for key, value in sorted(leaderboard.items(), key=lambda item: item[1], reverse=True):
             try:
-                member = await ctx.guild.fetch_member(key)
                 place += 1
 
-                if place > max:
+                if 0 < max < place:
                     if ready:
                         break
                     elif str(ctx.author.id) != key:
                         continue
-                message += "{:>4} | {:<37} | {:>6}\n".format(str(place), f"{member.display_name}#{member.discriminator}", value)
+                places += f"{place}: <@!{key}>\n"
+                scores += f"{value:,}\n".replace(",", ".")
+
                 if str(ctx.author.id) == key:
                     ready = True
             except:
                 pass
 
-        message += "```"
-        await ctx.send(message)
+        embed.add_field(name=f"Sucherin", value=places)
+        embed.add_field(name=f"Eier", value=scores)
+        await ctx.send("", embed=embed)
+
+    @tasks.loop(seconds=1)
+    async def reaction_timer(self):
+        delete = []
+
+        for message in self.messages:
+            if random.random() < 0.5:
+                if random.random() < self.data["probability"]:
+                    await message.add_reaction(random.choice(self.data["reactions_add"]))
+                else:
+                    await message.add_reaction(random.choice(self.data["reactions_remove"]))
+
+                self.data["message_ids"].append(message.id)
+                delete.append(message)
+                self.save_data()
+
+        if len(delete) > 0:
+            for message in delete:
+                self.messages.remove(message)
+
