@@ -89,8 +89,8 @@ class EasterCog(commands.Cog):
         delete = []
 
         for message in self.messages:
-            if random.random() < 0.5:
-                if random.random() < self.data["probability"]:
+            if random.random() < 0.6:
+                if random.random() < 0.75:
                     await message.add_reaction(random.choice(self.data["reactions_add"]))
                 else:
                     await message.add_reaction(random.choice(self.data["reactions_remove"]))
