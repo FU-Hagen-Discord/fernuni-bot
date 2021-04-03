@@ -34,16 +34,16 @@ class EasterCog(commands.Cog):
         if payload.member == self.bot.user or payload.message_id not in self.data["message_ids"]:
             return
 
-        self.data["message_ids"].remove(payload.message_id)
-
         modifier = 1 if payload.emoji.name in self.data["reactions_add"] else -1 if payload.emoji.name in self.data[
             "reactions_remove"] else 0
-        self.modify_leaderboard(payload.user_id, modifier)
+        if modifier != 0:
+            self.data["message_ids"].remove(payload.message_id)
+            self.modify_leaderboard(payload.user_id, modifier)
 
-        channel = await self.bot.fetch_channel(payload.channel_id)
-        message = await channel.fetch_message(payload.message_id)
-        await message.clear_reaction(payload.emoji.name)
-        self.save_data()
+            channel = await self.bot.fetch_channel(payload.channel_id)
+            message = await channel.fetch_message(payload.message_id)
+            await message.clear_reaction(payload.emoji.name)
+            self.save_data()
 
     def modify_leaderboard(self, user_id, modifier):
         if score := self.data["leaderboard"].get(str(user_id)):
