@@ -16,7 +16,7 @@ from roles_cog import RolesCog
 from support_cog import SupportCog
 from text_commands_cog import TextCommandsCog
 from welcome_cog import WelcomeCog
-from change_log import ChangeLogCog
+# from change_log import ChangeLogCog
 from voice_cog import VoiceCog
 from easter_cog import EasterCog
 from armin import Armin
@@ -45,7 +45,7 @@ bot.add_cog(ChristmasCog(bot))
 bot.add_cog(SupportCog(bot))
 bot.add_cog(NewsCog(bot))
 bot.add_cog(LinksCog(bot))
-bot.add_cog(ChangeLogCog(bot))
+# bot.add_cog(ChangeLogCog(bot))
 bot.add_cog(VoiceCog(bot))
 bot.add_cog(EasterCog(bot))
 bot.add_cog(Armin(bot))
