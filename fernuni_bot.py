@@ -19,6 +19,7 @@ from welcome_cog import WelcomeCog
 from change_log import ChangeLogCog
 from voice_cog import VoiceCog
 from easter_cog import EasterCog
+from armin import Armin
 
 # .env file is necessary in the same directory, that contains several strings.
 load_dotenv()
@@ -47,6 +48,7 @@ bot.add_cog(LinksCog(bot))
 bot.add_cog(ChangeLogCog(bot))
 bot.add_cog(VoiceCog(bot))
 bot.add_cog(EasterCog(bot))
+bot.add_cog(Armin(bot))
 
 
 def get_reaction(reactions):
