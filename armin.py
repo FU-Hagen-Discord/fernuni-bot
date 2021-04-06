@@ -7,7 +7,7 @@ class Armin(commands.Cog):
         self.bot = bot
         self.a = ["ein", "zwei", "drei", "vier", "fünf", "sechs"]
         self.b = ["tägige", "wöchige", "monatige", "fache", "malige", "hebige"]
-        self.c = ["harte", "softe", "optionale", "intranspatente", "alternativlose", "unumkehrbare"]
+        self.c = ["harte", "softe", "optionale", "intransparente", "alternativlose", "unumkehrbare"]
         self.d = ["Wellenbrecher-", "Brücken-", "Treppen-", "Wende-", "Impf-", "Ehren-"]
         self.e = ["Lockdown", "Stopp", "Maßnahme", "Kampagne", "Sprint", "Matrix"]
         self.f = ["zum Sommer", "auf Weiteres", "zur Bundestagswahl", "2030", "nach den Abiturprüfungen",
