@@ -254,7 +254,7 @@ class LearningGroups(commands.Cog):
             msg += f"**{category.name}**\n"
 
             for channel in category.text_channels:
-                result = re.match(r"([0-9]{4})-(.*)-([a-z0-9]+)$", channel.name[1:])
+                result = re.match(r"([0-9]{4,6})-(.*)-([a-z0-9]+)$", channel.name[1:])
                 if result is None:
                     await utils.send_dm(ctx.author, f"Abbruch! Channelname hat falsches Format: {channel.name}")
                     self.groups["groups"] = {}
