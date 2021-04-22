@@ -359,7 +359,7 @@ class LearningGroups(commands.Cog):
         if channel_config:
             channel_config["owner_id"] = arg_owner.id
             self.save_groups()
-            await ctx.channel.send(f"Glückwunsch {arg_owner.mention}! Du bist jetzt der Besitzer dieser Lerngruppe.")
+            await ctx.channel.send(f"Glückwunsch {arg_owner.mention}! Du bist jetzt die Besitzerin dieser Lerngruppe.")
 
     @commands.command(name="show-owner")
     @commands.check(utils.is_mod)
