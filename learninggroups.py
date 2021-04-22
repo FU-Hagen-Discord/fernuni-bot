@@ -10,6 +10,7 @@ from discord.ext import commands
   Environment Variablen:
   DISCORD_LEARNINGGROUPS_OPEN - ID der Kategorie für offene Lerngruppen
   DISCORD_LEARNINGGROUPS_CLOSE - ID der Kategorie für geschlossene Lerngruppen
+  DISCORD_LEARNINGGROUPS_ARCHIVE - ID der Kategorie für archivierte Lerngruppen
   DISCORD_LEARNINGGROUPS_REQUEST - ID des Channels in welchem Requests vom Bot eingestellt werden
   DISCORD_LEARNINGGROUPS_INFO - ID des Channels in welchem die Lerngruppen-Informationen gepostet/aktualisert werden
   DISCORD_LEARNINGGROUPS_FILE - Name der Datei mit Verwaltungsdaten der Lerngruppen (minimaler Inhalt: {"requested": {},"groups": {}})
@@ -57,6 +58,7 @@ class LearningGroups(commands.Cog):
         self.rename_ratelimit = 305  # ratelimit 2 in 10 minutes (305 * 2 = 610 = 10 minutes and 10 seconds)
         self.category_open = os.getenv('DISCORD_LEARNINGGROUPS_OPEN')
         self.category_close = os.getenv('DISCORD_LEARNINGGROUPS_CLOSE')
+        self.category_archive = os.getenv('DISCORD_LEARNINGGROUPS_ARCHIVE')
         self.channel_request = os.getenv('DISCORD_LEARNINGGROUPS_REQUEST')
         self.channel_info = os.getenv('DISCORD_LEARNINGGROUPS_INFO')
         self.group_file = os.getenv('DISCORD_LEARNINGGROUPS_FILE')
@@ -180,6 +182,12 @@ class LearningGroups(commands.Cog):
         self.groups["messageid"] = message.id
         self.save_groups()
 
+    async def archive(self, channel):
+        category = await self.bot.fetch_channel(self.category_archive)
+        await self.move_channel(channel, category)
+        await channel.edit(name=f"archiv-${channel.name[1:]}")
+        self.remove_group(channel)
+
     async def set_channel_state(self, channel, is_open):
         channel_config = self.groups["groups"][str(channel.id)]
         if await self.check_rename_rate_limit(channel_config): return  # prevent api requests when ratelimited
@@ -191,7 +199,8 @@ class LearningGroups(commands.Cog):
         channel_config["last_rename"] = int(time.time())
 
         await channel.edit(name=self.full_channel_name(channel_config))
-        await self.move_channel(channel, is_open)
+        category = await self.category_of_channel(is_open)
+        await self.move_channel(channel, category)
         await self.update_groupinfo()
         self.save_groups()
 
@@ -207,9 +216,7 @@ class LearningGroups(commands.Cog):
         await self.update_groupinfo()
         self.save_groups()
 
-    async def move_channel(self, channel, is_open):
-        category = await self.category_of_channel(is_open)
-
+    async def move_channel(self, channel, category):
         for sortchannel in category.text_channels:
             if sortchannel.name[1:] > channel.name[1:]:
                 await channel.move(category=category, before=sortchannel)
@@ -230,15 +237,19 @@ class LearningGroups(commands.Cog):
 
         self.groups["groups"][str(channel.id)] = channel_config
 
-        await self.remove_group_request(message)
+        self.remove_group_request(message)
         if not direct:
             await message.delete()
 
         await self.update_groupinfo()
         self.save_groups()
 
-    async def remove_group_request(self, message):
+    def remove_group_request(self, message):
         del self.groups["requested"][str(message.id)]
+        self.save_groups()
+
+    def remove_group(self, channel):
+        del self.groups["groups"][str(channel.id)]
         self.save_groups()
 
     @commands.command(name="init-groups")
@@ -336,6 +347,11 @@ class LearningGroups(commands.Cog):
     async def cmd_rename(self, ctx, arg_name):
         await self.set_channel_name(ctx.channel, arg_name)
 
+    @commands.command(name="archive")
+    @commands.check(utils.is_mod)
+    async def cmd_archive(self, ctx):
+        await self.archive(ctx.channel)
+
     @commands.command(name="owner")
     @commands.check(utils.is_mod)
     async def cmd_owner(self, ctx, arg_owner: discord.Member):
@@ -367,7 +383,7 @@ class LearningGroups(commands.Cog):
 
         if payload.emoji.name in ["🗑️"] and self.is_group_request_message(message) and (
                 self.is_request_owner(request, payload.member) or self.is_mod(payload.member)):
-            await self.remove_group_request(message)
+            self.remove_group_request(message)
             await message.delete()
 
     async def cog_command_error(self, ctx, error):
