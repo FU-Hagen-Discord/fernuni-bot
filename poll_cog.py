@@ -79,6 +79,7 @@ class Poll:
     async def send_poll(self, channel, result=False, message=None):
         option_ctr = 0
         title = "Umfrage"
+        participants = {}
 
         if result:
             title += " Ergebnis"
@@ -100,23 +101,16 @@ class Poll:
                 reaction = self.get_reaction(name)
                 if reaction:
                     name += f' : {reaction.count - 1}'
-                    # value += f'\nStimmen: '
-
-                    # async for user in reaction.users():
-                    #     if self.bot.user == user:
-                    #         continue
-                    #     ping = f'<@!{str(user.id)}> '
-                    #
-                    #     if len(value) + len(ping) > 1024:
-                    #         embed.add_field(name=name, value=value, inline=False)
-                    #         answer = f''
-                    #         name = "\u200b"
-                    #     elif
-                    #
-                    #     value += ping
+                    async for user in reaction.users():
+                        if user != self.bot.user:
+                            participants[str(user.id)] = 1
 
             embed.add_field(name=name, value=value, inline=False)
             option_ctr += 1
+
+        if result:
+            embed.add_field(name="\u200b", value="\u200b", inline=False)
+            embed.add_field(name="Anzahl Teilnehmer an der Umfrage", value=f"{len(participants)}", inline=False)
 
         if message:
             await message.edit(embed=embed)
