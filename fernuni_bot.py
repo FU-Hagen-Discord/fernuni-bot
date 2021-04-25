@@ -8,19 +8,19 @@ from dotenv import load_dotenv
 # from welcome_cog import WelcomeCog
 import utils
 from appointments_cog import AppointmentsCog
+from armin import Armin
 from christmas_cog import ChristmasCog
+from easter_cog import EasterCog
+from learninggroups import LearningGroups
 from links_cog import LinksCog
 from news_cog import NewsCog
 from poll_cog import PollCog
 from roles_cog import RolesCog
 from support_cog import SupportCog
 from text_commands_cog import TextCommandsCog
-from welcome_cog import WelcomeCog
 # from change_log import ChangeLogCog
 from voice_cog import VoiceCog
-from easter_cog import EasterCog
-from armin import Armin
-from learninggroups import LearningGroups
+from welcome_cog import WelcomeCog
 
 # .env file is necessary in the same directory, that contains several strings.
 load_dotenv()
@@ -78,7 +78,6 @@ async def pin_message(message):
 
     if not message.pinned:
         await message.pin()
-        await message.channel.send(f'Folgende Nachricht wurde gerade angepinnt: {message.jump_url}')
 
 
 async def unpin_message(message):
@@ -88,7 +87,6 @@ async def unpin_message(message):
         reaction = get_reaction(message.reactions)
         if reaction is None:
             await message.unpin()
-            await message.channel.send(f'Folgende Nachricht wurde gerade losgelöst: {message.jump_url}')
 
 
 @bot.event
