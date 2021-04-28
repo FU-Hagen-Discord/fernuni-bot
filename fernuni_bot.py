@@ -21,6 +21,8 @@ from text_commands_cog import TextCommandsCog
 # from change_log import ChangeLogCog
 from voice_cog import VoiceCog
 from welcome_cog import WelcomeCog
+from module_information.module_information import ModuleInformation
+
 
 # .env file is necessary in the same directory, that contains several strings.
 load_dotenv()
@@ -51,6 +53,7 @@ bot.add_cog(VoiceCog(bot))
 bot.add_cog(EasterCog(bot))
 bot.add_cog(Armin(bot))
 bot.add_cog(LearningGroups(bot))
+bot.add_cog(ModuleInformation(bot))
 
 
 def get_reaction(reactions):
