@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup
-from urllib.request import urlopen
+import aiohttp
 import re
 import os
 import json
@@ -11,21 +11,21 @@ class Scrapper:
         self.courses_file = filename
 
 
-    def scrap(self):
+    async def scrap(self):
         courses_of_studies = self.load_courses_fo_studies()
         for course in courses_of_studies:
-            self.fetch_module_infos_for_course_of_studies(course)
+            await self.fetch_module_infos_for_course_of_studies(course)
+        print(f"Done.")
         return courses_of_studies
 
 
-    def fetch_module_infos_for_course_of_studies(self, course):
+    async def fetch_module_infos_for_course_of_studies(self, course):
         print(f"Fetching {course['name']}")
         url = course['url']
-        html = self.fetch(url)
+        html = await self.fetch(url)
         modules = self.parse_index_page(html)
         for module in modules:
-            print(f"Scrap {module['url']}")
-            html = self.fetch(module['url'])
+            html = await self.fetch(module['url'])
             module['page'] = self.parse_course_page(html, course)
         course['modules'] = modules
 
@@ -35,11 +35,17 @@ class Scrapper:
         return json.load(group_file)
 
 
-    def fetch(self, url):
-        response = urlopen(url)
-        data = response.read()
-        text = data.decode('utf-8')
+    async def fetch(self, url):
+        sess = aiohttp.ClientSession()
+        req = await sess.get(url)
+        text = await req.read()
+        await sess.close()
         return text
+        #html = await response.text()
+        #response = urlopen(url)
+        #data = response.read()
+        #text = data.decode('utf-8')
+        #return text
 
 
     def prepare_url(self, url):
