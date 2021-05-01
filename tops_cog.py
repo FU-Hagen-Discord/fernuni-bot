@@ -4,6 +4,7 @@ import re
 
 import discord
 from discord.ext import commands
+from help.help import help, handle_error
 
 
 class TopsCog(commands.Cog):
@@ -19,6 +20,7 @@ class TopsCog(commands.Cog):
         tops_file = open(self.tops_file, mode='r')
         self.tops = json.load(tops_file)
 
+    @help()
     @commands.command(name="add-top")
     async def cmd_add_top(self, ctx, top):
         """ Add TOP to a channel """
@@ -34,6 +36,7 @@ class TopsCog(commands.Cog):
         tops_file = open(self.tops_file, mode='w')
         json.dump(self.tops, tops_file)
 
+    @help()
     @commands.command(name="remove-top")
     async def cmd_remove_top(self, ctx, top):
         """ Remove TOP from a channel """
@@ -54,6 +57,7 @@ class TopsCog(commands.Cog):
                 tops_file = open(self.tops_file, mode='w')
                 json.dump(self.tops, tops_file)
 
+    @help()
     @commands.command(name="clear-tops")
     async def cmd_clear_tops(self, ctx):
         """ Clear all TOPs from a channel """
@@ -65,6 +69,7 @@ class TopsCog(commands.Cog):
             tops_file = open(self.tops_file, mode='w')
             json.dump(self.tops, tops_file)
 
+    @help()
     @commands.command(name="tops")
     async def cmd_tops(self, ctx):
         """ Get all TOPs from a channel """
@@ -84,3 +89,6 @@ class TopsCog(commands.Cog):
             embed.add_field(name="Keine Tagesordnungspunkte vorhanden", value="\u200B", inline=False)
 
         await ctx.send(embed=embed)
+
+    async def cog_command_error(self, ctx, error):
+        await handle_error(ctx, error)

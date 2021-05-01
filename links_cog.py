@@ -2,6 +2,7 @@ import json
 
 import discord
 from discord.ext import commands
+from help.help import help, handle_error
 
 
 class LinksCog(commands.Cog):
@@ -19,6 +20,7 @@ class LinksCog(commands.Cog):
         links_file = open(self.links_file, 'w')
         json.dump(self.links, links_file)
 
+    @help()
     @commands.command(name="links")
     async def cmd_links(self, ctx, group=None):
         if channel_links := self.links.get(str(ctx.channel.id)):
@@ -62,3 +64,6 @@ class LinksCog(commands.Cog):
             self.add_link(group_links, link, title + str(1))
         else:
             group_links[title] = link
+        
+    async def cog_command_error(self, ctx, error):
+      await handle_error(ctx, error)

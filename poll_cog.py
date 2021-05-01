@@ -4,6 +4,7 @@ import discord
 from discord.ext import commands
 
 import utils
+from help.help import help, handle_error
 
 OPTIONS = ["🇦", "🇧", "🇨", "🇩", "🇪", "🇫", "🇬", "🇭", "🇮", "🇯", "🇰", "🇱", "🇲", "🇳", "🇴", "🇵", "🇶", "🇷"]
 
@@ -13,6 +14,8 @@ class PollCog(commands.Cog):
         self.bot = bot
         self.poll_sugg_channel = int(os.getenv("DISCORD_POLL_SUGG_CHANNEL"))
 
+
+    @help()
     @commands.command(name="add-poll")
     async def cmd_add_poll(self, ctx, question, *answers):
         channel = await self.bot.fetch_channel(self.poll_sugg_channel)
@@ -23,6 +26,7 @@ class PollCog(commands.Cog):
 
         await channel.send(msg)
 
+    @help()
     @commands.command(name="edit-poll")
     @commands.check(utils.is_mod)
     async def cmd_edit_poll(self, ctx, message_id, question, *answers):
@@ -36,6 +40,7 @@ class PollCog(commands.Cog):
             ctx.send("Fehler! Umfrage nicht gefunden!")
         pass
 
+    @help()
     @commands.command(name="poll")
     async def cmd_poll(self, ctx, question, *answers):
         """ Create poll """
@@ -57,6 +62,9 @@ class PollCog(commands.Cog):
                         await poll.delete_poll()
                     else:
                         await poll.close_poll()
+
+    async def cog_command_error(self, ctx, error):
+        await handle_error(ctx, error)
 
 
 class Poll:

@@ -6,6 +6,7 @@ import discord
 from discord.ext import commands
 
 import utils
+from help.help import help, handle_error
 
 
 class TextCommandsCog(commands.Cog):
@@ -36,6 +37,7 @@ class TextCommandsCog(commands.Cog):
         if texts:
             await message.channel.send(random.choice(texts))
 
+    @help()
     @commands.command(name="add-text-command")
     @commands.check(utils.is_mod)
     async def cmd_add_text_command(self, ctx, cmd, text):
@@ -50,6 +52,7 @@ class TextCommandsCog(commands.Cog):
 
         await ctx.send(f"[{cmd}] => [{text}] erfolgreich hinzugefügt.")
 
+    @help()
     @commands.command(name="text-commands")
     @commands.check(utils.is_mod)
     async def cmd_text_commands(self, ctx):
@@ -62,6 +65,7 @@ class TextCommandsCog(commands.Cog):
 
         await ctx.send(answer)
 
+    @help()
     @commands.command(name="texts")
     @commands.check(utils.is_mod)
     async def cmd_texts(self, ctx, cmd):
@@ -78,6 +82,7 @@ class TextCommandsCog(commands.Cog):
 
         await ctx.send(answer)
 
+    @help()
     @commands.command(name="edit-text")
     @commands.check(utils.is_mod)
     async def cmd_edit_text(self, ctx, cmd, id, text):
@@ -94,6 +99,7 @@ class TextCommandsCog(commands.Cog):
         else:
             await ctx.send("Command {cmd} nicht vorhanden!")
 
+    @help()
     @commands.command(name="remove-text")
     @commands.check(utils.is_mod)
     async def cmd_remove_text(self, ctx, cmd, id):
@@ -114,6 +120,7 @@ class TextCommandsCog(commands.Cog):
         else:
             await ctx.send("Command {cmd} nicht vorhanden!")
 
+    @help()
     @commands.command(name="remove-text-command")
     @commands.check(utils.is_mod)
     async def cmd_remove_text_command(self, ctx, cmd):
@@ -124,6 +131,9 @@ class TextCommandsCog(commands.Cog):
         else:
             await ctx.send(f"Text Command {cmd} nicht vorhanden")
 
+    @help(
+      brief="reicht deinen Motivationstext zur Genehmigung ein."
+    )
     @commands.command(name="add-motivation")
     async def cmd_add_motivation(self, ctx, *text):
         mod_channel = await self.bot.fetch_channel(int(os.getenv("DISCORD_MOD_CHANNEL")))
@@ -161,3 +171,6 @@ class TextCommandsCog(commands.Cog):
             message = await channel.fetch_message(payload.message_id)
             if len(message.embeds) > 0 and message.embeds[0].title == "Neuer Motivations Text":
                 await self.motivation_approved(message)
+
+    async def cog_command_error(self, ctx, error):
+        await handle_error(ctx, error)

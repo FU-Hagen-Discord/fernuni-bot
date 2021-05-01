@@ -1,6 +1,6 @@
 import random
 from discord.ext import commands
-
+from help.help import help, handle_error
 
 class Armin(commands.Cog):
     def __init__(self, bot):
@@ -18,6 +18,10 @@ class Armin(commands.Cog):
         self.i = ["Infektionszahlen", "privaten Treffen", "Wirtschaftsleistung", "Wahlprognosen", "dritten Welle",
                   "Bundeskanzlerin"]
 
+    @help(
+      brief="Wenn du wissen willst, was Armin sagt, dann !arminsagt",
+      description="gibt zufällig einen Satz aus,  den auch Armin Laschet so gesagt haben könnte."
+      )
     @commands.command(name="arminsagt")
     async def cmd_arminsagt(self, ctx):
         rNum = random.randint(0, 5)
@@ -26,3 +30,6 @@ class Armin(commands.Cog):
                        f"{random.choice(self.c)}{n} {random.choice(self.d)}{self.e[rNum]} "
                        f"bis {random.choice(self.f)} zur {random.choice(self.g)} {random.choice(self.h)} "
                        f"der {random.choice(self.i)}.")
+    
+    async def cog_command_error(self, ctx, error):
+        await handle_error(ctx, error)

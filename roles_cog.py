@@ -5,6 +5,7 @@ import discord
 from discord.ext import commands
 
 import utils
+from help.help import help, handle_error
 
 
 class RolesCog(commands.Cog):
@@ -67,6 +68,7 @@ class RolesCog(commands.Cog):
             if role_name == role.name:
                 return key
 
+    @help()
     @commands.command(name="stats")
     async def cmd_stats(self, ctx):
         """ Sends stats in Chat. """
@@ -95,6 +97,7 @@ class RolesCog(commands.Cog):
 
         await ctx.channel.send(answer, embed=embed)
 
+    @help()
     @commands.command("update-degree-program")
     @commands.check(utils.is_mod)
     async def cmd_update_degree_program(self, ctx):
@@ -121,6 +124,7 @@ class RolesCog(commands.Cog):
             if emoji:
                 await message.add_reaction(emoji)
 
+    @help()
     @commands.command("update-color")
     @commands.check(utils.is_mod)
     async def cmd_update_color(self, ctx):
@@ -138,6 +142,7 @@ class RolesCog(commands.Cog):
             if emoji:
                 await message.add_reaction(emoji)
 
+    @help()
     @commands.command("update-special")
     @commands.check(utils.is_mod)
     async def cmd_update_special(self, ctx):
@@ -201,3 +206,6 @@ class RolesCog(commands.Cog):
                 if role.name == role_name:
                     await member.add_roles(role)
                     await utils.send_dm(member, f"Rolle \"{role.name}\" erfolgreich hinzugefügt")
+
+    async def cog_command_error(self, ctx, error):
+        await handle_error(ctx, error)

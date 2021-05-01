@@ -21,6 +21,7 @@ from text_commands_cog import TextCommandsCog
 # from change_log import ChangeLogCog
 from voice_cog import VoiceCog
 from welcome_cog import WelcomeCog
+from help.help import Help
 
 # .env file is necessary in the same directory, that contains several strings.
 load_dotenv()
@@ -51,6 +52,7 @@ bot.add_cog(VoiceCog(bot))
 bot.add_cog(EasterCog(bot))
 bot.add_cog(Armin(bot))
 bot.add_cog(LearningGroups(bot))
+bot.add_cog(Help(bot))
 
 
 def get_reaction(reactions):
@@ -61,17 +63,6 @@ def get_reaction(reactions):
         if reaction.emoji == PIN_EMOJI:
             return reaction
     return None
-
-
-@bot.command(name="help")
-async def cmd_help(ctx):
-    """ Send help message as DM """
-
-    help_file = open(HELP_FILE, mode='r')
-    help_dict = json.load(help_file)
-    embed = discord.Embed.from_dict(help_dict)
-    await utils.send_dm(ctx.author, "", embed=embed)
-
 
 async def pin_message(message):
     """ Pin the given message, if it is not already pinned """
