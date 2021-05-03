@@ -8,14 +8,17 @@ import discord
 import collections
 data = {}
 
+
 def text_command_help(name, syntax=None, example=None, brief=None, description=None, mod=False, parameters={}):
     cmd = re.sub(r"^!", "", name)
     if syntax is None:
         syntax = name
     add_help(cmd, syntax, example, brief, description, mod, parameters)
 
+
 def remove_help_for(name):
-  data.pop(name)
+    data.pop(name)
+
 
 def help(syntax=None, example=None, brief=None, description=None, mod=False, parameters={}):
     def decorator_help(cmd):
@@ -42,6 +45,7 @@ def add_help(cmd, syntax, example, brief, description, mod, parameters):
         "mod": mod
     }
 
+
 async def handle_error(ctx, error):
     if isinstance(error, commands.errors.MissingRequiredArgument):
         syntax = data[ctx.command.name]['syntax']
@@ -62,7 +66,6 @@ class Help(commands.Cog):
 
     @help(
         brief="Zeigt die verfügbaren Kommandos an. Wenn ein Kommando übergeben wird, wird eine ausführliche Hilfe zu diesem Kommando angezeigt.",
-        description="."
     )
     @commands.command(name="help")
     async def cmd_help(self, ctx, command=None):
@@ -74,7 +77,6 @@ class Help(commands.Cog):
 
     @help(
         brief="Zeigt die verfügbaren Kommandos *für Mods* an. Wenn ein Kommando übergeben wird, wird eine ausführliche Hilfe zu diesem Kommando angezeigt.",
-        description=".",
         mod=True
     )
     @commands.command(name="mod-help")
@@ -90,13 +92,14 @@ class Help(commands.Cog):
         sorted_commands = collections.OrderedDict(sorted(data.items()))
         title = "Boty hilft dir!"
         helptext = ("Um ausführliche Hilfe zu einem bestimmten Kommando zu erhalten, gib **!help <command>** ein. "
-                    "Also z.B. **!help stats** um mehr über das Statistik-Kommando zu erfahren.\n\n\n")
+                    "Also z.B. **!help stats** um mehr über das Statistik-Kommando zu erfahren.\n\n")
         msgcount = 1
         for command in sorted_commands.values():
             text = ""
             if command['mod'] != mod:
                 continue
-            text += f"**{command['syntax']}** {'*' if command['description'] else ''}\n"
+            # {'*' if command['description'] else ''}\n"
+            text += f"**{command['syntax']}**\n"
             text += f"{command['brief']}\n\n" if command['brief'] else "\n"
             if (len(helptext) + len(text) > 2048):
                 embed = discord.Embed(title=title,
@@ -132,3 +135,36 @@ class Help(commands.Cog):
                               description=text,
                               color=19607)
         await utils.send_dm(ctx.author, text)  # , embed=embed)
+
+    @commands.command(name="all-help")
+    @commands.check(utils.is_mod)
+    async def help_all(self, ctx, mod=False):
+        sorted_commands = collections.OrderedDict(sorted(data.items()))
+        title = "Boty hilft dir!"
+        helptext = ("Um ausführliche Hilfe zu einem bestimmten Kommando zu erhalten, gib **!help <command>** ein. "
+                    "Also z.B. **!help stats** um mehr über das Statistik-Kommando zu erfahren.\n\n\n")
+        msgcount = 1
+        for command in sorted_commands.values():
+            text = f"**{command['name']}**{' (mods only)' if command['mod'] else ''}\n"
+            text += f"{command['brief']}\n\n" if command['brief'] else ""
+            text += f"**Syntax:**\n `{command['syntax']}`\n"
+            text += "**Paramter:**\n" if len(command['parameters']) > 0 else ""
+            for param, desc in command['parameters'].items():
+                text += f"`{param}` - {desc}\n"
+            text += f"**Beispiel:**\n `{command['example']}`\n" if command['example'] else ""
+            text += f"\n{command['description']}\n" if command['description'] else ""
+            text += "=====================================================\n"
+            if (len(helptext) + len(text) > 2048):
+                embed = discord.Embed(title=title,
+                                      description=helptext,
+                                      color=19607)
+                await utils.send_dm(ctx.author, "", embed=embed)
+                helptext = ""
+                msgcount = msgcount + 1
+                title = f"Boty hilft dir! (Fortsetzung {msgcount})"
+            helptext += text
+
+        embed = discord.Embed(title=title,
+                              description=helptext,
+                              color=19607)
+        await utils.send_dm(ctx.author, "", embed=embed)

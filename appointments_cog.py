@@ -108,15 +108,14 @@ class AppointmentsCog(commands.Cog):
 
     @help(
       brief="Fügt eine neue Erinnerung zu einem Kanal hinzu",
-      example="!add-appointment 20.12.2021 10:00 0 \"Toller Event\"",
+      example="!add-appointment 20.12.2021 10:00 0 \"Toller Event\" 7d",
       parameters={
         "date": "Datum des Termins im Format `DD.MM.YYYY`. Zum Beispiel `22.10.2022`",
         "time": "Uhrzeit des Termins im Format `hh:mm`. Zum Beispiel `10:00`",
         "reminder": "Anzahl an Mintuen die vor dem Termin erinnert werden soll.",
         "title": "Titel des Termins",
-        #"reccuring": "Anzahl der Wiederholungen"
-      },
-      description="."
+        "reccuring": "Interval für die Terminwiederholung. Zum Beispiel: `24h` für 24 Stunden `7d` für 7 Tage oder `10m` für 10 Minuten *(optional)*"
+      }
       )
     @commands.command(name="add-appointment")
     async def cmd_add_appointment(self, ctx, date, time, reminder, title, recurring=None):
@@ -171,8 +170,7 @@ class AppointmentsCog(commands.Cog):
         self.save_appointments()
 
     @help(
-      brief="Zeigt alle Termine des momentanen Kanals an.",
-      description="."
+      brief="Zeigt alle Termine des momentanen Kanals an."
     )
     @commands.command(name="appointments")
     async def cmd_appointments(self, ctx):

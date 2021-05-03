@@ -20,7 +20,12 @@ class LinksCog(commands.Cog):
         links_file = open(self.links_file, 'w')
         json.dump(self.links, links_file)
 
-    @help()
+    @help(
+      brief="Zeigt die Links an die in diesem Channel (evtl. unter Berücksichtigung einer Gruppe) hinterlegt sind.",
+      parameters={
+        "group": "schränkt die angezeigten Links auf die übergebene Gruppe ein. *(optional)*"
+      }
+    )
     @commands.command(name="links")
     async def cmd_links(self, ctx, group=None):
         if channel_links := self.links.get(str(ctx.channel.id)):
@@ -46,7 +51,16 @@ class LinksCog(commands.Cog):
         else:
             await ctx.send("Für diesen Channel sind noch keine Links hinterlegt.")
 
-    @help()
+    @help(
+      syntax="!add-link <group> <link> <title...>",
+      brief="Fügt einen Link zum Channel hinzu",
+      parameters={
+        "group":"Name der Gruppe die der Link zugeordnet werden soll",
+        "link":"die URL",
+        "title...":"Titel der für diesen Link angezeigt werden soll",
+      },
+      description="Die mit `!add-link` zu einem Kanal hinzugefügten Links können über das Kommando `!links` in diesem Kanal wieder abgerufen werden."
+    )
     @commands.command(name="add-link")
     async def cmd_add_link(self, ctx, group, link, *title):
         if not (channel_links := self.links.get(str(ctx.channel.id))):

@@ -9,7 +9,13 @@ class VoiceCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @help(mod=True)
+    @help(
+      brief="öffnet und schließt die Voice Kanäle",
+      parameters={
+        "switch": "`open` öffnet die Voice Kanäle. `close` schließt die Voice Kanäle."
+      },
+      mod=True
+      )
     @commands.command(name="voice")
     @commands.check(utils.is_mod)
     async def cmd_voice(self, ctx, switch):

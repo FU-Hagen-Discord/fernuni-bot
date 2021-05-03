@@ -51,7 +51,17 @@ class TextCommandsCog(commands.Cog):
             if texts:
                 await message.channel.send(random.choice(texts))
 
-    @help(mod=True)
+    @help(
+      brief="Fügt ein Text-Kommando hinzu",
+      example="!add-text-command !newcommand \"immer wenn newcommand aufgerufen wird wird das hier ausgegeben\" \"Hilfetext zu diesem Kommando\"",
+      description="Ein Text-Kommando ist ein Kommando welches über !<name des textkommandos> aufgerufen werden kann und dann zufällig einen der hinterlegten Texte ausgibt.",
+      parameters={
+        "cmd": "Name des anzulegenden Kommandos. Zum Beispiel: `!horoskop`",
+        "text": "Textnachricht die Ausgegeben werden soll wenn das Kommando aufgerufen wird. Zum Beispiel: `Wassermann: Findet diese Woche wahrscheinlich seinen Dreizack wieder.`",
+        "help_message": "Die Hilfenachricht die bei `!help` für dieses Kommando erscheinen soll. *(optional)*"
+      },
+      mod=True
+      )
     @commands.command(name="add-text-command")
     @commands.check(utils.is_mod)
     async def cmd_add_text_command(self, ctx, cmd, text, help_message=None):
@@ -73,7 +83,15 @@ class TextCommandsCog(commands.Cog):
 
         await ctx.send(f"[{cmd}] => [{text}] erfolgreich hinzugefügt.")
 
-    @help(mod=True)
+    @help(
+      brief="Bearbeitet den Hilfetext für ein Textkommando",
+      example="!exit-text-help !newcommand \"Neuer Hilfetext\"",
+      parameters={
+        "cmd": "Name des anzulegenden Kommandos. Zum Beispiel: `!horoskop`",
+        "help_message": "Die Hilfenachricht die bei `!help` für dieses Kommando erscheinen soll. *(optional)*"
+      },
+      mod=True
+      )    
     @commands.command(name="edit-text-help")
     @commands.check(utils.is_mod)
     async def cmd_edit_text_help(self, ctx, cmd, help_message):
@@ -90,7 +108,10 @@ class TextCommandsCog(commands.Cog):
 
         await ctx.send(f"[{cmd}] => Hilfe [{help_message}] erfolgreich hinzugefügt.")
 
-    @help(mod=True)
+    @help(
+      brief="Gibt eine Liste der verfügbaren Textkommandos aus.",
+      mod=True
+      )
     @commands.command(name="text-commands")
     @commands.check(utils.is_mod)
     async def cmd_text_commands(self, ctx):
@@ -103,7 +124,14 @@ class TextCommandsCog(commands.Cog):
 
         await ctx.send(answer)
 
-    @help(mod=True)
+    @help(
+      brief="Gibt alle für ein Textkommando hinterlegten Texte aus.",
+      parameters={
+        "cmd": "Textkommandos für welches die hinterlegten Texte ausgegeben werden sollen. Zum Beispiel `!horoskop`"
+      },
+      example="!texts !horoskop",
+      mod=True
+      )    
     @commands.command(name="texts")
     @commands.check(utils.is_mod)
     async def cmd_texts(self, ctx, cmd):
@@ -120,7 +148,16 @@ class TextCommandsCog(commands.Cog):
 
         await ctx.send(answer)
 
-    @help(mod=True)
+    @help(
+      brief="Editiert für ein Textkommando einen Text an einer bestimmten Position.",
+      parameters={
+        "cmd": "Textkommandos für welches die hinterlegte Text bearbeitet werden soll. Zum Beispiel `!horoskop`",
+        "id": "Nummer des Textes. Diese kann durch `!texts` ermittelt werden",
+        "text": "Der neue Text der an dieser Stelle stehen soll. (In Anführungszeichen eingeschlossen)"
+      },
+      example="!edit-text !horoskop 2 \"Wassermann: bricht sich eine Zacke ab. Hat leider nur noch einen Zweizack.\"",
+      mod=True
+      )   
     @commands.command(name="edit-text")
     @commands.check(utils.is_mod)
     async def cmd_edit_text(self, ctx, cmd, id, text):
@@ -137,7 +174,15 @@ class TextCommandsCog(commands.Cog):
         else:
             await ctx.send("Command {cmd} nicht vorhanden!")
 
-    @help(mod=True)
+    @help(
+      brief="Löscht für ein Textkommando einen Text an einer bestimmten Position.",
+      parameters={
+        "cmd": "Textkommandos für welches der hinterlegte Text gelöscht werden soll. Zum Beispiel `!horoskop`",
+        "id": "Nummer des Textes der gelöscht werden soll",
+      },
+      example="!remove-text !horoskop 2",
+      mod=True
+      )   
     @commands.command(name="remove-text")
     @commands.check(utils.is_mod)
     async def cmd_remove_text(self, ctx, cmd, id):
@@ -158,7 +203,14 @@ class TextCommandsCog(commands.Cog):
         else:
             await ctx.send("Command {cmd} nicht vorhanden!")
 
-    @help(mod=True)
+    @help(
+      brief="Löscht ein Textkommando",
+      parameters={
+        "cmd": "Textkommandos welches gelöscht werden soll. Zum Beispiel `!horoskop`",
+      },
+      example="!remove-text-command !horoskop",
+      mod=True
+      )   
     @commands.command(name="remove-text-command")
     @commands.check(utils.is_mod)
     async def cmd_remove_text_command(self, ctx, cmd):
@@ -171,7 +223,10 @@ class TextCommandsCog(commands.Cog):
             await ctx.send(f"Text Command {cmd} nicht vorhanden")
 
     @help(
-      brief="reicht deinen Motivationstext zur Genehmigung ein."
+      brief="reicht deinen Motivationstext zur Genehmigung ein.",
+      parameters={
+        "text":"der Spruch der deine Kommilitoninnen motiviert."
+      }
     )
     @commands.command(name="add-motivation")
     async def cmd_add_motivation(self, ctx, *text):

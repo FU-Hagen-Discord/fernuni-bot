@@ -16,7 +16,13 @@ class PollCog(commands.Cog):
 
 
     @help(
-      syntax="!add-poll <question> <answers...>"
+      syntax="!add-poll <question> <answers...>",
+      brief="Schlägt eine Umfrage für den Umfrage-Kanal vor.",
+      parameters={
+        "question": "Die Frage die gestellt werden soll (in Anführungszeichen)",
+        "answers...": "Durch Leerzeichen getrennte Antwortmöglichkeiten (die einzelnen Antworten in Anführungszeichen einschließen)"
+      },
+      example="!add-poll \"Wie ist das Wetter?\" \"echt gut\" \"weniger gut\" \"Boar nee, nicht schon wieder Regen\""
     )
     @commands.command(name="add-poll")
     async def cmd_add_poll(self, ctx, question, *answers):
@@ -28,8 +34,15 @@ class PollCog(commands.Cog):
 
         await channel.send(msg)
 
-    @help(      
+    @help(  
+      brief="Bearbeitet eine bereits vorhandene Umfrage.",    
       syntax="!edit-poll <message_id> <question> <answers...>",
+      parameters={
+        "message_id": "die Message ist (mit aktivierten Entwicklereinstellungen in Discord) einem Rechtsklick auf die Umfrage zu entnehmen.",
+        "question": "Die Frage die gestellt werden soll (in Anführungszeichen)",
+        "answers...": "Durch Leerzeichen getrennte Antwortmöglichkeiten (die einzelnen Antworten in Anführungszeichen einschließen)",
+      },
+      example="!edit-poll 838752355595059230 \"Wie ist das Wetter?\" \"echt gut\" \"weniger gut\" \"Boar nee, nicht schon wieder Regen\"",
       mod=True
       )
     @commands.command(name="edit-poll")
@@ -46,7 +59,13 @@ class PollCog(commands.Cog):
         pass
 
     @help(
-      syntax="!poll <question> <answers...>"
+      syntax="!poll <question> <answers...>",
+      brief="Erstellt eine Umfrage im aktuellen Kanal.",
+      parameters={
+        "question": "Die Frage die gestellt werden soll (in Anführungszeichen)",
+        "answers...": "Durch Leerzeichen getrennte Antwortmöglichkeiten (die einzelnen Antworten in Anführungszeichen einschließen)"
+      },
+      example="!poll \"Wie ist das Wetter?\" \"echt gut\" \"weniger gut\" \"Boar nee, nicht schon wieder Regen\""
     )    
     @commands.command(name="poll")
     async def cmd_poll(self, ctx, question, *answers):

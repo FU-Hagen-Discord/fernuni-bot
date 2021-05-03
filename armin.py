@@ -19,8 +19,8 @@ class Armin(commands.Cog):
                   "Bundeskanzlerin"]
 
     @help(
-      brief="Wenn du wissen willst, was Armin sagt, dann !arminsagt.",
-      description="gibt zufällig einen Satz aus, den auch Armin Laschet so gesagt haben könnte."
+      brief="Wenn du wissen willst, was Armin sagt, dann `!arminsagt.`",
+      description="Änhlichkeiten zu Äußerungen eines Ministerpräsidenten sind nicht beabsichtigt und rein zufällig."
       )
     @commands.command(name="arminsagt")
     async def cmd_arminsagt(self, ctx):

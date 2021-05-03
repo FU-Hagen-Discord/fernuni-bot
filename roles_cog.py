@@ -68,7 +68,9 @@ class RolesCog(commands.Cog):
             if role_name == role.name:
                 return key
 
-    @help()
+    @help(
+      brief="Gibt die Mitgliederstatistik aus."
+    )
     @commands.command(name="stats")
     async def cmd_stats(self, ctx):
         """ Sends stats in Chat. """
@@ -97,7 +99,10 @@ class RolesCog(commands.Cog):
 
         await ctx.channel.send(answer, embed=embed)
 
-    @help(mod=True)
+    @help(
+      brief="aktualisiert die Vergabe von Studiengangs-Rollen.",
+      mod=True
+      )
     @commands.command("update-degree-program")
     @commands.check(utils.is_mod)
     async def cmd_update_degree_program(self, ctx):
@@ -124,7 +129,10 @@ class RolesCog(commands.Cog):
             if emoji:
                 await message.add_reaction(emoji)
 
-    @help(mod=True)
+    @help(
+      brief="aktualisiert die Vergabe von Farb-Rollen.",
+      mod=True
+      )    
     @commands.command("update-color")
     @commands.check(utils.is_mod)
     async def cmd_update_color(self, ctx):
@@ -142,7 +150,10 @@ class RolesCog(commands.Cog):
             if emoji:
                 await message.add_reaction(emoji)
 
-    @help(mod=True)
+    @help(
+      brief="aktualisiert die Vergabe von Spezial-Rollen.",
+      mod=True
+      )     
     @commands.command("update-special")
     @commands.check(utils.is_mod)
     async def cmd_update_special(self, ctx):

@@ -387,7 +387,11 @@ class LearningGroups(commands.Cog):
     async def cmd_rename(self, ctx, arg_name):
         await self.set_channel_name(ctx.channel, arg_name)
 
-    @help(brief="Archiviert den Lerngruppenkanal", mod=True)
+    @help(
+      brief="Archiviert den Lerngruppenkanal", 
+      description="Verschiebt den Lerngruppenkanal in dem dieses Kommando ausgeführt wird ins Archiv.",
+      mod=True
+      )
     @commands.command(name="archive")
     @commands.check(utils.is_mod)
     async def cmd_archive(self, ctx):
@@ -413,8 +417,8 @@ class LearningGroups(commands.Cog):
             await ctx.channel.send(f"Glückwunsch {arg_owner.mention}! Du bist jetzt die Besitzerin dieser Lerngruppe.")
 
     @help(
-      brief="Zeigt die Besitzerin eines Lerngruppenkanals an", 
-      description="Muss im betreffenden Lerngruppenkanal ausgeführt werden. ",
+      brief="Zeigt die Besitzerin eines Lerngruppenkanals an.", 
+      description="Muss im betreffenden Lerngruppenkanal ausgeführt werden.",
       mod=True
       )
     @commands.command(name="show-owner")
