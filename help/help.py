@@ -119,6 +119,8 @@ class Help(commands.Cog):
     async def help_card(self, ctx, name):
         try:
             command = data[name]
+            if command['mod'] == True and not utils.is_mod(ctx):
+              raise KeyError
         except KeyError:
             await ctx.channel.send("Fehler! Für dieses Kommando habe ich keinen Hilfe-Eintrag. Gib `!help` ein um eine Übersicht zu erhalten. ")
             return
