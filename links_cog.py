@@ -21,9 +21,9 @@ class LinksCog(commands.Cog):
         json.dump(self.links, links_file)
 
     @help(
-      brief="Zeigt die Links an die in diesem Channel (evtl. unter Berücksichtigung einer Gruppe) hinterlegt sind.",
+      brief="Zeigt die Links an, die in diesem Channel (evtl. unter Berücksichtigung einer Gruppe) hinterlegt sind.",
       parameters={
-        "group": "schränkt die angezeigten Links auf die übergebene Gruppe ein. *(optional)*"
+        "group": "Schränkt die angezeigten Links auf die übergebene Gruppe ein. *(optional)*"
       }
     )
     @commands.command(name="links")
@@ -55,9 +55,9 @@ class LinksCog(commands.Cog):
       syntax="!add-link <group> <link> <title...>",
       brief="Fügt einen Link zum Channel hinzu",
       parameters={
-        "group":"Name der Gruppe die der Link zugeordnet werden soll",
+        "group":"Name der Gruppe, die der Link zugeordnet werden soll",
         "link":"die URL",
-        "title...":"Titel der für diesen Link angezeigt werden soll",
+        "title...":"Titel, der für diesen Link angezeigt werden soll",
       },
       description="Die mit `!add-link` zu einem Kanal hinzugefügten Links können über das Kommando `!links` in diesem Kanal wieder abgerufen werden."
     )

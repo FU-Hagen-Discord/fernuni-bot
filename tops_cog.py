@@ -20,7 +20,12 @@ class TopsCog(commands.Cog):
         tops_file = open(self.tops_file, mode='r')
         self.tops = json.load(tops_file)
 
-    @help()
+    @help(
+      brief="Fügt einen Tagesordnungspunkt zum Channel hinzu.",
+      parameters={
+        "top": "Der hinzuzufügende Tagesordnungspunkt."
+      }
+    )
     @commands.command(name="add-top")
     async def cmd_add_top(self, ctx, top):
         """ Add TOP to a channel """
@@ -36,7 +41,12 @@ class TopsCog(commands.Cog):
         tops_file = open(self.tops_file, mode='w')
         json.dump(self.tops, tops_file)
 
-    @help()
+   @help(
+      brief="Löscht einen Tagesordnungspunkt in einem Channel.",
+      parameters={
+        "top": "Numerischer Index des zu löschenden Tagesordnungspunkts."
+      }
+    )    
     @commands.command(name="remove-top")
     async def cmd_remove_top(self, ctx, top):
         """ Remove TOP from a channel """
@@ -57,7 +67,9 @@ class TopsCog(commands.Cog):
                 tops_file = open(self.tops_file, mode='w')
                 json.dump(self.tops, tops_file)
 
-    @help()
+    @help(
+        brief="Löscht alle Tagesordnungspunkte in einem Channel.",
+    )
     @commands.command(name="clear-tops")
     async def cmd_clear_tops(self, ctx):
         """ Clear all TOPs from a channel """
@@ -69,7 +81,9 @@ class TopsCog(commands.Cog):
             tops_file = open(self.tops_file, mode='w')
             json.dump(self.tops, tops_file)
 
-    @help()
+    @help(
+        brief="Zeigt alle Tagesordnungspunkte in einem Channel an.",
+    )
     @commands.command(name="tops")
     async def cmd_tops(self, ctx):
         """ Get all TOPs from a channel """

@@ -20,7 +20,7 @@ class Armin(commands.Cog):
 
     @help(
       brief="Wenn du wissen willst, was Armin sagt, dann `!arminsagt.`",
-      description="Änhlichkeiten zu Äußerungen eines Ministerpräsidenten sind nicht beabsichtigt und rein zufällig."
+      description="Ähnlichkeiten zu Äußerungen eines Ministerpräsidenten sind nicht beabsichtigt und rein zufällig."
       )
     @commands.command(name="arminsagt")
     async def cmd_arminsagt(self, ctx):

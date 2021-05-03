@@ -18,7 +18,8 @@ from help.help import help, handle_error
   DISCORD_LEARNINGGROUPS_COURSE_FILE - Name der Datei welche die Kursnamen für die Lerngruppen-Informationen enthält (minimalter Inhalt: {})
   DISCORD_MOD_ROLE - ID der Moderator Rolle von der erweiterte Lerngruppen-Actionen ausgeführt werden dürfen
 """
- 
+
+
 class LearningGroups(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -36,7 +37,6 @@ class LearningGroups(commands.Cog):
         self.header = {}
         self.load_groups()
         self.load_header()
-        
 
     def load_header(self):
         file = open(self.header_file, mode='r')
@@ -224,10 +224,10 @@ class LearningGroups(commands.Cog):
     @help(
         brief="Erstellt aus den Lerngruppen-Kanälen eine Datendatei",
         description=(
-          "Initalisiert alle Gruppen in den Kategorien für offene und geschlossele Lerngruppen und baut die Verwaltungsdaten dazu auf. "
-          "Die Lerngruppen-Kanal-Namen müssen hierfür zuvor ins Format #{symbol}{kursnummer}-{name}-{semester} gebracht werden. "
-          "Als Owner wird der ausführende Account für alle Lerngruppen gesetzt. "
-          " Wenn die Verwaltungsdatenbank nicht leer ist, wird das Kommando nicht ausgeführt. "
+            "Initalisiert alle Gruppen in den Kategorien für offene und geschlossene Lerngruppen und baut die Verwaltungsdaten dazu auf. "
+            "Die Lerngruppen-Kanal-Namen müssen hierfür zuvor ins Format #{symbol}{kursnummer}-{name}-{semester} gebracht werden. "
+            "Als `Owner` wird der ausführende Account für alle Lerngruppen gesetzt. "
+            "Wenn die Verwaltungsdatenbank nicht leer ist, wird das Kommando nicht ausgeführt. "
         ),
         mod=True
     )
@@ -272,11 +272,11 @@ class LearningGroups(commands.Cog):
         brief="Fügt einen Kurs zur Kursnamen-Datei hinzu. Der Name kann Leerzeichen enthalten.",
         example="!add-course 1141 Mathematische Grundlagen",
         parameters={
-          "coursenumber": "Nummer des Kurses wie von der FernUni angegeben (ohne führende Nullen)",
-          "name": "Ein frei wählbarer Text",        
+            "coursenumber": "Nummer des Kurses wie von der Fernuni angegeben (ohne führende Nullen)",
+            "name": "Ein frei wählbarer Text",
         },
         mod=True
-        )
+    )
     @commands.command(name="add-course")
     @commands.check(utils.is_mod)
     async def cmd_add_course(self, ctx, arg_course, *arg_name):
@@ -291,13 +291,13 @@ class LearningGroups(commands.Cog):
     @help(
         syntax="!add-group <coursenumber> <name> <semester)> <status> <@usermention>",
         example="!add-group 1142 mathegenies sose22 clsoed @someuser",
-        brief="Fügt einen Lerngruppenkanal hinzu. Der Name darf keine Leerzeichen enthalten.",
+        brief="Fügt einen Lerngruppen-Kanal hinzu. Der Name darf keine Leerzeichen enthalten.",
         parameters={
-            "coursenumber": "Nummer des Kurses wie von der FernUni angegeben (ohne führende Nullen)",
+            "coursenumber": "Nummer des Kurses wie von der Fernuni angegeben (ohne führende Nullen)",
             "name": "Ein frei wählbarer Text ohne Leerzeichen",
-            "semester": "Das Semester für welches diese Lerngruppe erstellt werden soll. `sose` oder `wise` gefolgt von der zweistelligen Jahrenszahl",
-            "status": "gibt an ob die Lerngruppe für weitere Lernwillige geöffnet ist `open` oder nicht `closed`",
-            "@usermention": "Der so angesprochene Benutzer wird als Besitzer für die Lerngruppe gesetzt"
+            "semester": "Das Semester, für welches diese Lerngruppe erstellt werden soll. `sose` oder `wise` gefolgt von der zweistelligen Jahreszahl.",
+            "status": "Gibt an ob die Lerngruppe für weitere Lernwillige geöffnet ist (`open`) oder nicht (`closed`).",
+            "@usermention": "Der so erwähnte Benutzer wird als Besitzer für die Lerngruppe gesetzt."
         },
         mod=True
     )
@@ -317,15 +317,15 @@ class LearningGroups(commands.Cog):
 
     @help(
         syntax="!request-group <coursenumber> <name> <semester> <status>",
-        brief="Fragt nach einem neuen Lerngruppen-Kanal",
+        brief="Stellt eine Anfrage für einen neuen Lerngruppen-Kanal",
         example="!request-group 1142 mathegenies sose22 closed",
-        description=("Stellt eine Anfrage für einen Lerngruppen-Kanal. Moderatorinnen können diese bestätigen, dann wird die Gruppe"
+        description=("Moderatorinnen können diese Anfrage bestätigen, dann wird die Gruppe"
                      " eingerichtet. Der Besitzer der Gruppe ist der Benutzer der die Anfrage eingestellt hat."),
         parameters={
-            "coursenumber": "Nummer des Kurses wie von der FernUni angegeben (ohne führende Nullen)",
-            "name": "Ein frei wählbarer Text ohne Leerzeichen",
-            "semester": "Das Semester für welches diese Lerngruppe erstellt werden soll. `sose` oder `wise` gefolgt von der zweistelligen Jahrenszahl",
-            "status": "gibt an ob die Lerngruppe für weitere Lernwillige geöffnet ist `open` oder nicht `closed`"
+            "coursenumber": "Nummer des Kurses, wie von der FernUni angegeben (ohne führende Nullen).",
+            "name": "Ein frei wählbarer Text ohne Leerzeichen.",
+            "semester": "Das Semester, für welches diese Lerngruppe erstellt werden soll. `sose` oder `wise` gefolgt von der zweistelligen Jahrenszahl.",
+            "status": "Gibt an ob die Lerngruppe für weitere Lernwillige geöffnet ist `open` oder nicht `closed`"
         }
     )
     @commands.command(name="request-group")
@@ -351,9 +351,9 @@ class LearningGroups(commands.Cog):
         self.save_groups()
 
     @help(
-        brief="Öffnet den Lerngruppenkanal wenn du die Besitzerin bist. ",
-        description=("Muss im betreffenden Lerngruppenkanal ausgeführt werden. "
-                     "Verschiebt den Lerngruppenkanal in die Kategorie für **offene** Kanäle und ändert das Icon. "
+        brief="Öffnet den Lerngruppen-Kanal wenn du die Besitzerin bist. ",
+        description=("Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. "
+                     "Verschiebt den Lerngruppen-Kanal in die Kategorie für **offene** Kanäle und ändert das Icon. "
                      "Diese Aktion kann nur vom Besitzer der Lerngruppe ausgeführt werden. ")
     )
     @commands.command(name="open")
@@ -362,9 +362,9 @@ class LearningGroups(commands.Cog):
             await self.set_channel_state(ctx.channel, is_open=True)
 
     @help(
-        brief="Schließt den Lerngruppenkanal wenn du die Besitzerin bist. ",
-        description=("Muss im betreffenden Lerngruppenkanal ausgeführt werden. "
-                     "Verschiebt den Lerngruppenkanal in die Kategorie für **geschlossene** Kanäle und ändert das Icon. "
+        brief="Schließt den Lerngruppen-Kanal wenn du die Besitzerin bist. ",
+        description=("Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. "
+                     "Verschiebt den Lerngruppen-Kanal in die Kategorie für **geschlossene** Kanäle und ändert das Icon. "
                      "Diese Aktion kann nur vom Besitzer der Lerngruppe ausgeführt werden. ")
     )
     @commands.command(name="close")
@@ -373,14 +373,14 @@ class LearningGroups(commands.Cog):
             await self.set_channel_state(ctx.channel, is_open=False)
 
     @help(
-      syntax="!rename <name>",
-      brief="Ändert den Namen des Lerngruppenkanals in dem das Komando ausgeführt wird.", 
-      example="!rename matheluschen",
-      description="Aus `#1142-matheprofis-sose22` wird nach dem Aufruf des Beispiels `#1142-matheluschen-sose22`.",
-      parameters= {
-        "name": "der neue Name der Lerngruppe"
-      },
-      mod=True
+        syntax="!rename <name>",
+        brief="Ändert den Namen des Lerngruppen-Kanals, in dem das Komando ausgeführt wird.",
+        example="!rename matheluschen",
+        description="Aus `#1142-matheprofis-sose22` wird nach dem Aufruf des Beispiels `#1142-matheluschen-sose22`.",
+        parameters={
+            "name": "Der neue Name der Lerngruppe."
+        },
+        mod=True
     )
     @commands.command(name="rename")
     @commands.check(utils.is_mod)
@@ -388,10 +388,10 @@ class LearningGroups(commands.Cog):
         await self.set_channel_name(ctx.channel, arg_name)
 
     @help(
-      brief="Archiviert den Lerngruppenkanal", 
-      description="Verschiebt den Lerngruppenkanal in dem dieses Kommando ausgeführt wird ins Archiv.",
-      mod=True
-      )
+        brief="Archiviert den Lerngruppen-Kanal",
+        description="Verschiebt den Lerngruppen-Kanal, in dem dieses Kommando ausgeführt wird ins Archiv.",
+        mod=True
+    )
     @commands.command(name="archive")
     @commands.check(utils.is_mod)
     async def cmd_archive(self, ctx):
@@ -400,10 +400,10 @@ class LearningGroups(commands.Cog):
     @help(
         syntax="!owner <@usermention>",
         example="!owner @someuser",
-        brief="Setzt die Besitzerin eines Lerngruppenkanals",
-        description="Muss im betreffenden Lerngruppenkanal ausgeführt werden. ",
-        parameters= {
-          "@usermention": "der neue Besitzer der Lerngruppe"
+        brief="Setzt die Besitzerin eines Lerngruppen-Kanals",
+        description="Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. ",
+        parameters={
+            "@usermention": "Der neue Besitzer der Lerngruppe."
         },
         mod=True
     )
@@ -417,10 +417,10 @@ class LearningGroups(commands.Cog):
             await ctx.channel.send(f"Glückwunsch {arg_owner.mention}! Du bist jetzt die Besitzerin dieser Lerngruppe.")
 
     @help(
-      brief="Zeigt die Besitzerin eines Lerngruppenkanals an.", 
-      description="Muss im betreffenden Lerngruppenkanal ausgeführt werden.",
-      mod=True
-      )
+        brief="Zeigt die Besitzerin eines Lerngruppen-Kanals an.",
+        description="Muss im betreffenden Lerngruppen-Kanal ausgeführt werden.",
+        mod=True
+    )
     @commands.command(name="show-owner")
     @commands.check(utils.is_mod)
     async def cmd_show_owner(self, ctx):

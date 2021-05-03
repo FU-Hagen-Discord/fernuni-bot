@@ -100,7 +100,7 @@ class RolesCog(commands.Cog):
         await ctx.channel.send(answer, embed=embed)
 
     @help(
-      brief="aktualisiert die Vergabe von Studiengangs-Rollen.",
+      brief="Aktualisiert die Vergabe von Studiengangs-Rollen.",
       mod=True
       )
     @commands.command("update-degree-program")
@@ -130,7 +130,7 @@ class RolesCog(commands.Cog):
                 await message.add_reaction(emoji)
 
     @help(
-      brief="aktualisiert die Vergabe von Farb-Rollen.",
+      brief="Aktualisiert die Vergabe von Farb-Rollen.",
       mod=True
       )    
     @commands.command("update-color")
@@ -151,7 +151,7 @@ class RolesCog(commands.Cog):
                 await message.add_reaction(emoji)
 
     @help(
-      brief="aktualisiert die Vergabe von Spezial-Rollen.",
+      brief="Aktualisiert die Vergabe von Spezial-Rollen.",
       mod=True
       )     
     @commands.command("update-special")

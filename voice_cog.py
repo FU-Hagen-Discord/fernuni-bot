@@ -10,9 +10,9 @@ class VoiceCog(commands.Cog):
         self.bot = bot
 
     @help(
-      brief="öffnet und schließt die Voice Kanäle",
+      brief="Öffnet und schließt die Voice-Kanäle.",
       parameters={
-        "switch": "`open` öffnet die Voice Kanäle. `close` schließt die Voice Kanäle."
+        "switch": "`open` öffnet die Voice-Kanäle. `close` schließt die Voice-Kanäle."
       },
       mod=True
       )
