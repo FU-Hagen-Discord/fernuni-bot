@@ -1,12 +1,12 @@
 import json
 import os
 import random
-
+import re
 import discord
 from discord.ext import commands
 
 import utils
-from help.help import help, handle_error
+from help.help import text_command_help, help, handle_error, remove_help_for
 
 
 class TextCommandsCog(commands.Cog):
@@ -21,6 +21,19 @@ class TextCommandsCog(commands.Cog):
 
         text_commands_file = open(self.cmd_file, mode='r')
         self.text_commands = json.load(text_commands_file)
+        for cmd in self.text_commands:
+            help_for_cmd = self.text_commands[cmd].get('help')
+            
+            if not help_for_cmd:
+                continue
+            
+            brief = help_for_cmd.get('brief')
+            if not brief:
+                text_command_help(cmd)
+                continue
+
+            text_command_help(cmd, brief=brief)
+
 
     def save_text_commands(self):
         text_commands_file = open(self.cmd_file, mode='w')
@@ -32,27 +45,52 @@ class TextCommandsCog(commands.Cog):
             return
 
         cmd = message.content.split(" ")[0]
-        texts = self.text_commands.get(cmd)
+        cmd_object = self.text_commands.get(cmd)
+        if cmd_object:
+            texts = cmd_object.get('data')
+            if texts:
+                await message.channel.send(random.choice(texts))
 
-        if texts:
-            await message.channel.send(random.choice(texts))
-
-    @help()
+    @help(mod=True)
     @commands.command(name="add-text-command")
     @commands.check(utils.is_mod)
-    async def cmd_add_text_command(self, ctx, cmd, text):
-        texts = self.text_commands.get(cmd)
-
+    async def cmd_add_text_command(self, ctx, cmd, text, help_message=None):
+        texts = None
+        try:
+            texts = self.text_commands.get(cmd).get('data')
+        except:
+          pass
+        
         if texts:
             texts.append(text)
         else:
-            self.text_commands[cmd] = [text]
+            self.text_commands[cmd] = {"data": [text]}
+            if help_message:
+              self.text_commands[cmd]['help'] = {"brief": help_message}
+              text_command_help(cmd, brief=help_message)
 
         self.save_text_commands()
 
         await ctx.send(f"[{cmd}] => [{text}] erfolgreich hinzugefügt.")
 
-    @help()
+    @help(mod=True)
+    @commands.command(name="edit-text-help")
+    @commands.check(utils.is_mod)
+    async def cmd_edit_text_help(self, ctx, cmd, help_message):
+        help_object = None
+        try:
+          help_object = self.text_commands.get(re.sub("^!*", "!", cmd)).get('help')
+        except:
+          pass
+
+        if help_object:
+            help_object['brief'] = help_message
+            text_command_help(cmd, brief=help_message)
+        self.save_text_commands()
+
+        await ctx.send(f"[{cmd}] => Hilfe [{help_message}] erfolgreich hinzugefügt.")
+
+    @help(mod=True)
     @commands.command(name="text-commands")
     @commands.check(utils.is_mod)
     async def cmd_text_commands(self, ctx):
@@ -65,11 +103,11 @@ class TextCommandsCog(commands.Cog):
 
         await ctx.send(answer)
 
-    @help()
+    @help(mod=True)
     @commands.command(name="texts")
     @commands.check(utils.is_mod)
     async def cmd_texts(self, ctx, cmd):
-        texts = self.text_commands.get(cmd)
+        texts = self.text_commands.get(cmd).get('data')
         answer = f"Für {cmd} hinterlegte Texte: \n"
 
         for i in range(0, len(texts)):
@@ -82,11 +120,11 @@ class TextCommandsCog(commands.Cog):
 
         await ctx.send(answer)
 
-    @help()
+    @help(mod=True)
     @commands.command(name="edit-text")
     @commands.check(utils.is_mod)
     async def cmd_edit_text(self, ctx, cmd, id, text):
-        texts = self.text_commands.get(cmd)
+        texts = self.text_commands.get(cmd).get('data')
 
         if texts:
             i = int(id)
@@ -99,11 +137,11 @@ class TextCommandsCog(commands.Cog):
         else:
             await ctx.send("Command {cmd} nicht vorhanden!")
 
-    @help()
+    @help(mod=True)
     @commands.command(name="remove-text")
     @commands.check(utils.is_mod)
     async def cmd_remove_text(self, ctx, cmd, id):
-        texts = self.text_commands.get(cmd)
+        texts = self.text_commands.get(cmd).get('data')
 
         if texts:
             i = int(id)
@@ -120,12 +158,13 @@ class TextCommandsCog(commands.Cog):
         else:
             await ctx.send("Command {cmd} nicht vorhanden!")
 
-    @help()
+    @help(mod=True)
     @commands.command(name="remove-text-command")
     @commands.check(utils.is_mod)
     async def cmd_remove_text_command(self, ctx, cmd):
         if cmd in self.text_commands:
             self.text_commands.pop(cmd)
+            remove_help_for(re.sub(r"^!", "", cmd))
             await ctx.send(f"Text Command {cmd} wurde erfolgreich entfernt")
             self.save_text_commands()
         else:
