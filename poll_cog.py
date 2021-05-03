@@ -15,7 +15,9 @@ class PollCog(commands.Cog):
         self.poll_sugg_channel = int(os.getenv("DISCORD_POLL_SUGG_CHANNEL"))
 
 
-    @help()
+    @help(
+      syntax="!add-poll <question> <answers...>"
+    )
     @commands.command(name="add-poll")
     async def cmd_add_poll(self, ctx, question, *answers):
         channel = await self.bot.fetch_channel(self.poll_sugg_channel)
@@ -26,7 +28,10 @@ class PollCog(commands.Cog):
 
         await channel.send(msg)
 
-    @help()
+    @help(      
+      syntax="!edit-poll <message_id> <question> <answers...>",
+      mod=True
+      )
     @commands.command(name="edit-poll")
     @commands.check(utils.is_mod)
     async def cmd_edit_poll(self, ctx, message_id, question, *answers):
@@ -40,7 +45,9 @@ class PollCog(commands.Cog):
             ctx.send("Fehler! Umfrage nicht gefunden!")
         pass
 
-    @help()
+    @help(
+      syntax="!poll <question> <answers...>"
+    )    
     @commands.command(name="poll")
     async def cmd_poll(self, ctx, question, *answers):
         """ Create poll """

@@ -9,7 +9,7 @@ class VoiceCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @help()
+    @help(mod=True)
     @commands.command(name="voice")
     @commands.check(utils.is_mod)
     async def cmd_voice(self, ctx, switch):

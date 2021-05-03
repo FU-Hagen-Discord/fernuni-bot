@@ -13,7 +13,7 @@ class WelcomeCog(commands.Cog):
         self.channel_id = int(os.getenv("DISCORD_WELCOME_CHANNEL"))
         self.message_id = int(os.getenv("DISCORD_WELCOME_MSG"))
 
-    @help()
+    @help(mod=True)
     @commands.command("update-welcome")
     @commands.check(utils.is_mod)
     async def cmd_update_welcome(self, ctx):

@@ -97,7 +97,7 @@ class RolesCog(commands.Cog):
 
         await ctx.channel.send(answer, embed=embed)
 
-    @help()
+    @help(mod=True)
     @commands.command("update-degree-program")
     @commands.check(utils.is_mod)
     async def cmd_update_degree_program(self, ctx):
@@ -124,7 +124,7 @@ class RolesCog(commands.Cog):
             if emoji:
                 await message.add_reaction(emoji)
 
-    @help()
+    @help(mod=True)
     @commands.command("update-color")
     @commands.check(utils.is_mod)
     async def cmd_update_color(self, ctx):
@@ -142,7 +142,7 @@ class RolesCog(commands.Cog):
             if emoji:
                 await message.add_reaction(emoji)
 
-    @help()
+    @help(mod=True)
     @commands.command("update-special")
     @commands.check(utils.is_mod)
     async def cmd_update_special(self, ctx):

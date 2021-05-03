@@ -46,6 +46,7 @@ class LinksCog(commands.Cog):
         else:
             await ctx.send("Für diesen Channel sind noch keine Links hinterlegt.")
 
+    @help()
     @commands.command(name="add-link")
     async def cmd_add_link(self, ctx, group, link, *title):
         if not (channel_links := self.links.get(str(ctx.channel.id))):
