@@ -53,12 +53,12 @@ class TextCommandsCog(commands.Cog):
 
     @help(
       brief="Fügt ein Text-Kommando hinzu.",
-      example="!add-text-command !newcommand \"immer wenn newcommand aufgerufen wird wird das hier ausgegeben\" \"Hilfetext zu diesem Kommando\".",
+      example="!add-text-command !newcommand \"immer wenn newcommand aufgerufen wird wird das hier ausgegeben\" \"Hilfetext zu diesem Kommando\"",
       description="Ein Text-Kommando ist ein Kommando welches über !<name des textkommandos> aufgerufen werden kann und dann zufällig einen der hinterlegten Texte ausgibt.",
       parameters={
-        "cmd": "Name des anzulegenden Kommandos. Zum Beispiel: `!horoskop`",
-        "text": "Textnachricht, die Ausgegeben werden soll, wenn das Kommando aufgerufen wird. Zum Beispiel: `Wassermann: Findet diese Woche wahrscheinlich seinen Dreizack wieder.`",
-        "help_message": "Die Hilfenachricht, die bei `!help` für dieses Kommando erscheinen soll. *(optional)*"
+        "cmd": "Name des anzulegenden Kommandos (z. B. !horoskop). ",
+        "text": "in Anführungszeichen eingeschlossene Textnachricht, die ausgegeben werden soll, wenn das Kommando aufgerufen wird (z. B. \"Wassermann: Findet diese Woche wahrscheinlich seinen Dreizack wieder.\").",
+        "help_message": "*(optional)* Die Hilfenachricht, die bei `!help` für dieses Kommando erscheinen soll (in Anführungszeichen). "
       },
       mod=True
       )
@@ -87,8 +87,8 @@ class TextCommandsCog(commands.Cog):
       brief="Bearbeitet den Hilfetext für ein Text-Kommando.",
       example="!exit-text-help !newcommand \"Neuer Hilfetext\"",
       parameters={
-        "cmd": "Name des anzulegenden Kommandos. Zum Beispiel: `!horoskop`",
-        "help_message": "Die Hilfenachricht, die bei `!help` für dieses Kommando erscheinen soll. *(optional)*"
+        "cmd": "Name des anzulegenden Kommandos (z. B. !horoskop).",
+        "help_message": "Die Hilfenachricht, die bei !help für dieses Kommando erscheinen soll (in Anführungszeichen)."
       },
       mod=True
       )    
@@ -127,7 +127,7 @@ class TextCommandsCog(commands.Cog):
     @help(
       brief="Gibt alle für ein Text-Kommando hinterlegten Texte aus.",
       parameters={
-        "cmd": "Text-Kommandos, für welches die hinterlegten Texte ausgegeben werden sollen. Zum Beispiel `!horoskop`"
+        "cmd": "Text-Kommandos, für welches die hinterlegten Texte ausgegeben werden sollen (z. B. !horoskop)."
       },
       example="!texts !horoskop",
       mod=True
@@ -151,9 +151,9 @@ class TextCommandsCog(commands.Cog):
     @help(
       brief="Editiert für ein Text-Kommando einen Text an einer bestimmten Position.",
       parameters={
-        "cmd": "Text-Kommandos, für welches die hinterlegte Text bearbeitet werden soll. Zum Beispiel `!horoskop`",
-        "id": "Nummer des Textes. Diese kann durch `!texts` ermittelt werden",
-        "text": "Der neue Text, der an dieser Stelle stehen soll. (In Anführungszeichen eingeschlossen)"
+        "cmd": "Text-Kommandos, für welches die hinterlegte Text bearbeitet werden soll (z. B. !horoskop).",
+        "id": "Nummer des Textes. Diese kann durch !texts ermittelt werden.",
+        "text": "Der neue Text, der an dieser Stelle stehen soll (in Anführungszeichen eingeschlossen)."
       },
       example="!edit-text !horoskop 2 \"Wassermann: bricht sich eine Zacke ab. Hat leider nur noch einen Zweizack.\"",
       mod=True
@@ -177,8 +177,8 @@ class TextCommandsCog(commands.Cog):
     @help(
       brief="Löscht für ein Text-Kommando einen Text an einer bestimmten Position.",
       parameters={
-        "cmd": "Text-Kommandos, für welches der hinterlegte Text gelöscht werden soll. Zum Beispiel `!horoskop`",
-        "id": "Nummer des Textes der gelöscht werden soll",
+        "cmd": "Text-Kommandos, für welches der hinterlegte Text gelöscht werden soll (z. B. !horoskop).",
+        "id": "Nummer des Textes der gelöscht werden soll.",
       },
       example="!remove-text !horoskop 2",
       mod=True
@@ -204,9 +204,9 @@ class TextCommandsCog(commands.Cog):
             await ctx.send("Command {cmd} nicht vorhanden!")
 
     @help(
-      brief="Löscht ein Text-Kommando",
+      brief="Löscht ein Text-Kommando.",
       parameters={
-        "cmd": "Text-Kommando, welches gelöscht werden soll. Zum Beispiel `!horoskop`",
+        "cmd": "Text-Kommando, welches gelöscht werden soll (z. B. !horoskop).",
       },
       example="!remove-text-command !horoskop",
       mod=True
@@ -225,7 +225,7 @@ class TextCommandsCog(commands.Cog):
     @help(
       brief="reicht deinen Motivationstext zur Genehmigung ein.",
       parameters={
-        "text":"Der Spruch, der deine Kommilitoninnen motiviert."
+        "text...":"Der Spruch, der deine Kommilitoninnen motiviert (darf Leerzeichen enthalten)."
       }
     )
     @commands.command(name="add-motivation")

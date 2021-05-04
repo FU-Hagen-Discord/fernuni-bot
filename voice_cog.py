@@ -12,8 +12,9 @@ class VoiceCog(commands.Cog):
     @help(
       brief="Öffnet und schließt die Voice-Kanäle.",
       parameters={
-        "switch": "`open` öffnet die Voice-Kanäle. `close` schließt die Voice-Kanäle."
+        "switch": "open öffnet die Voice-Kanäle, close schließt die Voice-Kanäle."
       },
+      example="!voice close",
       mod=True
       )
     @commands.command(name="voice")

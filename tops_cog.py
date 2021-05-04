@@ -41,7 +41,7 @@ class TopsCog(commands.Cog):
         tops_file = open(self.tops_file, mode='w')
         json.dump(self.tops, tops_file)
 
-   @help(
+    @help(
       brief="Löscht einen Tagesordnungspunkt in einem Channel.",
       parameters={
         "top": "Numerischer Index des zu löschenden Tagesordnungspunkts."

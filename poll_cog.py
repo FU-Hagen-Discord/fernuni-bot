@@ -19,8 +19,8 @@ class PollCog(commands.Cog):
       syntax="!add-poll <question> <answers...>",
       brief="Schlägt eine Umfrage für den Umfrage-Kanal vor.",
       parameters={
-        "question": "Die Frage die gestellt werden soll (in Anführungszeichen),",
-        "answers...": "Durch Leerzeichen getrennte Antwortmöglichkeiten (die einzelnen Antworten in Anführungszeichen einschließen),"
+        "question": "Die Frage die gestellt werden soll (in Anführungszeichen).",
+        "answers...": "Durch Leerzeichen getrennte Antwortmöglichkeiten (die einzelnen Antworten in Anführungszeichen einschließen)."
       },
       example="!add-poll \"Wie ist das Wetter?\" \"echt gut\" \"weniger gut\" \"Boar nee, nicht schon wieder Regen\""
     )
@@ -38,8 +38,8 @@ class PollCog(commands.Cog):
       brief="Bearbeitet eine bereits vorhandene Umfrage.",    
       syntax="!edit-poll <message_id> <question> <answers...>",
       parameters={
-        "message_id": "die Message-ID ist der Nachricht (mit aktivierten Entwicklereinstellungen in Discord) einem Rechtsklick auf die Umfrage zu entnehmen.",
-        "question": "Die Frage, die gestellt werden soll (in Anführungszeichen)",
+        "message_id": "die Message-ID ist der Nachricht mit einem Rechtsklick auf die Umfrage zu entnehmen (Entwicklermodus in Discord müssen aktiv sein).",
+        "question": "Die Frage, die gestellt werden soll (in Anführungszeichen).",
         "answers...": "Durch Leerzeichen getrennte Antwortmöglichkeiten (die einzelnen Antworten in Anführungszeichen einschließen).",
       },
       example="!edit-poll 838752355595059230 \"Wie ist das Wetter?\" \"echt gut\" \"weniger gut\" \"Boar nee, nicht schon wieder Regen\"",

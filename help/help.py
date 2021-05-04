@@ -120,7 +120,7 @@ class Help(commands.Cog):
         try:
             command = data[name]
             if command['mod'] == True and not utils.is_mod(ctx):
-              raise KeyError
+                raise KeyError
         except KeyError:
             await ctx.channel.send("Fehler! Für dieses Kommando habe ich keinen Hilfe-Eintrag. Gib `!help` ein um eine Übersicht zu erhalten. ")
             return
@@ -128,7 +128,7 @@ class Help(commands.Cog):
         text = f"**{title}**\n"
         text += f"{command['brief']}\n\n" if command['brief'] else ""
         text += f"**Syntax:**\n `{command['syntax']}`\n"
-        text += "**Paramter:**\n" if len(command['parameters']) > 0 else ""
+        text += "**Parameter:**\n" if len(command['parameters']) > 0 else ""
         for param, desc in command['parameters'].items():
             text += f"`{param}` - {desc}\n"
         text += f"**Beispiel:**\n `{command['example']}`\n" if command['example'] else ""
@@ -150,7 +150,8 @@ class Help(commands.Cog):
             text = f"**{command['name']}**{' (mods only)' if command['mod'] else ''}\n"
             text += f"{command['brief']}\n\n" if command['brief'] else ""
             text += f"**Syntax:**\n `{command['syntax']}`\n"
-            text += "**Paramter:**\n" if len(command['parameters']) > 0 else ""
+            text += "**Parameter:**\n" if len(
+                command['parameters']) > 0 else ""
             for param, desc in command['parameters'].items():
                 text += f"`{param}` - {desc}\n"
             text += f"**Beispiel:**\n `{command['example']}`\n" if command['example'] else ""

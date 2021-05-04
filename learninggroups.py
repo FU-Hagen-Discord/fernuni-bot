@@ -222,11 +222,11 @@ class LearningGroups(commands.Cog):
         self.save_groups()
 
     @help(
-        brief="Erstellt aus den Lerngruppen-Kanälen eine Datendatei",
+        brief="Erstellt aus den Lerngruppen-Kanälen eine Datendatei. ",
         description=(
             "Initalisiert alle Gruppen in den Kategorien für offene und geschlossene Lerngruppen und baut die Verwaltungsdaten dazu auf. "
             "Die Lerngruppen-Kanal-Namen müssen hierfür zuvor ins Format #{symbol}{kursnummer}-{name}-{semester} gebracht werden. "
-            "Als `Owner` wird der ausführende Account für alle Lerngruppen gesetzt. "
+            "Als Owner wird der ausführende Account für alle Lerngruppen gesetzt. "
             "Wenn die Verwaltungsdatenbank nicht leer ist, wird das Kommando nicht ausgeführt. "
         ),
         mod=True
@@ -268,12 +268,12 @@ class LearningGroups(commands.Cog):
         self.save_groups()
 
     @help(
-        syntax="!add-course <coursenumber> <name>",
+        syntax="!add-course <coursenumber> <name...>",
         brief="Fügt einen Kurs zur Kursnamen-Datei hinzu. Der Name kann Leerzeichen enthalten.",
         example="!add-course 1141 Mathematische Grundlagen",
         parameters={
-            "coursenumber": "Nummer des Kurses wie von der Fernuni angegeben (ohne führende Nullen)",
-            "name": "Ein frei wählbarer Text",
+            "coursenumber": "Nummer des Kurses wie von der Fernuni angegeben (ohne führende Nullen z. B. 1142).",
+            "name...": "Ein frei wählbarer Text (darf Leerzeichen enthalten).",
         },
         mod=True
     )
@@ -289,14 +289,14 @@ class LearningGroups(commands.Cog):
         await self.update_groupinfo()
 
     @help(
-        syntax="!add-group <coursenumber> <name> <semester)> <status> <@usermention>",
+        syntax="!add-group <coursenumber> <name> <semester> <status> <@usermention>",
         example="!add-group 1142 mathegenies sose22 clsoed @someuser",
         brief="Fügt einen Lerngruppen-Kanal hinzu. Der Name darf keine Leerzeichen enthalten.",
         parameters={
-            "coursenumber": "Nummer des Kurses wie von der Fernuni angegeben (ohne führende Nullen)",
-            "name": "Ein frei wählbarer Text ohne Leerzeichen",
-            "semester": "Das Semester, für welches diese Lerngruppe erstellt werden soll. `sose` oder `wise` gefolgt von der zweistelligen Jahreszahl.",
-            "status": "Gibt an ob die Lerngruppe für weitere Lernwillige geöffnet ist (`open`) oder nicht (`closed`).",
+            "coursenumber": "Nummer des Kurses wie von der Fernuni angegeben (ohne führende Nullen z. B. 1142).",
+            "name": "Ein frei wählbarer Text ohne Leerzeichen.",
+            "semester": "Das Semester, für welches diese Lerngruppe erstellt werden soll. sose oder wise gefolgt von der zweistelligen Jahreszahl (z. B. sose22).",
+            "status": "Gibt an ob die Lerngruppe für weitere Lernwillige geöffnet ist (open) oder nicht (closed).",
             "@usermention": "Der so erwähnte Benutzer wird als Besitzer für die Lerngruppe gesetzt."
         },
         mod=True
@@ -317,15 +317,15 @@ class LearningGroups(commands.Cog):
 
     @help(
         syntax="!request-group <coursenumber> <name> <semester> <status>",
-        brief="Stellt eine Anfrage für einen neuen Lerngruppen-Kanal",
+        brief="Stellt eine Anfrage für einen neuen Lerngruppen-Kanal.",
         example="!request-group 1142 mathegenies sose22 closed",
-        description=("Moderatorinnen können diese Anfrage bestätigen, dann wird die Gruppe"
-                     " eingerichtet. Der Besitzer der Gruppe ist der Benutzer der die Anfrage eingestellt hat."),
+        description=("Moderatorinnen können diese Anfrage bestätigen, dann wird die Gruppe eingerichtet. "
+                     "Der Besitzer der Gruppe ist der Benutzer der die Anfrage eingestellt hat."),
         parameters={
-            "coursenumber": "Nummer des Kurses, wie von der FernUni angegeben (ohne führende Nullen).",
+            "coursenumber": "Nummer des Kurses, wie von der FernUni angegeben (ohne führende Nullen z. B. 1142).",
             "name": "Ein frei wählbarer Text ohne Leerzeichen.",
-            "semester": "Das Semester, für welches diese Lerngruppe erstellt werden soll. `sose` oder `wise` gefolgt von der zweistelligen Jahrenszahl.",
-            "status": "Gibt an ob die Lerngruppe für weitere Lernwillige geöffnet ist `open` oder nicht `closed`"
+            "semester": "Das Semester, für welches diese Lerngruppe erstellt werden soll. sose oder wise gefolgt von der zweistelligen Jahrenszahl (z. B. sose22).",
+            "status": "Gibt an ob die Lerngruppe für weitere Lernwillige geöffnet ist (open) oder nicht (closed)."
         }
     )
     @commands.command(name="request-group")
@@ -353,7 +353,7 @@ class LearningGroups(commands.Cog):
     @help(
         brief="Öffnet den Lerngruppen-Kanal wenn du die Besitzerin bist. ",
         description=("Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. "
-                     "Verschiebt den Lerngruppen-Kanal in die Kategorie für **offene** Kanäle und ändert das Icon. "
+                     "Verschiebt den Lerngruppen-Kanal in die Kategorie für offene Kanäle und ändert das Icon. "
                      "Diese Aktion kann nur vom Besitzer der Lerngruppe ausgeführt werden. ")
     )
     @commands.command(name="open")
@@ -364,7 +364,7 @@ class LearningGroups(commands.Cog):
     @help(
         brief="Schließt den Lerngruppen-Kanal wenn du die Besitzerin bist. ",
         description=("Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. "
-                     "Verschiebt den Lerngruppen-Kanal in die Kategorie für **geschlossene** Kanäle und ändert das Icon. "
+                     "Verschiebt den Lerngruppen-Kanal in die Kategorie für geschlossene Kanäle und ändert das Icon. "
                      "Diese Aktion kann nur vom Besitzer der Lerngruppe ausgeführt werden. ")
     )
     @commands.command(name="close")
@@ -376,9 +376,9 @@ class LearningGroups(commands.Cog):
         syntax="!rename <name>",
         brief="Ändert den Namen des Lerngruppen-Kanals, in dem das Komando ausgeführt wird.",
         example="!rename matheluschen",
-        description="Aus `#1142-matheprofis-sose22` wird nach dem Aufruf des Beispiels `#1142-matheluschen-sose22`.",
+        description="Aus #1142-matheprofis-sose22 wird nach dem Aufruf des Beispiels #1142-matheluschen-sose22.",
         parameters={
-            "name": "Der neue Name der Lerngruppe."
+            "name": "Der neue Name der Lerngruppe ohne Leerzeichen."
         },
         mod=True
     )
@@ -389,7 +389,7 @@ class LearningGroups(commands.Cog):
 
     @help(
         brief="Archiviert den Lerngruppen-Kanal",
-        description="Verschiebt den Lerngruppen-Kanal, in dem dieses Kommando ausgeführt wird ins Archiv.",
+        description="Verschiebt den Lerngruppen-Kanal, in welchem dieses Kommando ausgeführt wird, ins Archiv.",
         mod=True
     )
     @commands.command(name="archive")

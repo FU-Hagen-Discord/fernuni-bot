@@ -110,11 +110,11 @@ class AppointmentsCog(commands.Cog):
       brief="Fügt eine neue Erinnerung zu einem Kanal hinzu.",
       example="!add-appointment 20.12.2021 10:00 0 \"Toller Event\" 7d",
       parameters={
-        "date": "Datum des Termins im Format `DD.MM.YYYY`. Zum Beispiel `22.10.2022`",
-        "time": "Uhrzeit des Termins im Format `hh:mm`. Zum Beispiel `10:00`",
+        "date": "Datum des Termins im Format DD.MM.YYYY (z. B. 22.10.2022).",
+        "time": "Uhrzeit des Termins im Format hh:mm (z. B. 10:00).",
         "reminder": "Anzahl an Minuten die vor dem Termin erinnert werden soll.",
-        "title": "Titel des Termins",
-        "reccuring": "Interval für die Terminwiederholung. Zum Beispiel: `24h` für 24 Stunden `7d` für 7 Tage oder `10m` für 10 Minuten *(optional)*"
+        "title": "der Titel des Termins (in Anführungszeichen).",
+        "recurring": "*(optional)* Interval für die Terminwiederholung (z. B. 24h für 24 Stunden 7d für 7 Tage oder 10m für 10 Minuten)."
       }
       )
     @commands.command(name="add-appointment")

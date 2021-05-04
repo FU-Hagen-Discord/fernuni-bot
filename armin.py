@@ -19,7 +19,7 @@ class Armin(commands.Cog):
                   "Bundeskanzlerin"]
 
     @help(
-      brief="Wenn du wissen willst, was Armin sagt, dann `!arminsagt.`",
+      brief="Wenn du wissen willst, was Armin sagt, dann `!arminsagt`.",
       description="Ähnlichkeiten zu Äußerungen eines Ministerpräsidenten sind nicht beabsichtigt und rein zufällig."
       )
     @commands.command(name="arminsagt")
