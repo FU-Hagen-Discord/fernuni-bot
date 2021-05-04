@@ -224,7 +224,7 @@ class LearningGroups(commands.Cog):
     @help(
         brief="Erstellt aus den Lerngruppen-Kanälen eine Datendatei. ",
         description=(
-            "Initalisiert alle Gruppen in den Kategorien für offene und geschlossene Lerngruppen und baut die Verwaltungsdaten dazu auf. "
+            "Initialisiert alle Gruppen in den Kategorien für offene und geschlossene Lerngruppen und baut die Verwaltungsdaten dazu auf. "    #hier hat ein I gefehlt
             "Die Lerngruppen-Kanal-Namen müssen hierfür zuvor ins Format #{symbol}{kursnummer}-{name}-{semester} gebracht werden. "
             "Als Owner wird der ausführende Account für alle Lerngruppen gesetzt. "
             "Wenn die Verwaltungsdatenbank nicht leer ist, wird das Kommando nicht ausgeführt. "
@@ -269,12 +269,14 @@ class LearningGroups(commands.Cog):
 
     @help(
         syntax="!add-course <coursenumber> <name...>",
-        brief="Fügt einen Kurs zur Kursnamen-Datei hinzu. Der Name kann Leerzeichen enthalten.",
+        brief="Fügt einen Kurs als neue Überschrift in Botys Lerngruppen-Liste (Kanal #lerngruppen) hinzu. Darf Leerzeichen enthalten, Anführungszeichen sind nicht erforderlich.",  
+      #Beschreibung für Laienaugen angepasst
         example="!add-course 1141 Mathematische Grundlagen",
         parameters={
             "coursenumber": "Nummer des Kurses wie von der Fernuni angegeben (ohne führende Nullen z. B. 1142).",
             "name...": "Ein frei wählbarer Text (darf Leerzeichen enthalten).",
         },
+        description="Kann auch zum Bearbeiten einer Überschrift genutzt werden. Bei bereits existierender Kursnummer wird die Überschrift abgeändert", #description hinzugefügt
         mod=True
     )
     @commands.command(name="add-course")
