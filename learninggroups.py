@@ -224,7 +224,7 @@ class LearningGroups(commands.Cog):
     @help(
         brief="Erstellt aus den Lerngruppen-Kanälen eine Datendatei. ",
         description=(
-            "Initialisiert alle Gruppen in den Kategorien für offene und geschlossene Lerngruppen und baut die Verwaltungsdaten dazu auf. "    #hier hat ein I gefehlt
+            "Initialisiert alle Gruppen in den Kategorien für offene und geschlossene Lerngruppen und baut die Verwaltungsdaten dazu auf. " 
             "Die Lerngruppen-Kanal-Namen müssen hierfür zuvor ins Format #{symbol}{kursnummer}-{name}-{semester} gebracht werden. "
             "Als Owner wird der ausführende Account für alle Lerngruppen gesetzt. "
             "Wenn die Verwaltungsdatenbank nicht leer ist, wird das Kommando nicht ausgeführt. "
@@ -235,7 +235,7 @@ class LearningGroups(commands.Cog):
     @commands.check(utils.is_mod)
     async def cmd_init_groups(self, ctx):
         if len(self.groups["groups"]) > 0:
-            await ctx.channel.send("Nope. Das sollte ich lieber nicht tun.")  #ich verstehe nicht ganz, wann diese Nachricht kommt aber wenn es eintritt: versteht man  aus dem Kontext, warum man das nicht tun sollte?
+            await ctx.channel.send("Nope. Das sollte ich lieber nicht tun.") 
             return
 
         msg = "Initialisierung abgeschlossen:\n"
@@ -270,13 +270,12 @@ class LearningGroups(commands.Cog):
     @help(
         syntax="!add-course <coursenumber> <name...>",
         brief="Fügt einen Kurs als neue Überschrift in Botys Lerngruppen-Liste (Kanal #lerngruppen) hinzu. Darf Leerzeichen enthalten, Anführungszeichen sind nicht erforderlich.",  
-      #Beschreibung für Laienaugen angepasst
         example="!add-course 1141 Mathematische Grundlagen",
         parameters={
             "coursenumber": "Nummer des Kurses wie von der Fernuni angegeben (ohne führende Nullen z. B. 1142).",
             "name...": "Ein frei wählbarer Text (darf Leerzeichen enthalten).",
         },
-        description="Kann auch zum Bearbeiten einer Überschrift genutzt werden. Bei bereits existierender Kursnummer wird die Überschrift abgeändert", #description hinzugefügt
+        description="Kann auch zum Bearbeiten einer Überschrift genutzt werden. Bei bereits existierender Kursnummer wird die Überschrift abgeändert",
         mod=True
     )
     @commands.command(name="add-course")
@@ -296,7 +295,7 @@ class LearningGroups(commands.Cog):
         brief="Fügt einen Lerngruppen-Kanal hinzu. Der Name darf keine Leerzeichen enthalten.",
         parameters={
             "coursenumber": "Nummer des Kurses wie von der Fernuni angegeben (ohne führende Nullen z. B. 1142).",
-            "name": "Ein frei wählbarer Text ohne Leerzeichen. Bindestriche sind zulässig.",    #oder?
+            "name": "Ein frei wählbarer Text ohne Leerzeichen. Bindestriche sind zulässig.",
             "semester": "Das Semester, für welches diese Lerngruppe erstellt werden soll. sose oder wise gefolgt von der zweistelligen Jahreszahl (z. B. sose22).",
             "status": "Gibt an ob die Lerngruppe für weitere Lernwillige geöffnet ist (open) oder nicht (closed).",
             "@usermention": "Der so erwähnte Benutzer wird als Besitzer für die Lerngruppe gesetzt."
