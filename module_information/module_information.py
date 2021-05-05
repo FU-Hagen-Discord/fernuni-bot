@@ -1,10 +1,9 @@
+import utils
 from module_information.scrapper import Scrapper
 
 import json
 import os
-import time
 import re
-import sys
 import discord
 from discord.ext import commands, tasks
 
@@ -27,12 +26,18 @@ class ModuleInformation(commands.Cog):
 
     @tasks.loop(hours=24)
     async def update_loop(self):
+        await self.refresh_data()
+
+    async def refresh_data(self):
         try:
             scrapper = Scrapper(self.courses_file)
+            print("Refresh started")
             data = await scrapper.scrap()
             self.data = data
             self.save_data()
+            print("Refresh finished")
         except:
+            print("Can't refresh Data")
             pass
 
     @update_loop.before_loop
@@ -65,7 +70,11 @@ class ModuleInformation(commands.Cog):
         if not arg_stg:
             arg_stg = await self.get_stg_from_role(ctx.author)
         if not arg_stg:
-            await ctx.channel.send("Fehler! Wähle entweder eine Studiengangs-Rolle aus oder gebe ein Studiengangskürzel nach dem Kommando an.")
+            shorts = []
+            for course_of_studies in self.data:
+                shorts.append(f"`{course_of_studies['short']}`")
+            await ctx.channel.send(
+                f"Fehler! Wähle entweder eine Studiengangs-Rolle aus oder gebe ein Studiengangskürzel nach dem Kommando an.\nMögliche Kürzel: {', '.join(shorts)}")
         return arg_stg
 
     async def find_module(self, number, stg):
@@ -111,7 +120,7 @@ class ModuleInformation(commands.Cog):
 
     async def handbook(self, channel, stg):
         desc = await self.download_for(r"Modulhandbuch", channel, stg)
-        if desc == None:
+        if desc is None:
             await channel.send("Leider habe ich kein Modulhandbuch gefunden")
             return
         embed = discord.Embed(title="Modulehandbuch",
@@ -121,7 +130,7 @@ class ModuleInformation(commands.Cog):
 
     async def reading_sample(self, channel, stg):
         desc = await self.download_for(r"Leseprobe", channel, stg)
-        if desc == None:
+        if desc is None:
             await channel.send("Leider habe ich keine Leseprobe gefunden")
             return
         embed = discord.Embed(title="Leseprobe",
@@ -137,12 +146,9 @@ class ModuleInformation(commands.Cog):
         module = result['module']
 
         infos = module['page']['infos']
-        #time = re.sub(r': *(\r*\n*)*', ':\n', infos['time'])
         desc = (f"Wie viele Credits bekomme ich? **{infos['ects']} ECTS**\n"
                 f"Wie lange geht das Modul? **{infos['duration']}**\n"
                 f"Wie oft wird das Modul angeboten? **{infos['interval']}**\n"
-                #f"Welcher Aufwand erwartet mich?\n"
-                # f"{time}"
                 )
 
         if len(infos['requirements']) > 0 and infos['requirements'] != 'keine':
@@ -160,7 +166,7 @@ class ModuleInformation(commands.Cog):
             for course in module['page']['courses']:
                 desc += f"[{course['number']} - {course['name']}]({course['url']})\n"
 
-        if desc == None:
+        if desc is None:
             await channel.send("Leider habe ich keine Leseprobe gefunden")
             return
         desc += self.stg_string_for_desc(result)
@@ -219,12 +225,13 @@ class ModuleInformation(commands.Cog):
                 desc += f"Inhaltliche Voraussetzungen: \n{exam['requirements']}\n\n"
             if len(exam['hard_requirements']) > 0 and exam['hard_requirements'] != 'keine':
                 desc += f"Formale Voraussetzungen: \n{exam['hard_requirements']}\n\n"
-        #desc += self.stg_string_for_desc(result)
+        # desc += self.stg_string_for_desc(result)
         embed = discord.Embed(title=f"Prüfungsinformationen",
                               description=desc,
                               color=19607)
         await channel.send(embed=embed)
 
+    #TODO Entfernen wenn Hilfesystem eingebaut ist
     async def help(self, channel):
         await channel.send(
             "```"
@@ -244,6 +251,12 @@ class ModuleInformation(commands.Cog):
     async def cmd_module(self, ctx):
         if not ctx.invoked_subcommand:
             await self.help(ctx.channel)
+
+    @cmd_module.command("update")
+    @commands.check(utils.is_mod)
+    async def cmd_module_update(self, ctx):
+        await ctx.channel.send("Refreshing...")
+        await self.refresh_data()
 
     @cmd_module.command("handbuch", aliases=["mhb", "hb", "modulhandbuch"])
     async def cmd_module_handbuch(self, ctx, arg_stg=None):

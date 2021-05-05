@@ -10,17 +10,13 @@ class Scrapper:
         self.base_url = 'https://www.fernuni-hagen.de'
         self.courses_file = filename
 
-
     async def scrap(self):
         courses_of_studies = self.load_courses_fo_studies()
         for course in courses_of_studies:
             await self.fetch_module_infos_for_course_of_studies(course)
-        print(f"Done.")
         return courses_of_studies
 
-
     async def fetch_module_infos_for_course_of_studies(self, course):
-        print(f"Fetching {course['name']}")
         url = course['url']
         html = await self.fetch(url)
         modules = self.parse_index_page(html)
@@ -29,11 +25,9 @@ class Scrapper:
             module['page'] = self.parse_course_page(html, course)
         course['modules'] = modules
 
-
     def load_courses_fo_studies(self):
         group_file = open(self.courses_file, mode='r')
         return json.load(group_file)
-
 
     async def fetch(self, url):
         sess = aiohttp.ClientSession()
@@ -41,20 +35,13 @@ class Scrapper:
         text = await req.read()
         await sess.close()
         return text
-        #html = await response.text()
-        #response = urlopen(url)
-        #data = response.read()
-        #text = data.decode('utf-8')
-        #return text
-
 
     def prepare_url(self, url):
-        if (re.search(r"^http(s)*://", url)):
+        if re.search(r"^http(s)*://", url):
             return url
         elif (re.search(r"^/", url)):
             return self.base_url + url
         return self.base_url + "/" + url
-
 
     def parse_index_page(self, html):
         soup = BeautifulSoup(html, "html.parser")
@@ -69,22 +56,20 @@ class Scrapper:
             modules.append(module)
         return modules
 
-
     def parse_course_page(self, html, stg):
         soup = BeautifulSoup(html, "html.parser")
         module = {
-            "title": self.parse_title(soup, stg),
-            "infos": self.parse_infos(soup, stg),
-            "courses": self.parse_courses(soup, stg),
-            "support": self.parse_support(soup, stg),
-            "exams": self.parse_exams(soup, stg),
+            "title": self.parse_title(soup),
+            "infos": self.parse_infos(soup),
+            "courses": self.parse_courses(soup),
+            "support": self.parse_support(soup),
+            "exams": self.parse_exams(soup),
             "downloads": self.parse_downloads(soup, stg),
-            "persons": self.parse_persons(soup, stg)
+            "persons": self.parse_persons(soup)
         }
         return module
 
-
-    def parse_title(self, soup, stg):
+    def parse_title(self, soup):
         title = re.sub(
             r" -.*FernUniversität in Hagen",
             "",
@@ -93,8 +78,7 @@ class Scrapper:
         ).strip()
         return title
 
-
-    def parse_infos(self, soup, stg):
+    def parse_infos(self, soup):
         try:
         	info_source = soup.find(summary='Modulinformationen')
         except:
@@ -110,7 +94,7 @@ class Scrapper:
         return infos
 
 
-    def parse_courses(self, soup, stg):
+    def parse_courses(self, soup):
         try:
             course_source = soup.find('h2', text=re.compile(r'Aktuelles Angebot')) \
                 .findNext('div') \
@@ -128,7 +112,7 @@ class Scrapper:
         return courses
 
 
-    def parse_support(self, soup, stg):
+    def parse_support(self, soup):
         try:
             support_source = soup.find('h2', text=re.compile(
                 r'Mentorielle Betreuung in Regional- und Studienzentren')).findNext('div').findAll('li')
@@ -148,7 +132,7 @@ class Scrapper:
         return supports
 
 
-    def parse_exams(self, soup, _):
+    def parse_exams(self, soup):
         try:
             exam_source = soup.find(summary='Prüfungsinformationen')
         except:
@@ -189,7 +173,7 @@ class Scrapper:
         return downloads
 
 
-    def parse_persons(self, soup, stg):
+    def parse_persons(self, soup):
         try:
             person_source = soup.find('h2', text=re.compile(
                 r'Ansprechpersonen')).findNext('ul').findAll('h4')
