@@ -235,7 +235,7 @@ class LearningGroups(commands.Cog):
     @commands.check(utils.is_mod)
     async def cmd_init_groups(self, ctx):
         if len(self.groups["groups"]) > 0:
-            await ctx.channel.send("Nope. Das sollte ich lieber nicht tun.")
+            await ctx.channel.send("Nope. Das sollte ich lieber nicht tun.")  #ich verstehe nicht ganz, wann diese Nachricht kommt aber wenn es eintritt: versteht man  aus dem Kontext, warum man das nicht tun sollte?
             return
 
         msg = "Initialisierung abgeschlossen:\n"
@@ -296,7 +296,7 @@ class LearningGroups(commands.Cog):
         brief="Fügt einen Lerngruppen-Kanal hinzu. Der Name darf keine Leerzeichen enthalten.",
         parameters={
             "coursenumber": "Nummer des Kurses wie von der Fernuni angegeben (ohne führende Nullen z. B. 1142).",
-            "name": "Ein frei wählbarer Text ohne Leerzeichen.",
+            "name": "Ein frei wählbarer Text ohne Leerzeichen. Bindestriche sind zulässig.",    #oder?
             "semester": "Das Semester, für welches diese Lerngruppe erstellt werden soll. sose oder wise gefolgt von der zweistelligen Jahreszahl (z. B. sose22).",
             "status": "Gibt an ob die Lerngruppe für weitere Lernwillige geöffnet ist (open) oder nicht (closed).",
             "@usermention": "Der so erwähnte Benutzer wird als Besitzer für die Lerngruppe gesetzt."
