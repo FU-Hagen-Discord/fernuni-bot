@@ -19,18 +19,18 @@ from discord.ext import commands
 
   Kommandos für Moderatoren:
     !init-groups 
-      Initalisiert alle Gruppen in den Kategorien für offene und geschlossele Lerngruppen und baut die Verwaltungsdaten dazu auf.
+      Initalisiert alle Gruppen in den Kategorien für offene und geschlossene Lerngruppen und baut die Verwaltungsdaten dazu auf.
       Die Lerngruppen-Kanal-Namen müssen hierfür zuvor ins Format #{symbol}{kursnummer}-{name}-{semester} gebracht werden.
       Als Owner wird der ausführende Account für alle Lerngruppen gesetzt. 
       Wenn die Verwaltungsdatenbank nicht leer ist, wird das Kommando nicht ausgeführt.
     !owner <@usermention> (z.B. !owner @ffaadd)
       Muss im betreffenden Lerngruppenkanal ausgeführt werden.
-      Setzt den Besitzer für diesen Kanal auf den User der in der Mention erwähnt wird
+      Setzt den Besitzer für diesen Kanal auf den User der in der Mention erwähnt wird.
     !show-owner
       Muss im betreffenden Lerngruppenkanal ausgeführt werden.
       Zeigt den momentanen Besitzer dieses Kanals an.
     !add-course <coursenumber> <*name> (z.B. !add-course 1142 Mathematische Grundlagen)
-      Fügt einen Kurs zur Kursnamen-Datei hinzu. Der Name kann Leerzeichen enthalten
+      Fügt einen Kurs zur Kursnamen-Datei hinzu. Der Name kann Leerzeichen enthalten.
     !add-group <coursenumber> <name> <semester> <open|closed> <@owner> (z.B. !add-group 1142 matheprofis sose22 open @ffaadd)
       Fügt einen Lerngruppenkanal hinzu. Der Name darf KEINE Leerzeichen enthalten.
     !rename <name> (z.B. !rename matheluschen)
@@ -70,7 +70,7 @@ class LearningGroups(commands.Cog):
         self.load_header()
         self.cmd_syntax = {
             "add-group": "`!add-group <coursenumber> <name> <soseYY|wiseYY)> <open|closed> <@usermention>`\n"
-                         "`!add-group 1142 mathegenies sose22 clsoed @someuser`",
+                         "`!add-group 1142 mathegenies sose22 closed @someuser`",
             "add-course": "`!add-course <coursenumber> <*name>`\n"
                           "`!add-course 1141 Mathematische Grundlagen`",
             "request-group": "`!request-group <coursenumber> <name> <soseYY|wiseYY> <open|closed>`\n"
