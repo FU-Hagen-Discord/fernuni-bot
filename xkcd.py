@@ -21,7 +21,15 @@ class Xkcd(commands.Cog):
         r_data = requests.get(f'http://xkcd.com/{r}/info.0.json')
         r_data_json = r_data.json()
 
-        # Link zum Bild posten
+        # Link zum Bild holen
         img = r_data_json['img']
         num = r_data_json['num']
-        await ctx.send(f'xkcd #{num} [https://xkcd.com]\n {img}')
+
+        # Comic embedden
+        e = discord.Embed()
+        e.set_image(url=img)
+        e.url = img
+        e.title = f'xkcd #{num}'
+        e.set_footer(text='https://xkcd.com', icon_url='https://xkcd.com/s/0b7742.png')
+
+        await ctx.send(embed=e)
