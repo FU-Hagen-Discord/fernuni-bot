@@ -5,9 +5,11 @@ import discord
 from discord.ext import commands
 
 import utils
-from help.help import help, handle_error
+from help.help import help, handle_error, help_category
 
 
+@help_category("roles", "Rollen", "")
+@help_category("info", "Informationen", "")
 class RolesCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -69,7 +71,8 @@ class RolesCog(commands.Cog):
                 return key
 
     @help(
-      brief="Gibt die Mitgliederstatistik aus."
+        category="info",
+        brief="Gibt die Mitgliederstatistik aus."
     )
     @commands.command(name="stats")
     async def cmd_stats(self, ctx):
@@ -100,9 +103,10 @@ class RolesCog(commands.Cog):
         await ctx.channel.send(answer, embed=embed)
 
     @help(
-      brief="Aktualisiert die Vergabe von Studiengangs-Rollen.",
-      mod=True
-      )
+        category="roles",
+        brief="Aktualisiert die Vergabe von Studiengangs-Rollen.",
+        mod=True
+    )
     @commands.command("update-degree-program")
     @commands.check(utils.is_mod)
     async def cmd_update_degree_program(self, ctx):
@@ -130,9 +134,10 @@ class RolesCog(commands.Cog):
                 await message.add_reaction(emoji)
 
     @help(
-      brief="Aktualisiert die Vergabe von Farb-Rollen.",
-      mod=True
-      )    
+        category="roles",
+        brief="Aktualisiert die Vergabe von Farb-Rollen.",
+        mod=True
+    )
     @commands.command("update-color")
     @commands.check(utils.is_mod)
     async def cmd_update_color(self, ctx):
@@ -151,9 +156,10 @@ class RolesCog(commands.Cog):
                 await message.add_reaction(emoji)
 
     @help(
-      brief="Aktualisiert die Vergabe von Spezial-Rollen.",
-      mod=True
-      )     
+        category="roles",
+        brief="Aktualisiert die Vergabe von Spezial-Rollen.",
+        mod=True
+    )
     @commands.command("update-special")
     @commands.check(utils.is_mod)
     async def cmd_update_special(self, ctx):

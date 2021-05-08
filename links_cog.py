@@ -2,9 +2,10 @@ import json
 
 import discord
 from discord.ext import commands
-from help.help import help, handle_error
+from help.help import help, handle_error, help_category
 
 
+@help_category("links", "Links", "")
 class LinksCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -21,10 +22,11 @@ class LinksCog(commands.Cog):
         json.dump(self.links, links_file)
 
     @help(
-      brief="Zeigt die Links an, die in diesem Channel (evtl. unter Berücksichtigung einer Gruppe) hinterlegt sind.",
-      parameters={
-        "group": "*(optional)* Schränkt die angezeigten Links auf die übergebene Gruppe ein. "
-      }
+        category="links",
+        brief="Zeigt die Links an, die in diesem Channel (evtl. unter Berücksichtigung einer Gruppe) hinterlegt sind.",
+        parameters={
+            "group": "*(optional)* Schränkt die angezeigten Links auf die übergebene Gruppe ein. "
+        }
     )
     @commands.command(name="links")
     async def cmd_links(self, ctx, group=None):
@@ -52,14 +54,15 @@ class LinksCog(commands.Cog):
             await ctx.send("Für diesen Channel sind noch keine Links hinterlegt.")
 
     @help(
-      syntax="!add-link <group> <link> <title...>",
-      brief="Fügt einen Link zum Channel hinzu.",
-      parameters={
-        "group":"Name der Gruppe, die der Link zugeordnet werden soll. ",
-        "link":"die URL, die aufgerufen werden soll (z. B. https://www.fernuni-hagen.de). ",
-        "title...":"Titel, der für diesen Link angezeigt werden soll (darf Leerzeichen enthalten). ",
-      },
-      description="Die mit !add-link zu einem Kanal hinzugefügten Links können über das Kommando !links in diesem Kanal wieder abgerufen werden."
+        category="links",
+        syntax="!add-link <group> <link> <title...>",
+        brief="Fügt einen Link zum Channel hinzu.",
+        parameters={
+            "group": "Name der Gruppe, die der Link zugeordnet werden soll. ",
+            "link": "die URL, die aufgerufen werden soll (z. B. https://www.fernuni-hagen.de). ",
+            "title...": "Titel, der für diesen Link angezeigt werden soll (darf Leerzeichen enthalten). ",
+        },
+        description="Die mit !add-link zu einem Kanal hinzugefügten Links können über das Kommando !links in diesem Kanal wieder abgerufen werden."
     )
     @commands.command(name="add-link")
     async def cmd_add_link(self, ctx, group, link, *title):
@@ -79,6 +82,6 @@ class LinksCog(commands.Cog):
             self.add_link(group_links, link, title + str(1))
         else:
             group_links[title] = link
-        
+
     async def cog_command_error(self, ctx, error):
-      await handle_error(ctx, error)
+        await handle_error(ctx, error)

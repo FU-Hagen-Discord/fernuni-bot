@@ -4,25 +4,25 @@ import discord
 from discord.ext import commands
 
 import utils
-from help.help import help, handle_error
+from help.help import help, handle_error, help_category
 
 OPTIONS = ["🇦", "🇧", "🇨", "🇩", "🇪", "🇫", "🇬", "🇭", "🇮", "🇯", "🇰", "🇱", "🇲", "🇳", "🇴", "🇵", "🇶", "🇷"]
 
-
+@help_category("poll", "Umfragen", "")
 class PollCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.poll_sugg_channel = int(os.getenv("DISCORD_POLL_SUGG_CHANNEL"))
 
-
     @help(
-      syntax="!add-poll <question> <answers...>",
-      brief="Schlägt eine Umfrage für den Umfrage-Kanal vor.",
-      parameters={
-        "question": "Die Frage die gestellt werden soll (in Anführungszeichen).",
-        "answers...": "Durch Leerzeichen getrennte Antwortmöglichkeiten (die einzelnen Antworten in Anführungszeichen einschließen)."
-      },
-      example="!add-poll \"Wie ist das Wetter?\" \"echt gut\" \"weniger gut\" \"Boar nee, nicht schon wieder Regen\""
+        category="poll",
+        syntax="!add-poll <question> <answers...>",
+        brief="Schlägt eine Umfrage für den Umfrage-Kanal vor.",
+        parameters={
+            "question": "Die Frage die gestellt werden soll (in Anführungszeichen).",
+            "answers...": "Durch Leerzeichen getrennte Antwortmöglichkeiten (die einzelnen Antworten in Anführungszeichen einschließen)."
+        },
+        example="!add-poll \"Wie ist das Wetter?\" \"echt gut\" \"weniger gut\" \"Boar nee, nicht schon wieder Regen\""
     )
     @commands.command(name="add-poll")
     async def cmd_add_poll(self, ctx, question, *answers):
@@ -34,17 +34,18 @@ class PollCog(commands.Cog):
 
         await channel.send(msg)
 
-    @help(  
-      brief="Bearbeitet eine bereits vorhandene Umfrage.",    
-      syntax="!edit-poll <message_id> <question> <answers...>",
-      parameters={
-        "message_id": "die Message-ID ist der Nachricht mit einem Rechtsklick auf die Umfrage zu entnehmen (Entwicklermodus in Discord müssen aktiv sein).",
-        "question": "Die Frage, die gestellt werden soll (in Anführungszeichen).",
-        "answers...": "Durch Leerzeichen getrennte Antwortmöglichkeiten (die einzelnen Antworten in Anführungszeichen einschließen).",
-      },
-      example="!edit-poll 838752355595059230 \"Wie ist das Wetter?\" \"echt gut\" \"weniger gut\" \"Boar nee, nicht schon wieder Regen\"",
-      mod=True
-      )
+    @help(
+        category="poll",
+        brief="Bearbeitet eine bereits vorhandene Umfrage.",
+        syntax="!edit-poll <message_id> <question> <answers...>",
+        parameters={
+            "message_id": "die Message-ID ist der Nachricht mit einem Rechtsklick auf die Umfrage zu entnehmen (Entwicklermodus in Discord müssen aktiv sein).",
+            "question": "Die Frage, die gestellt werden soll (in Anführungszeichen).",
+            "answers...": "Durch Leerzeichen getrennte Antwortmöglichkeiten (die einzelnen Antworten in Anführungszeichen einschließen).",
+        },
+        example="!edit-poll 838752355595059230 \"Wie ist das Wetter?\" \"echt gut\" \"weniger gut\" \"Boar nee, nicht schon wieder Regen\"",
+        mod=True
+    )
     @commands.command(name="edit-poll")
     @commands.check(utils.is_mod)
     async def cmd_edit_poll(self, ctx, message_id, question, *answers):
@@ -59,14 +60,15 @@ class PollCog(commands.Cog):
         pass
 
     @help(
-      syntax="!poll <question> <answers...>",
-      brief="Erstellt eine Umfrage im aktuellen Kanal.",
-      parameters={
-        "question": "Die Frage, die gestellt werden soll (in Anführungszeichen).",
-        "answers...": "Durch Leerzeichen getrennte Antwortmöglichkeiten (die einzelnen Antworten in Anführungszeichen einschließen)."
-      },
-      example="!poll \"Wie ist das Wetter?\" \"echt gut\" \"weniger gut\" \"Boar nee, nicht schon wieder Regen\""
-    )    
+        category="poll",
+        syntax="!poll <question> <answers...>",
+        brief="Erstellt eine Umfrage im aktuellen Kanal.",
+        parameters={
+            "question": "Die Frage, die gestellt werden soll (in Anführungszeichen).",
+            "answers...": "Durch Leerzeichen getrennte Antwortmöglichkeiten (die einzelnen Antworten in Anführungszeichen einschließen)."
+        },
+        example="!poll \"Wie ist das Wetter?\" \"echt gut\" \"weniger gut\" \"Boar nee, nicht schon wieder Regen\""
+    )
     @commands.command(name="poll")
     async def cmd_poll(self, ctx, question, *answers):
         """ Create poll """

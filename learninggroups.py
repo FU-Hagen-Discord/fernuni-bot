@@ -5,7 +5,7 @@ import re
 import discord
 import utils
 from discord.ext import commands
-from help.help import help, handle_error
+from help.help import help, handle_error, help_category
 
 """
   Environment Variablen:
@@ -19,7 +19,7 @@ from help.help import help, handle_error
   DISCORD_MOD_ROLE - ID der Moderator Rolle von der erweiterte Lerngruppen-Actionen ausgeführt werden dürfen
 """
 
-
+@help_category("learninggroups", "Lerngruppen", "")
 class LearningGroups(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -222,6 +222,7 @@ class LearningGroups(commands.Cog):
         self.save_groups()
 
     @help(
+        category="learninggroups",
         brief="Erstellt aus den Lerngruppen-Kanälen eine Datendatei. ",
         description=(
             "Initialisiert alle Gruppen in den Kategorien für offene und geschlossene Lerngruppen und baut die Verwaltungsdaten dazu auf. " 
@@ -268,6 +269,7 @@ class LearningGroups(commands.Cog):
         self.save_groups()
 
     @help(
+        category="learninggroups",
         syntax="!add-course <coursenumber> <name...>",
         brief="Fügt einen Kurs als neue Überschrift in Botys Lerngruppen-Liste (Kanal #lerngruppen) hinzu. Darf Leerzeichen enthalten, Anführungszeichen sind nicht erforderlich.",  
         example="!add-course 1141 Mathematische Grundlagen",
@@ -290,6 +292,7 @@ class LearningGroups(commands.Cog):
         await self.update_groupinfo()
 
     @help(
+        category="learninggroups",
         syntax="!add-group <coursenumber> <name> <semester> <status> <@usermention>",
         example="!add-group 1142 mathegenies sose22 clsoed @someuser",
         brief="Fügt einen Lerngruppen-Kanal hinzu. Der Name darf keine Leerzeichen enthalten.",
@@ -317,6 +320,7 @@ class LearningGroups(commands.Cog):
         await self.add_requested_group_channel(ctx.message, direct=True)
 
     @help(
+        category="learninggroups",
         syntax="!request-group <coursenumber> <name> <semester> <status>",
         brief="Stellt eine Anfrage für einen neuen Lerngruppen-Kanal.",
         example="!request-group 1142 mathegenies sose22 closed",
@@ -352,6 +356,7 @@ class LearningGroups(commands.Cog):
         self.save_groups()
 
     @help(
+        category="learninggroups",
         brief="Öffnet den Lerngruppen-Kanal wenn du die Besitzerin bist. ",
         description=("Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. "
                      "Verschiebt den Lerngruppen-Kanal in die Kategorie für offene Kanäle und ändert das Icon. "
@@ -363,6 +368,7 @@ class LearningGroups(commands.Cog):
             await self.set_channel_state(ctx.channel, is_open=True)
 
     @help(
+        category="learninggroups",
         brief="Schließt den Lerngruppen-Kanal wenn du die Besitzerin bist. ",
         description=("Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. "
                      "Verschiebt den Lerngruppen-Kanal in die Kategorie für geschlossene Kanäle und ändert das Icon. "
@@ -374,6 +380,7 @@ class LearningGroups(commands.Cog):
             await self.set_channel_state(ctx.channel, is_open=False)
 
     @help(
+        category="learninggroups",
         syntax="!rename <name>",
         brief="Ändert den Namen des Lerngruppen-Kanals, in dem das Komando ausgeführt wird.",
         example="!rename matheluschen",
@@ -389,6 +396,7 @@ class LearningGroups(commands.Cog):
         await self.set_channel_name(ctx.channel, arg_name)
 
     @help(
+        category="learninggroups",
         brief="Archiviert den Lerngruppen-Kanal",
         description="Verschiebt den Lerngruppen-Kanal, in welchem dieses Kommando ausgeführt wird, ins Archiv.",
         mod=True
@@ -399,6 +407,7 @@ class LearningGroups(commands.Cog):
         await self.archive(ctx.channel)
 
     @help(
+        category="learninggroups",
         syntax="!owner <@usermention>",
         example="!owner @someuser",
         brief="Setzt die Besitzerin eines Lerngruppen-Kanals",
@@ -418,6 +427,7 @@ class LearningGroups(commands.Cog):
             await ctx.channel.send(f"Glückwunsch {arg_owner.mention}! Du bist jetzt die Besitzerin dieser Lerngruppe.")
 
     @help(
+        category="learninggroups",
         brief="Zeigt die Besitzerin eines Lerngruppen-Kanals an.",
         description="Muss im betreffenden Lerngruppen-Kanal ausgeführt werden.",
         mod=True

@@ -6,7 +6,7 @@ import re
 
 import discord
 from discord.ext import tasks, commands
-from help.help import help, handle_error
+from help.help import help, handle_error, help_category
 
 
 def is_valid_time(time):
@@ -27,6 +27,8 @@ def to_minutes(time):
     return int(time)
 
 
+@help_category("appointments", "Appointments", "Mit Appointments kannst du Termine zu einem Kanal hinzufügen."
+"Sehr praktisches Feature zum Organisieren von Lerngruppen.")
 class AppointmentsCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -107,16 +109,17 @@ class AppointmentsCog(commands.Cog):
         await asyncio.sleep(60 - datetime.datetime.now().second)
 
     @help(
-      brief="Fügt eine neue Erinnerung zu einem Kanal hinzu.",
-      example="!add-appointment 20.12.2021 10:00 0 \"Toller Event\" 7d",
-      parameters={
-        "date": "Datum des Termins im Format DD.MM.YYYY (z. B. 22.10.2022).",
-        "time": "Uhrzeit des Termins im Format hh:mm (z. B. 10:00).",
-        "reminder": "Anzahl an Minuten die vor dem Termin erinnert werden soll.",
-        "title": "der Titel des Termins (in Anführungszeichen).",
-        "recurring": "*(optional)* Interval für die Terminwiederholung (z. B. 24h für 24 Stunden 7d für 7 Tage oder 10m für 10 Minuten)."
-      }
-      )
+        category="appointments",
+        brief="Fügt eine neue Erinnerung zu einem Kanal hinzu.",
+        example="!add-appointment 20.12.2021 10:00 0 \"Toller Event\" 7d",
+        parameters={
+            "date": "Datum des Termins im Format DD.MM.YYYY (z. B. 22.10.2022).",
+            "time": "Uhrzeit des Termins im Format hh:mm (z. B. 10:00).",
+            "reminder": "Anzahl an Minuten die vor dem Termin erinnert werden soll.",
+            "title": "der Titel des Termins (in Anführungszeichen).",
+            "recurring": "*(optional)* Interval für die Terminwiederholung (z. B. 24h für 24 Stunden 7d für 7 Tage oder 10m für 10 Minuten)."
+        }
+    )
     @commands.command(name="add-appointment")
     async def cmd_add_appointment(self, ctx, date, time, reminder, title, recurring=None):
         await self.add_appointment(ctx.channel, ctx.author.id, date, time, reminder, title, recurring)
@@ -170,7 +173,8 @@ class AppointmentsCog(commands.Cog):
         self.save_appointments()
 
     @help(
-      brief="Zeigt alle Termine des momentanen Kanals an."
+        category="appointments",
+        brief="Zeigt alle Termine des momentanen Kanals an."
     )
     @commands.command(name="appointments")
     async def cmd_appointments(self, ctx):
@@ -227,4 +231,4 @@ class AppointmentsCog(commands.Cog):
                 await self.handle_reactions(payload)
 
     async def cog_command_error(self, ctx, error):
-      await handle_error(ctx, error)
+        await handle_error(ctx, error)
