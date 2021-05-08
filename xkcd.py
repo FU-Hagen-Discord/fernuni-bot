@@ -10,26 +10,36 @@ class Xkcd(commands.Cog):
         self.bot = bot
 
     @commands.command(name="xkcd")
-    async def cmd_xkcd(self, ctx):
+    async def cmd_xkcd(self, ctx, number=None):
         # Daten vom aktuellsten Comic holen, um max zu bestimmen
         data = requests.get('http://xkcd.com/info.0.json')
         data_json = data.json()
         max = data_json['num']
 
-        # Daten von random Comic holen
-        r = str(random.randint(1,max))
-        r_data = requests.get(f'http://xkcd.com/{r}/info.0.json')
-        r_data_json = r_data.json()
+        # Nummer übernehmen wenn vorhanden und zwischen 1 und max, sonst random Nummer wählen
+        if number == 'latest':
+            n = max
+        else:
+            try:
+                n = number if (number and 0 < int(number) <= max) else str(random.randint(1, max))
+            except ValueError:
+                n = str(random.randint(1, max))
 
-        # Link zum Bild holen
-        img = r_data_json['img']
-        num = r_data_json['num']
+        # Daten zum Bild holen
+        n_data = requests.get(f'http://xkcd.com/{n}/info.0.json')
+        n_data_json = n_data.json()
+
+        img = n_data_json['img']
+        num = n_data_json['num']
+        title = n_data_json['title']
+        text = n_data_json['alt']
 
         # Comic embedden
         e = discord.Embed()
         e.set_image(url=img)
         e.url = img
         e.title = f'xkcd #{num}'
+        e.add_field(name=title, value=text)
         e.set_footer(text='https://xkcd.com', icon_url='https://xkcd.com/s/0b7742.png')
 
         await ctx.send(embed=e)
