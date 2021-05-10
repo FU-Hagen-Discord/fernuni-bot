@@ -40,7 +40,7 @@ class TopsCog(commands.Cog):
         channel = ctx.channel
 
         if not re.match(r'^-?\d+$', top):
-            await ctx.send("Fehler! Der übergebene Parameter muss eine Zahl sein")
+            await ctx.send("Fehler! Der übergebene Parameter muss eine Zahl sein.")
         else:
             if str(channel.id) in self.tops:
                 channel_tops = self.tops.get(str(channel.id))
@@ -81,6 +81,6 @@ class TopsCog(commands.Cog):
             for i in range(0, len(channel_tops)):
                 embed.add_field(name=f"TOP {i + 1}", value=channel_tops[i], inline=False)
         else:
-            embed.add_field(name="Keine Tagesordnungspunkte vorhanden", value="\u200B", inline=False)
+            embed.add_field(name="Keine Tagesordnungspunkte vorhanden.", value="\u200B", inline=False)
 
         await ctx.send(embed=embed)
