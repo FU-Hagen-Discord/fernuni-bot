@@ -8,8 +8,8 @@ from discord.ext import commands
 import utils
 from help.help import text_command_help, help, handle_error, remove_help_for, help_category
 
-
-@help_category("textcommands", "Text-Kommandos", "")
+@help_category("textcommands", "Text-Kommandos", "", "Alle Werkzeuge zum Anlegen und Verwalten von Textkommandos.")
+@help_category("motivation", "Motivation (oder auch nicht)", "Manchmal braucht man einfach Zuspruch.")
 class TextCommandsCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -29,11 +29,12 @@ class TextCommandsCog(commands.Cog):
                 continue
 
             brief = help_for_cmd.get('brief')
+            category = help_for_cmd.get('category')
             if not brief:
                 text_command_help(cmd)
                 continue
 
-            text_command_help(cmd, brief=brief)
+            text_command_help(cmd, brief=brief, category=category)
 
     def save_text_commands(self):
         text_commands_file = open(self.cmd_file, mode='w')
@@ -266,7 +267,7 @@ class TextCommandsCog(commands.Cog):
             await ctx.send(f"Text Command {cmd} nicht vorhanden")
 
     @help(
-        category="textcommands",
+        category="motivation",
         brief="reicht deinen Motivationstext zur Genehmigung ein.",
         parameters={
             "text...": "Der Spruch, der deine Kommilitoninnen motiviert (darf Leerzeichen enthalten)."

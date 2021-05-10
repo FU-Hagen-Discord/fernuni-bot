@@ -8,7 +8,7 @@ from help.help import help, handle_error, help_category
 
 OPTIONS = ["🇦", "🇧", "🇨", "🇩", "🇪", "🇫", "🇬", "🇭", "🇮", "🇯", "🇰", "🇱", "🇲", "🇳", "🇴", "🇵", "🇶", "🇷"]
 
-@help_category("poll", "Umfragen", "")
+@help_category("poll", "Umfragen", "Erstelle eine Umfrage in einem Kanal oder schlage eine Server-Umfrage vor.", "Umfragen erstellen oder bearbeiten.")
 class PollCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot

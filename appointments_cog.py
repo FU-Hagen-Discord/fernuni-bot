@@ -27,7 +27,7 @@ def to_minutes(time):
     return int(time)
 
 
-@help_category("appointments", "Appointments", "Mit Appointments kannst du Termine zu einem Kanal hinzufügen."
+@help_category("appointments", "Appointments", "Mit Appointments kannst du Termine zu einem Kanal hinzufügen. "
 "Sehr praktisches Feature zum Organisieren von Lerngruppen.")
 class AppointmentsCog(commands.Cog):
     def __init__(self, bot):

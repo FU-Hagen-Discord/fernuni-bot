@@ -5,12 +5,12 @@ import re
 import discord
 import collections
 
-data = {"category": {"__none__": {"title": "Sonstiges", "description": ""}}, "command": {}}
+data = {"category": {"__none__": {"title": "Sonstiges", "description": "Die Kategorie für die Kategorielosen."}}, "command": {}}
 
 
-def help_category(name=None, title=None, description=None):
+def help_category(name=None, title=None, description=None, mod_description=None):
     def decorator_help(cmd):
-        data["category"][name] = {"title": title, "description": description}
+        data["category"][name] = {"title": title, "description": description, "mod_description": mod_description if mod_description else description}
         # if not data["category"][name]:
         #    data["category"][name] = {"description": description}
         # else:
@@ -19,7 +19,7 @@ def help_category(name=None, title=None, description=None):
 
     return decorator_help
 
-@help_category("help", "Hilfe", "Wenn du nicht weiter weißt, gib `!help` ein.")
+@help_category("help", "Hilfe", "Wenn du nicht weiter weißt, gib `!help` ein.", "Wenn du nicht weiter weißt, gib `!mod-help` ein.")
 def text_command_help(name, syntax=None, example=None, brief=None, description=None, mod=False, parameters={},
                       category=None):
     cmd = re.sub(r"^!", "", name)
@@ -97,6 +97,7 @@ class Help(commands.Cog):
     @help(
         category="help",
         brief="Zeigt die verfügbaren Hilfe-Kategorien an.",
+        mod=True
     )
     @commands.command(name="help-categories")
     @commands.check(utils.is_mod)
@@ -112,7 +113,7 @@ class Help(commands.Cog):
 
     @help(
         category="help",
-        brief="Zeigt die verfügbaren Kommandos *für Mods* an. Wenn ein Kommando übergeben wird, wird eine ausführliche Hilfe zu diesem Kommando angezeigt.",
+        brief="Zeigt die verfügbaren Kommandos *für Mods* an. Wenn ein Kommando übergeben wird, wird eine ausführliche Hilfe zu diesem Kommando angezeigt. ",
         mod=True
     )
     @commands.command(name="mod-help")
@@ -120,24 +121,33 @@ class Help(commands.Cog):
     async def cmd_mod_help(self, ctx, command=None):
         if not command is None:
             command = re.sub(r"^!", "", command)
+            if command == "*" or command == "all":
+                await self.help_overview(ctx, mod=True, all=True)
+                return
             await self.help_card(ctx, command)
             return
-        await self.help_overview(ctx, True)
+        await self.help_overview(ctx, mod=True)
 
-    async def help_overview(self, ctx, mod=False):
-        sorted_groups = {k: v for k, v in sorted(data["category"].items(), key=lambda item: item[1]['title'])}
+    async def help_overview(self, ctx, mod=False, all=False):
+        sorted_groups = {k: v for k, v in sorted(data["category"].items(), key=lambda item: item[1]['title'] if item[0] != '__none__' else 'zzzzzzzzzzzzzz')}
         sorted_commands = {k: v for k, v in sorted(data["command"].items(), key=lambda item: item[1]['syntax'])}
 
         title = "Boty hilft dir!"
-        helptext = ("Um ausführliche Hilfe zu einem bestimmten Kommando zu erhalten, gib **!help <command>** ein. "
-                    "Also z.B. **!help stats** um mehr über das Statistik-Kommando zu erfahren.\n\n")
+        help_command = "!help" if not mod else "!mod-help"
+        helptext = (f"Um ausführliche Hilfe zu einem bestimmten Kommando zu erhalten, gib **{help_command} <command>** ein. "
+                    f"Also z.B. **{help_command} stats** um mehr über das Statistik-Kommando zu erfahren.")
+        helptext += "`!mod-help *` gibt gleichzeitig mod und nicht-mod Kommandos in der Liste aus." if mod else ""
+        helptext += "\n\n"
         msgcount = 1
 
         for key, group in sorted_groups.items():
             text = f"\n__**{group['title']}**__\n"
-            text += f"{group['description']}\n\n" if group['description'] else "\n"
+            text += f"{group['mod_description']}\n" if group.get('mod_description') and mod  else ""
+            text += f"{group['description']}\n" if group.get('description') and not mod else ""
+            text += "\n"
             for command in sorted_commands.values():
-                if command['mod'] != mod or command['category'] != key:
+
+                if (not all and command['mod'] != mod) or command['category'] != key:
                     continue
                 # {'*' if command['description'] else ''}\n"
                 text += f"**{command['syntax']}**\n"
@@ -181,10 +191,10 @@ class Help(commands.Cog):
                               color=19607)
         await utils.send_dm(ctx.author, text)  # , embed=embed)
 
-    @commands.command(name="all-help")
+    @commands.command(name="debug-help")
     @commands.check(utils.is_mod)
     async def help_all(self, ctx, mod=False):
-        sorted_groups = {k: v for k, v in sorted(data["category"].items(), key=lambda item: item[1]['title'])}
+        sorted_groups = {k: v for k, v in sorted(data["category"].items(), key=lambda item: item[1]['title'] if item[0] != '__none__' else 'zzzzzzzzzzzzzz')}
         sorted_commands = {k: v for k, v in sorted(data["command"].items(), key=lambda item: item[1]['syntax'])}
         title = "Boty hilft dir!"
         helptext = ("Um ausführliche Hilfe zu einem bestimmten Kommando zu erhalten, gib **!help <command>** ein. "

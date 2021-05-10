@@ -5,7 +5,7 @@ from discord.ext import commands
 from help.help import help, handle_error, help_category
 
 
-@help_category("links", "Links", "")
+@help_category("links", "Links", "Feature zum Verwalten von Links innerhalb eines Channels.")
 class LinksCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot

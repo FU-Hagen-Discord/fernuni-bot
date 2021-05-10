@@ -14,6 +14,7 @@ class WelcomeCog(commands.Cog):
         self.message_id = int(os.getenv("DISCORD_WELCOME_MSG"))
 
     @help(
+      category="updater",
       brief="aktualisiert die Willkommensnachricht.",
       mod=True
       )

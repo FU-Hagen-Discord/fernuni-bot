@@ -8,8 +8,8 @@ import utils
 from help.help import help, handle_error, help_category
 
 
-@help_category("roles", "Rollen", "")
-@help_category("info", "Informationen", "")
+@help_category("updater", "Updater", "Diese Kommandos werden zum Updaten von Nachrichten benutzt, die Boty automatisch erzeugt.")
+@help_category("info", "Informationen", "Kleine Helferlein, um schnell an Informationen zu kommen.")
 class RolesCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -103,8 +103,8 @@ class RolesCog(commands.Cog):
         await ctx.channel.send(answer, embed=embed)
 
     @help(
-        category="roles",
-        brief="Aktualisiert die Vergabe von Studiengangs-Rollen.",
+        category="updater",
+        brief="Aktualisiert die Vergabe-Nachricht von Studiengangs-Rollen.",
         mod=True
     )
     @commands.command("update-degree-program")
@@ -134,8 +134,8 @@ class RolesCog(commands.Cog):
                 await message.add_reaction(emoji)
 
     @help(
-        category="roles",
-        brief="Aktualisiert die Vergabe von Farb-Rollen.",
+        category="updater",
+        brief="Aktualisiert die Vergabe-Nachricht von Farb-Rollen.",
         mod=True
     )
     @commands.command("update-color")
@@ -156,8 +156,8 @@ class RolesCog(commands.Cog):
                 await message.add_reaction(emoji)
 
     @help(
-        category="roles",
-        brief="Aktualisiert die Vergabe von Spezial-Rollen.",
+        category="updater",
+        brief="Aktualisiert die Vergabe-Nachricht von Spezial-Rollen.",
         mod=True
     )
     @commands.command("update-special")

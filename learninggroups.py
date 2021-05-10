@@ -19,7 +19,7 @@ from help.help import help, handle_error, help_category
   DISCORD_MOD_ROLE - ID der Moderator Rolle von der erweiterte Lerngruppen-Actionen ausgeführt werden dürfen
 """
 
-@help_category("learninggroups", "Lerngruppen", "")
+@help_category("learninggroups", "Lerngruppen", "Mit dem Lerngruppen-Feature kannst du Lerngruppen-Kanäle beantragen und/oder diese rudimentär verwalten.", "Hier kannst du Lerngruppen-Kanäle anlegen, beantragen und verwalten.")
 class LearningGroups(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
