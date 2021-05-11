@@ -5,6 +5,7 @@ import re
 import discord
 import utils
 from discord.ext import commands
+from help.help import help, handle_error, help_category
 
 """
   Environment Variablen:
@@ -16,46 +17,14 @@ from discord.ext import commands
   DISCORD_LEARNINGGROUPS_FILE - Name der Datei mit Verwaltungsdaten der Lerngruppen (minimaler Inhalt: {"requested": {},"groups": {}})
   DISCORD_LEARNINGGROUPS_COURSE_FILE - Name der Datei welche die Kursnamen für die Lerngruppen-Informationen enthält (minimalter Inhalt: {})
   DISCORD_MOD_ROLE - ID der Moderator Rolle von der erweiterte Lerngruppen-Actionen ausgeführt werden dürfen
-
-  Kommandos für Moderatoren:
-    !init-groups 
-      Initalisiert alle Gruppen in den Kategorien für offene und geschlossene Lerngruppen und baut die Verwaltungsdaten dazu auf.
-      Die Lerngruppen-Kanal-Namen müssen hierfür zuvor ins Format #{symbol}{kursnummer}-{name}-{semester} gebracht werden.
-      Als Owner wird der ausführende Account für alle Lerngruppen gesetzt. 
-      Wenn die Verwaltungsdatenbank nicht leer ist, wird das Kommando nicht ausgeführt.
-    !owner <@usermention> (z.B. !owner @ffaadd)
-      Muss im betreffenden Lerngruppenkanal ausgeführt werden.
-      Setzt den Besitzer für diesen Kanal auf den User der in der Mention erwähnt wird.
-    !show-owner
-      Muss im betreffenden Lerngruppenkanal ausgeführt werden.
-      Zeigt den momentanen Besitzer dieses Kanals an.
-    !add-course <coursenumber> <*name> (z.B. !add-course 1142 Mathematische Grundlagen)
-      Fügt einen Kurs zur Kursnamen-Datei hinzu. Der Name kann Leerzeichen enthalten.
-    !add-group <coursenumber> <name> <semester> <open|closed> <@owner> (z.B. !add-group 1142 matheprofis sose22 open @ffaadd)
-      Fügt einen Lerngruppenkanal hinzu. Der Name darf KEINE Leerzeichen enthalten.
-    !rename <name> (z.B. !rename matheluschen)
-      Ändert den Namen des Lerngruppenkanals in dem das Komando ausgeführt wird. 
-      Aus #1142-matheprofis-sose22 wird nach dem Aufruf des Beispiels #1142-matheluschen-sose22.
-
-  Kommandos für Besitzer:
-    !open
-      Muss im betreffenden Lerngruppenkanal ausgeführt werden.
-      Verschiebt den Lerngruppenkanal in die Kategorie für offene Kanäle und ändert das Icon
-    !close
-      Muss im betreffenden Lerngruppenkanal ausgeführt werden.
-      Verschiebt den Lerngruppenkanal in die Kategorie für geschlossene Kanäle und ändert das Icon
-
-  Kommandos für Benutzer:
-    !request-group <coursenumber> <name> <semester> <open|closed> (z.B. !request-group 1142 matheprofis sose22 open)
-      Stellt eine Anfrage für einen Lerngruppen-Kanal. Moderatoren können diese bestätigen (dann wird die Gruppe 
-      wie bei !add-group eingerichtet) oder verwerfen. Der Besitzer der Gruppe ist der Benutzer der die Anfrage eingestellt hat.
 """
 
-
+@help_category("learninggroups", "Lerngruppen", "Mit dem Lerngruppen-Feature kannst du Lerngruppen-Kanäle beantragen und/oder diese rudimentär verwalten.", "Hier kannst du Lerngruppen-Kanäle anlegen, beantragen und verwalten.")
 class LearningGroups(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.rename_ratelimit = 305  # ratelimit 2 in 10 minutes (305 * 2 = 610 = 10 minutes and 10 seconds)
+        # ratelimit 2 in 10 minutes (305 * 2 = 610 = 10 minutes and 10 seconds)
+        self.rename_ratelimit = 305
         self.category_open = os.getenv('DISCORD_LEARNINGGROUPS_OPEN')
         self.category_close = os.getenv('DISCORD_LEARNINGGROUPS_CLOSE')
         self.category_archive = os.getenv('DISCORD_LEARNINGGROUPS_ARCHIVE')
@@ -68,16 +37,6 @@ class LearningGroups(commands.Cog):
         self.header = {}
         self.load_groups()
         self.load_header()
-        self.cmd_syntax = {
-            "add-group": "`!add-group <coursenumber> <name> <soseYY|wiseYY)> <open|closed> <@usermention>`\n"
-                         "`!add-group 1142 mathegenies sose22 closed @someuser`",
-            "add-course": "`!add-course <coursenumber> <*name>`\n"
-                          "`!add-course 1141 Mathematische Grundlagen`",
-            "request-group": "`!request-group <coursenumber> <name> <soseYY|wiseYY> <open|closed>`\n"
-                             "`!request-group 1142 mathegenies sose22 closed`",
-            "owner": "`!owner <@usermention>`\n"
-                     "`!owner @someuser`\n"
-        }
 
     def load_header(self):
         file = open(self.header_file, mode='r')
@@ -96,8 +55,10 @@ class LearningGroups(commands.Cog):
         json.dump(self.groups, group_file)
 
     def arg_open_to_bool(self, arg_open):
-        if arg_open in ["offen", "open"]: return True
-        if arg_open in ["geschlossen", "closed", "close"]: return False
+        if arg_open in ["offen", "open"]:
+            return True
+        if arg_open in ["geschlossen", "closed", "close"]:
+            return False
         return None
 
     def is_request_owner(self, request, member):
@@ -122,21 +83,25 @@ class LearningGroups(commands.Cog):
 
     async def is_channel_config_valid(self, ctx, channel_config, command=None):
         if channel_config['is_open'] is None:
-            if command: await ctx.channel.send(
-                f"Fehler! Bitte gib an ob die Gruppe **offen** (**open**) oder **geschlossen** (**closed**) ist\n{self.cmd_syntax[command]}")
+            if command:
+                await ctx.channel.send(
+                    f"Fehler! Bitte gib an ob die Gruppe **offen** (**open**) oder **geschlossen** (**closed**) ist. Gib `!help {command}` für Details ein.")
             return False
         if not re.match(r"^[0-9]+$", channel_config['course']):
-            if command: await ctx.channel.send(
-                f"Fehler! Die Kursnummer muss numerisch sein\n{self.cmd_syntax[command]}")
+            if command:
+                await ctx.channel.send(
+                    f"Fehler! Die Kursnummer muss numerisch sein. Gib `!help {command}` für Details ein.")
             return False
         if not re.match(r"^(sose|wise)[0-9]{2}$", channel_config['semester']):
-            if command: await ctx.channel.send(
-                f"Fehler! Das Semester muss mit **sose** oder **wise** angegeben werden gefolgt von der **zweistelligen Jahreszahl**\n{self.cmd_syntax[command]}")
+            if command:
+                await ctx.channel.send(
+                    f"Fehler! Das Semester muss mit **sose** oder **wise** angegeben werden gefolgt von der **zweistelligen Jahreszahl**. Gib `!help {command}` für Details ein.")
             return False
         return True
 
     async def check_rename_rate_limit(self, channel_config):
-        if channel_config.get("last_rename") is None: return False
+        if channel_config.get("last_rename") is None:
+            return False
         now = int(time.time())
         seconds = channel_config["last_rename"] + self.rename_ratelimit - now
         if seconds > 0:
@@ -157,7 +122,8 @@ class LearningGroups(commands.Cog):
         info_message_id = self.groups.get("messageid")
 
         msg = f"**Lerngruppen**\n\n"
-        sorted_groups = sorted(self.groups["groups"].values(), key=lambda group: f"{group['course']}-{group['name']}")
+        sorted_groups = sorted(self.groups["groups"].values(
+        ), key=lambda group: f"{group['course']}-{group['name']}")
         open_groups = [group for group in sorted_groups if group['is_open']]
         courseheader = None
         for group in open_groups:
@@ -190,10 +156,12 @@ class LearningGroups(commands.Cog):
 
     async def set_channel_state(self, channel, is_open):
         channel_config = self.groups["groups"][str(channel.id)]
-        if await self.check_rename_rate_limit(channel_config): return  # prevent api requests when ratelimited
+        if await self.check_rename_rate_limit(channel_config):
+            return  # prevent api requests when ratelimited
 
         was_open = channel_config["is_open"]
-        if (was_open == is_open): return  # prevent api requests when nothing changed
+        if (was_open == is_open):
+            return  # prevent api requests when nothing changed
 
         channel_config["is_open"] = is_open
         channel_config["last_rename"] = int(time.time())
@@ -207,7 +175,8 @@ class LearningGroups(commands.Cog):
     async def set_channel_name(self, channel, name):
         channel_config = self.groups["groups"][str(channel.id)]
 
-        if await self.check_rename_rate_limit(channel_config): return  # prevent api requests when ratelimited
+        if await self.check_rename_rate_limit(channel_config):
+            return  # prevent api requests when ratelimited
 
         channel_config["name"] = name
         channel_config["last_rename"] = int(time.time())
@@ -252,11 +221,22 @@ class LearningGroups(commands.Cog):
         del self.groups["groups"][str(channel.id)]
         self.save_groups()
 
+    @help(
+        category="learninggroups",
+        brief="Erstellt aus den Lerngruppen-Kanälen eine Datendatei. ",
+        description=(
+            "Initialisiert alle Gruppen in den Kategorien für offene und geschlossene Lerngruppen und baut die Verwaltungsdaten dazu auf. " 
+            "Die Lerngruppen-Kanal-Namen müssen hierfür zuvor ins Format #{symbol}{kursnummer}-{name}-{semester} gebracht werden. "
+            "Als Owner wird der ausführende Account für alle Lerngruppen gesetzt. "
+            "Wenn die Verwaltungsdatenbank nicht leer ist, wird das Kommando nicht ausgeführt. "
+        ),
+        mod=True
+    )
     @commands.command(name="init-groups")
     @commands.check(utils.is_mod)
     async def cmd_init_groups(self, ctx):
         if len(self.groups["groups"]) > 0:
-            await ctx.channel.send("Nope. Das sollte ich lieber nicht tun.")
+            await ctx.channel.send("Nope. Das sollte ich lieber nicht tun.") 
             return
 
         msg = "Initialisierung abgeschlossen:\n"
@@ -265,7 +245,8 @@ class LearningGroups(commands.Cog):
             msg += f"**{category.name}**\n"
 
             for channel in category.text_channels:
-                result = re.match(r"([0-9]{4,6})-(.*)-([a-z0-9]+)$", channel.name[1:])
+                result = re.match(
+                    r"([0-9]{4,6})-(.*)-([a-z0-9]+)$", channel.name[1:])
                 if result is None:
                     await utils.send_dm(ctx.author, f"Abbruch! Channelname hat falsches Format: {channel.name}")
                     self.groups["groups"] = {}
@@ -287,17 +268,43 @@ class LearningGroups(commands.Cog):
         await self.update_groupinfo()
         self.save_groups()
 
+    @help(
+        category="learninggroups",
+        syntax="!add-course <coursenumber> <name...>",
+        brief="Fügt einen Kurs als neue Überschrift in Botys Lerngruppen-Liste (Kanal #lerngruppen) hinzu. Darf Leerzeichen enthalten, Anführungszeichen sind nicht erforderlich.",  
+        example="!add-course 1141 Mathematische Grundlagen",
+        parameters={
+            "coursenumber": "Nummer des Kurses wie von der Fernuni angegeben (ohne führende Nullen z. B. 1142).",
+            "name...": "Ein frei wählbarer Text (darf Leerzeichen enthalten).",
+        },
+        description="Kann auch zum Bearbeiten einer Überschrift genutzt werden. Bei bereits existierender Kursnummer wird die Überschrift abgeändert",
+        mod=True
+    )
     @commands.command(name="add-course")
     @commands.check(utils.is_mod)
     async def cmd_add_course(self, ctx, arg_course, *arg_name):
         if not re.match(r"[0-9]+", arg_course):
-            await ctx.channel.send(f"Fehler! Die Kursnummer muss numerisch sein\n{self.cmd_syntax['add-course']}")
+            await ctx.channel.send(f"Fehler! Die Kursnummer muss numerisch sein. Gib `!help add-course` für Details ein.")
             return
 
         self.header[arg_course] = f"{arg_course} - {' '.join(arg_name)}"
         self.save_header()
         await self.update_groupinfo()
 
+    @help(
+        category="learninggroups",
+        syntax="!add-group <coursenumber> <name> <semester> <status> <@usermention>",
+        example="!add-group 1142 mathegenies sose22 clsoed @someuser",
+        brief="Fügt einen Lerngruppen-Kanal hinzu. Der Name darf keine Leerzeichen enthalten.",
+        parameters={
+            "coursenumber": "Nummer des Kurses wie von der Fernuni angegeben (ohne führende Nullen z. B. 1142).",
+            "name": "Ein frei wählbarer Text ohne Leerzeichen. Bindestriche sind zulässig.",
+            "semester": "Das Semester, für welches diese Lerngruppe erstellt werden soll. sose oder wise gefolgt von der zweistelligen Jahreszahl (z. B. sose22).",
+            "status": "Gibt an ob die Lerngruppe für weitere Lernwillige geöffnet ist (open) oder nicht (closed).",
+            "@usermention": "Der so erwähnte Benutzer wird als Besitzer für die Lerngruppe gesetzt."
+        },
+        mod=True
+    )
     @commands.command(name="add-group")
     @commands.check(utils.is_mod)
     async def cmd_add_group(self, ctx, arg_course, arg_name, arg_semester, arg_open, arg_owner: discord.Member):
@@ -305,19 +312,35 @@ class LearningGroups(commands.Cog):
         channel_config = {"owner_id": arg_owner.id, "course": arg_course, "name": arg_name, "semester": arg_semester,
                           "is_open": is_open}
 
-        if not await self.is_channel_config_valid(ctx, channel_config, ctx.command.name): return
+        if not await self.is_channel_config_valid(ctx, channel_config, ctx.command.name):
+            return
 
         self.groups["requested"][str(ctx.message.id)] = channel_config
         self.save_groups()
         await self.add_requested_group_channel(ctx.message, direct=True)
 
+    @help(
+        category="learninggroups",
+        syntax="!request-group <coursenumber> <name> <semester> <status>",
+        brief="Stellt eine Anfrage für einen neuen Lerngruppen-Kanal.",
+        example="!request-group 1142 mathegenies sose22 closed",
+        description=("Moderatorinnen können diese Anfrage bestätigen, dann wird die Gruppe eingerichtet. "
+                     "Der Besitzer der Gruppe ist der Benutzer der die Anfrage eingestellt hat."),
+        parameters={
+            "coursenumber": "Nummer des Kurses, wie von der FernUni angegeben (ohne führende Nullen z. B. 1142).",
+            "name": "Ein frei wählbarer Text ohne Leerzeichen.",
+            "semester": "Das Semester, für welches diese Lerngruppe erstellt werden soll. sose oder wise gefolgt von der zweistelligen Jahrenszahl (z. B. sose22).",
+            "status": "Gibt an ob die Lerngruppe für weitere Lernwillige geöffnet ist (open) oder nicht (closed)."
+        }
+    )
     @commands.command(name="request-group")
     async def cmd_request_group(self, ctx, arg_course, arg_name, arg_semester, arg_open):
         is_open = self.arg_open_to_bool(arg_open)
         channel_config = {"owner_id": ctx.author.id, "course": arg_course, "name": arg_name, "semester": arg_semester,
                           "is_open": is_open}
 
-        if not await self.is_channel_config_valid(ctx, channel_config, ctx.command.name): return
+        if not await self.is_channel_config_valid(ctx, channel_config, ctx.command.name):
+            return
 
         channel_name = self.full_channel_name(channel_config)
         embed = discord.Embed(title="Lerngruppenanfrage!",
@@ -332,26 +355,68 @@ class LearningGroups(commands.Cog):
         self.groups["requested"][str(message.id)] = channel_config
         self.save_groups()
 
+    @help(
+        category="learninggroups",
+        brief="Öffnet den Lerngruppen-Kanal wenn du die Besitzerin bist. ",
+        description=("Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. "
+                     "Verschiebt den Lerngruppen-Kanal in die Kategorie für offene Kanäle und ändert das Icon. "
+                     "Diese Aktion kann nur vom Besitzer der Lerngruppe ausgeführt werden. ")
+    )
     @commands.command(name="open")
     async def cmd_open(self, ctx):
         if self.is_group_owner(ctx.channel, ctx.author) or utils.is_mod(ctx):
             await self.set_channel_state(ctx.channel, is_open=True)
 
+    @help(
+        category="learninggroups",
+        brief="Schließt den Lerngruppen-Kanal wenn du die Besitzerin bist. ",
+        description=("Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. "
+                     "Verschiebt den Lerngruppen-Kanal in die Kategorie für geschlossene Kanäle und ändert das Icon. "
+                     "Diese Aktion kann nur vom Besitzer der Lerngruppe ausgeführt werden. ")
+    )
     @commands.command(name="close")
     async def cmd_close(self, ctx):
         if self.is_group_owner(ctx.channel, ctx.author) or utils.is_mod(ctx):
             await self.set_channel_state(ctx.channel, is_open=False)
 
+    @help(
+        category="learninggroups",
+        syntax="!rename <name>",
+        brief="Ändert den Namen des Lerngruppen-Kanals, in dem das Komando ausgeführt wird.",
+        example="!rename matheluschen",
+        description="Aus #1142-matheprofis-sose22 wird nach dem Aufruf des Beispiels #1142-matheluschen-sose22.",
+        parameters={
+            "name": "Der neue Name der Lerngruppe ohne Leerzeichen."
+        },
+        mod=True
+    )
     @commands.command(name="rename")
     @commands.check(utils.is_mod)
     async def cmd_rename(self, ctx, arg_name):
         await self.set_channel_name(ctx.channel, arg_name)
 
+    @help(
+        category="learninggroups",
+        brief="Archiviert den Lerngruppen-Kanal",
+        description="Verschiebt den Lerngruppen-Kanal, in welchem dieses Kommando ausgeführt wird, ins Archiv.",
+        mod=True
+    )
     @commands.command(name="archive")
     @commands.check(utils.is_mod)
     async def cmd_archive(self, ctx):
         await self.archive(ctx.channel)
 
+    @help(
+        category="learninggroups",
+        syntax="!owner <@usermention>",
+        example="!owner @someuser",
+        brief="Setzt die Besitzerin eines Lerngruppen-Kanals",
+        description="Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. ",
+        parameters={
+            "@usermention": "Der neue Besitzer der Lerngruppe."
+        },
+        mod=True
+    )
     @commands.command(name="owner")
     @commands.check(utils.is_mod)
     async def cmd_owner(self, ctx, arg_owner: discord.Member):
@@ -361,6 +426,12 @@ class LearningGroups(commands.Cog):
             self.save_groups()
             await ctx.channel.send(f"Glückwunsch {arg_owner.mention}! Du bist jetzt die Besitzerin dieser Lerngruppe.")
 
+    @help(
+        category="learninggroups",
+        brief="Zeigt die Besitzerin eines Lerngruppen-Kanals an.",
+        description="Muss im betreffenden Lerngruppen-Kanal ausgeführt werden.",
+        mod=True
+    )
     @commands.command(name="show-owner")
     @commands.check(utils.is_mod)
     async def cmd_show_owner(self, ctx):
@@ -372,7 +443,8 @@ class LearningGroups(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
-        if payload.user_id == self.bot.user.id: return
+        if payload.user_id == self.bot.user.id:
+            return
 
         channel = await self.bot.fetch_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
@@ -387,7 +459,4 @@ class LearningGroups(commands.Cog):
             await message.delete()
 
     async def cog_command_error(self, ctx, error):
-        if isinstance(error, commands.errors.MissingRequiredArgument):
-            await ctx.channel.send(f"Fehler! Du hast ein Argument vergessen.\n{self.cmd_syntax[ctx.command.name]}")
-        else:
-            raise error
+        await handle_error(ctx, error)

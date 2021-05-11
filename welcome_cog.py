@@ -4,6 +4,7 @@ import discord
 from discord.ext import commands
 
 import utils
+from help.help import help, handle_error
 
 
 class WelcomeCog(commands.Cog):
@@ -12,6 +13,11 @@ class WelcomeCog(commands.Cog):
         self.channel_id = int(os.getenv("DISCORD_WELCOME_CHANNEL"))
         self.message_id = int(os.getenv("DISCORD_WELCOME_MSG"))
 
+    @help(
+      category="updater",
+      brief="aktualisiert die Willkommensnachricht.",
+      mod=True
+      )
     @commands.command("update-welcome")
     @commands.check(utils.is_mod)
     async def cmd_update_welcome(self, ctx):
@@ -57,3 +63,6 @@ class WelcomeCog(commands.Cog):
         if before.pending != after.pending and not after.pending:
             channel = await self.bot.fetch_channel(int(os.getenv("DISCORD_GREETING_CHANNEL")))
             await channel.send(f"Herzlich Willkommen <@!{before.id}> im Kreise der Studentinnen :wave:")
+
+    async def cog_command_error(self, ctx, error):
+        await handle_error(ctx, error)

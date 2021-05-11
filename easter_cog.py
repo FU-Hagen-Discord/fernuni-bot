@@ -2,6 +2,7 @@ import json
 import random
 import discord
 from discord.ext import commands, tasks
+from help.help import help, handle_error
 
 
 class EasterCog(commands.Cog):
@@ -52,7 +53,7 @@ class EasterCog(commands.Cog):
     #         self.data["leaderboard"][str(user_id)] = modifier
     #
     #     self.save_data()
-
+    #@help()
     @commands.command(name="leaderboard")
     async def cmd_leaderboard(self, ctx, all=None):
         leaderboard = self.data["leaderboard"]
@@ -102,3 +103,6 @@ class EasterCog(commands.Cog):
     #     if len(delete) > 0:
     #         for message in delete:
     #             self.messages.remove(message)
+
+    async def cog_command_error(self, ctx, error):
+        await handle_error(ctx, error)
