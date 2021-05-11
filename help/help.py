@@ -32,16 +32,17 @@ def remove_help_for(name):
     data["command"].pop(name)
 
 
-def help(syntax=None, example=None, brief=None, description=None, mod=False, parameters={}, category=None):
+def help(syntax=None, example=None, brief=None, description=None, mod=False, parameters={}, category=None, command_group=''):
     def decorator_help(cmd):
         nonlocal syntax, parameters
+        cmd_name = f"{command_group} {cmd.name}" if command_group else f"{cmd.name}"
         if syntax is None:
             arguments = inspect.signature(cmd.callback).parameters
             function_arguments = [
                 f"<{item[1].name}{'?' if item[1].default != inspect._empty else ''}>" for item in
                 list(arguments.items())[2:]]
-            syntax = f"!{cmd.name} {' '.join(function_arguments)}"
-        add_help(cmd.name, syntax, example, brief,
+            syntax = f"!{cmd_name} {' '.join(function_arguments)}"
+        add_help(cmd_name, syntax, example, brief,
                  description, mod, parameters, category)
         return cmd
 
@@ -87,9 +88,9 @@ class Help(commands.Cog):
         brief="Zeigt die verfügbaren Kommandos an. Wenn ein Kommando übergeben wird, wird eine ausführliche Hilfe zu diesem Kommando angezeigt.",
     )
     @commands.command(name="help")
-    async def cmd_help(self, ctx, command=None):
-        if not command is None:
-            command = re.sub(r"^!", "", command)
+    async def cmd_help(self, ctx, *command):
+        if len(command) > 0:
+            command = re.sub(r"^!", "", ' '.join(command))
             await self.help_card(ctx, command)
             return
         await self.help_overview(ctx)
