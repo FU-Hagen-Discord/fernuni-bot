@@ -1,4 +1,5 @@
 import utils
+from help.help import help, help_category
 from module_information.scrapper import Scrapper
 
 import json
@@ -14,6 +15,8 @@ from discord.ext import commands, tasks
 """
 
 
+@help_category("moduleinformation", "Modulinformationen",
+               "Mit diesen Kommandos kannst du dir Informationen zu einem Kurs/Modul anzeigen lassen. Die angezeigten Informationen sind abhängig von deinem Studiengang (also der Rolle die du gewählt hast).")
 class ModuleInformation(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -231,71 +234,128 @@ class ModuleInformation(commands.Cog):
                               color=19607)
         await channel.send(embed=embed)
 
-    #TODO Entfernen wenn Hilfesystem eingebaut ist
-    async def help(self, channel):
-        await channel.send(
-            "```"
-            "!module info        gibt allgemeine Modulinformationen aus\n"
-            "!module handbuch    gibt den Link zur Seite im Modulhandbuch aus\n"
-            "!module leseprobe   gibt den Link zur Leseprobe aus\n"
-            "!module aufwand     gibt den zeitlichen Aufwand des Moduls aus\n"
-            "!module mentoriat   gibt eine Liste der Mentoriate aus\n"
-            "!module prüfung     gibt Informationen zur Prüfung aus\n\n"
-            "```"
-            f"Die angezeigten Infos sind abhängig von deinem Studiengang (siehe <#{self.roles_channel_id}>)"
-
-        )
-        return
-
+    @help(
+        category="moduleinformation",
+        syntax="!module <command> <stg?>",
+        parameters={
+            "command": "Das Kommando welches ausgeführt werden soll (aufwand, handbuch, info, leseprobe, mentoriate, prüfungen)",
+            "stg": "*(optional)* Kürzel des Studiengangs für den die Informationen angezeigt werden sollen (bainf, bamath, bscmatse, bawiinf, mscma, mscinf, mawiinf, mscprinf)"
+        },
+        brief="Ruft Modulinformation ab. "
+    )
     @commands.group(name="module", aliases=["modul"], pass_context=True)
     async def cmd_module(self, ctx):
         if not ctx.invoked_subcommand:
             await self.help(ctx.channel)
 
+    @help(
+        command_group="module",
+        category="moduleinformation",
+        syntax="!module update <stg?>",
+        parameters={
+            "stg": "*(optional)* Kürzel des Studiengangs für den die Informationen angezeigt werden sollen (bainf, bamath, bscmatse, bawiinf, mscma, mscinf, mawiinf, mscprinf)"
+        },
+        mod=True,
+        brief="Aktualisiert die Daten über die Module (manueller Aufruf im Normalfall nicht nötig). "
+    )
     @cmd_module.command("update")
     @commands.check(utils.is_mod)
     async def cmd_module_update(self, ctx):
         await ctx.channel.send("Refreshing...")
         await self.refresh_data()
 
+    @help(
+        command_group="module",
+        category="moduleinformation",
+        syntax="!module handbuch <stg?>",
+        parameters={
+            "stg": "*(optional)* Kürzel des Studiengangs für den die Informationen angezeigt werden sollen (bainf, bamath, bscmatse, bawiinf, mscma, mscinf, mawiinf, mscprinf)"
+        },
+        brief="Zeigt den Link zum Modulhandbuch für dieses Modul an. "
+    )
     @cmd_module.command("handbuch", aliases=["mhb", "hb", "modulhandbuch"])
     async def cmd_module_handbuch(self, ctx, arg_stg=None):
         stg = await self.get_stg(ctx, arg_stg)
-        if (not stg):
+        if not stg:
             return
         await self.handbook(ctx.channel, stg)
 
+    @help(
+        command_group="module",
+        category="moduleinformation",
+        syntax="!module leseprobe <stg?>",
+        parameters={
+            "stg": "*(optional)* Kürzel des Studiengangs für den die Informationen angezeigt werden sollen (bainf, bamath, bscmatse, bawiinf, mscma, mscinf, mawiinf, mscprinf)"
+        },
+        brief="Zeigt den Link zur Leseprobe für diesen Kurs an. "
+    )
     @cmd_module.command("probe", aliases=["leseprobe"])
     async def cmd_module_probe(self, ctx, arg_stg=None):
         stg = await self.get_stg(ctx, arg_stg)
-        if (not stg):
+        if not stg:
             return
         await self.reading_sample(ctx.channel, stg)
 
+    @help(
+        command_group="module",
+        category="moduleinformation",
+        syntax="!module info <stg?>",
+        parameters={
+            "stg": "*(optional)* Kürzel des Studiengangs für den die Informationen angezeigt werden sollen (bainf, bamath, bscmatse, bawiinf, mscma, mscinf, mawiinf, mscprinf)"
+        },
+        brief="Zeigt allgeimeine Informationen zum Modul an. "
+    )
     @cmd_module.command("info")
     async def cmd_module_info(self, ctx, arg_stg=None):
         stg = await self.get_stg(ctx, arg_stg)
-        if (not stg):
+        if not stg:
             return
         await self.info(ctx.channel, stg)
 
+    @help(
+        command_group="module",
+        category="moduleinformation",
+        syntax="!module aufwand <stg?>",
+        parameters={
+            "stg": "*(optional)* Kürzel des Studiengangs für den die Informationen angezeigt werden sollen (bainf, bamath, bscmatse, bawiinf, mscma, mscinf, mawiinf, mscprinf)"
+        },
+        brief="Zeigt die Informationen zum zeitlichen Aufwand an. "
+    )
     @cmd_module.command("aufwand", aliases=["workload", "load", "zeit", "arbeitzeit"])
     async def cmd_module_aufwand(self, ctx, arg_stg=None):
         stg = await self.get_stg(ctx, arg_stg)
-        if (not stg):
+        if not stg:
             return
         await self.load(ctx.channel, stg)
 
+    @help(
+        command_group="module",
+        category="moduleinformation",
+        syntax="!module mentoriate <stg?>",
+        parameters={
+            "stg": "*(optional)* Kürzel des Studiengangs für den die Informationen angezeigt werden sollen (bainf, bamath, bscmatse, bawiinf, mscma, mscinf, mawiinf, mscprinf)"
+        },
+        brief="Zeigt eine Liste der verfügbaren Mentoriate an. "
+    )
     @cmd_module.command("mentoriate", aliases=["mentoriat", "support"])
     async def cmd_module_mentoriate(self, ctx, arg_stg=None):
         stg = await self.get_stg(ctx, arg_stg)
-        if (not stg):
+        if not stg:
             return
         await self.support(ctx.channel, stg)
 
+    @help(
+        command_group="module",
+        category="moduleinformation",
+        syntax="!module prüfungen <stg?>",
+        parameters={
+            "stg": "*(optional)* Kürzel des Studiengangs für den die Informationen angezeigt werden sollen (bainf, bamath, bscmatse, bawiinf, mscma, mscinf, mawiinf, mscprinf)"
+        },
+        brief="Zeigt Informationen zur Prüfung an. "
+    )
     @cmd_module.command("prüfungen", aliases=["exam", "exams", "prüfung"])
     async def cmd_module_pruefungen(self, ctx, arg_stg=None):
         stg = await self.get_stg(ctx, arg_stg)
-        if (not stg):
+        if not stg:
             return
         await self.exams(ctx.channel, stg)
