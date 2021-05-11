@@ -162,7 +162,7 @@ class Poll:
             await message.clear_reaction("🛑")
 
             for reaction in reactions:
-                if reaction not in OPTIONS[:len(self.answers) - 1]:
+                if reaction not in OPTIONS[:len(self.answers)]:
                     await message.clear_reaction(reaction)
 
             for i in range(0, len(self.answers)):
