@@ -40,7 +40,7 @@ class ModuleInformation(commands.Cog):
             self.save_data()
             print("Refresh finished")
         except:
-            print("Can't refresh Data")
+            print("Can't refresh data")
             pass
 
     @update_loop.before_loop
@@ -124,9 +124,9 @@ class ModuleInformation(commands.Cog):
     async def handbook(self, channel, stg):
         desc = await self.download_for(r"Modulhandbuch", channel, stg)
         if desc is None:
-            await channel.send("Leider habe ich kein Modulhandbuch gefunden")
+            await channel.send("Leider habe ich kein Modulhandbuch gefunden.")
             return
-        embed = discord.Embed(title="Modulehandbuch",
+        embed = discord.Embed(title="Modulhandbuch",
                               description=desc,
                               color=19607)
         await channel.send(embed=embed)
@@ -134,7 +134,7 @@ class ModuleInformation(commands.Cog):
     async def reading_sample(self, channel, stg):
         desc = await self.download_for(r"Leseprobe", channel, stg)
         if desc is None:
-            await channel.send("Leider habe ich keine Leseprobe gefunden")
+            await channel.send("Leider habe ich keine Leseprobe gefunden.")
             return
         embed = discord.Embed(title="Leseprobe",
                               description=desc,
@@ -238,8 +238,8 @@ class ModuleInformation(commands.Cog):
         category="moduleinformation",
         syntax="!module <command> <stg?>",
         parameters={
-            "command": "Das Kommando welches ausgeführt werden soll (aufwand, handbuch, info, leseprobe, mentoriate, prüfungen)",
-            "stg": "*(optional)* Kürzel des Studiengangs für den die Informationen angezeigt werden sollen (bainf, bamath, bscmatse, bawiinf, mscma, mscinf, mawiinf, mscprinf)"
+            "command": "Das Kommando, welches ausgeführt werden soll (aufwand, handbuch, info, leseprobe, mentoriate, prüfungen)",
+            "stg": "*(optional)* Kürzel des Studiengangs, für den die Informationen angezeigt werden sollen (bainf, bamath, bscmatse, bawiinf, mscma, mscinf, mawiinf, mscprinf)"
         },
         brief="Ruft Modulinformation ab. "
     )
@@ -253,7 +253,7 @@ class ModuleInformation(commands.Cog):
         category="moduleinformation",
         syntax="!module update <stg?>",
         parameters={
-            "stg": "*(optional)* Kürzel des Studiengangs für den die Informationen angezeigt werden sollen (bainf, bamath, bscmatse, bawiinf, mscma, mscinf, mawiinf, mscprinf)"
+            "stg": "*(optional)* Kürzel des Studiengangs, für den die Informationen angezeigt werden sollen (bainf, bamath, bscmatse, bawiinf, mscma, mscinf, mawiinf, mscprinf)"
         },
         mod=True,
         brief="Aktualisiert die Daten über die Module (manueller Aufruf im Normalfall nicht nötig). "
@@ -269,7 +269,7 @@ class ModuleInformation(commands.Cog):
         category="moduleinformation",
         syntax="!module handbuch <stg?>",
         parameters={
-            "stg": "*(optional)* Kürzel des Studiengangs für den die Informationen angezeigt werden sollen (bainf, bamath, bscmatse, bawiinf, mscma, mscinf, mawiinf, mscprinf)"
+            "stg": "*(optional)* Kürzel des Studiengangs, für den die Informationen angezeigt werden sollen (bainf, bamath, bscmatse, bawiinf, mscma, mscinf, mawiinf, mscprinf)"
         },
         brief="Zeigt den Link zum Modulhandbuch für dieses Modul an. "
     )
@@ -285,9 +285,9 @@ class ModuleInformation(commands.Cog):
         category="moduleinformation",
         syntax="!module leseprobe <stg?>",
         parameters={
-            "stg": "*(optional)* Kürzel des Studiengangs für den die Informationen angezeigt werden sollen (bainf, bamath, bscmatse, bawiinf, mscma, mscinf, mawiinf, mscprinf)"
+            "stg": "*(optional)* Kürzel des Studiengangs, für den die Informationen angezeigt werden sollen (bainf, bamath, bscmatse, bawiinf, mscma, mscinf, mawiinf, mscprinf)"
         },
-        brief="Zeigt den Link zur Leseprobe für diesen Kurs an. "
+        brief="Zeigt den Link zur Leseprobe für diesen Kurs an."
     )
     @cmd_module.command("probe", aliases=["leseprobe"])
     async def cmd_module_probe(self, ctx, arg_stg=None):
@@ -301,9 +301,9 @@ class ModuleInformation(commands.Cog):
         category="moduleinformation",
         syntax="!module info <stg?>",
         parameters={
-            "stg": "*(optional)* Kürzel des Studiengangs für den die Informationen angezeigt werden sollen (bainf, bamath, bscmatse, bawiinf, mscma, mscinf, mawiinf, mscprinf)"
+            "stg": "*(optional)* Kürzel des Studiengangs, für den die Informationen angezeigt werden sollen (bainf, bamath, bscmatse, bawiinf, mscma, mscinf, mawiinf, mscprinf)"
         },
-        brief="Zeigt allgeimeine Informationen zum Modul an. "
+        brief="Zeigt allgemeine Informationen zum Modul an."
     )
     @cmd_module.command("info")
     async def cmd_module_info(self, ctx, arg_stg=None):
@@ -317,7 +317,7 @@ class ModuleInformation(commands.Cog):
         category="moduleinformation",
         syntax="!module aufwand <stg?>",
         parameters={
-            "stg": "*(optional)* Kürzel des Studiengangs für den die Informationen angezeigt werden sollen (bainf, bamath, bscmatse, bawiinf, mscma, mscinf, mawiinf, mscprinf)"
+            "stg": "*(optional)* Kürzel des Studiengangs, für den die Informationen angezeigt werden sollen (bainf, bamath, bscmatse, bawiinf, mscma, mscinf, mawiinf, mscprinf)"
         },
         brief="Zeigt die Informationen zum zeitlichen Aufwand an. "
     )
@@ -333,9 +333,9 @@ class ModuleInformation(commands.Cog):
         category="moduleinformation",
         syntax="!module mentoriate <stg?>",
         parameters={
-            "stg": "*(optional)* Kürzel des Studiengangs für den die Informationen angezeigt werden sollen (bainf, bamath, bscmatse, bawiinf, mscma, mscinf, mawiinf, mscprinf)"
+            "stg": "*(optional)* Kürzel des Studiengangs, für den die Informationen angezeigt werden sollen (bainf, bamath, bscmatse, bawiinf, mscma, mscinf, mawiinf, mscprinf)"
         },
-        brief="Zeigt eine Liste der verfügbaren Mentoriate an. "
+        brief="Zeigt eine Liste der verfügbaren Mentoriate an."
     )
     @cmd_module.command("mentoriate", aliases=["mentoriat", "support"])
     async def cmd_module_mentoriate(self, ctx, arg_stg=None):
@@ -349,7 +349,7 @@ class ModuleInformation(commands.Cog):
         category="moduleinformation",
         syntax="!module prüfungen <stg?>",
         parameters={
-            "stg": "*(optional)* Kürzel des Studiengangs für den die Informationen angezeigt werden sollen (bainf, bamath, bscmatse, bawiinf, mscma, mscinf, mawiinf, mscprinf)"
+            "stg": "*(optional)* Kürzel des Studiengangs, für den die Informationen angezeigt werden sollen (bainf, bamath, bscmatse, bawiinf, mscma, mscinf, mawiinf, mscprinf)"
         },
         brief="Zeigt Informationen zur Prüfung an. "
     )
