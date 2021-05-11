@@ -65,6 +65,8 @@ class AppointmentsCog(commands.Cog):
 
                         if appointment["reminder"] > 0 and diff > 0:
                             answer += f"in {diff} Minuten fällig."
+                            if appointment["recurring"]:
+                                appointment["original_reminder"] = str(appointment["reminder"])
                             appointment["reminder"] = 0
                         else:
                             answer += f"jetzt fällig. :loudspeaker: "
@@ -98,7 +100,7 @@ class AppointmentsCog(commands.Cog):
                             await self.add_appointment(channel, channel_appointment["author_id"],
                                                        splitted_new_date_time_str[0],
                                                        splitted_new_date_time_str[1],
-                                                       str(channel_appointment["reminder"]),
+                                                       str(channel_appointment["original_reminder"]),
                                                        channel_appointment["title"],
                                                        str(channel_appointment["recurring"]))
                         channel_appointments.pop(key)
