@@ -65,8 +65,8 @@ class AppointmentsCog(commands.Cog):
 
                         if appointment["reminder"] > 0 and diff > 0:
                             answer += f"in {diff} Minuten fällig."
-                            if appointment.get("recurring") and appointment.get("reminder"):
-                                appointment["original_reminder"] = str(appointment.get("reminder"))
+                            if reminder := appointment.get("reminder") and appointment.get("recurring"):
+                                appointment["original_reminder"] = str(reminder)
                             appointment["reminder"] = 0
                         else:
                             answer += f"jetzt fällig. :loudspeaker: "
