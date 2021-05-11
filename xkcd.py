@@ -1,5 +1,5 @@
 import random
-import requests
+import aiohttp
 
 import discord
 from discord.ext import commands
@@ -11,28 +11,31 @@ class Xkcd(commands.Cog):
 
     @commands.command(name="xkcd")
     async def cmd_xkcd(self, ctx, number=None):
-        # Daten vom aktuellsten Comic holen, um max zu bestimmen
-        data = requests.get('http://xkcd.com/info.0.json')
-        data_json = data.json()
-        max = data_json['num']
 
-        # Nummer übernehmen wenn vorhanden und zwischen 1 und max, sonst random Nummer wählen
-        if number == 'latest':
-            n = max
-        else:
-            try:
-                n = number if (number and 0 < int(number) <= max) else str(random.randint(1, max))
-            except ValueError:
-                n = str(random.randint(1, max))
+        async with aiohttp.ClientSession() as session:
 
-        # Daten zum Bild holen
-        n_data = requests.get(f'http://xkcd.com/{n}/info.0.json')
-        n_data_json = n_data.json()
+            # Daten vom aktuellsten Comic holen, um max zu bestimmen
+            async with session.get('http://xkcd.com/info.0.json') as request:
+                data = await request.json()
+            max = data['num']
 
-        img = n_data_json['img']
-        num = n_data_json['num']
-        title = n_data_json['title']
-        text = n_data_json['alt']
+            # Nummer übernehmen wenn vorhanden und zwischen 1 und max, sonst random Nummer wählen
+            if number == 'latest':
+                n = max
+            else:
+                try:
+                    n = number if (number and 0 < int(number) <= max) else str(random.randint(1, max))
+                except ValueError:
+                    n = str(random.randint(1, max))
+
+            # Daten zum Bild holen
+            async with session.get(f'http://xkcd.com/{n}/info.0.json') as request:
+                n_data = await request.json()
+
+        img = n_data['img']
+        num = n_data['num']
+        title = n_data['title']
+        text = n_data['alt']
 
         # Comic embedden
         e = discord.Embed()
