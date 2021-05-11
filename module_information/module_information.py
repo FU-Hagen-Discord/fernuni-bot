@@ -246,7 +246,7 @@ class ModuleInformation(commands.Cog):
     @commands.group(name="module", aliases=["modul"], pass_context=True)
     async def cmd_module(self, ctx):
         if not ctx.invoked_subcommand:
-            await self.help(ctx.channel)
+            await self.cmd_module_info(ctx)
 
     @help(
         command_group="module",
