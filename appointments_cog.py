@@ -97,7 +97,7 @@ class AppointmentsCog(commands.Cog):
                             new_date_time = date_time + datetime.timedelta(minutes=recurring)
                             new_date_time_str = new_date_time.strftime(self.fmt)
                             splitted_new_date_time_str = new_date_time_str.split(" ")
-                            reminder = channel_appointment.get("orignal_reminder")
+                            reminder = channel_appointment.get("original_reminder")
                             reminder = reminder if reminder else 0
                             await self.add_appointment(channel, channel_appointment["author_id"],
                                                        splitted_new_date_time_str[0],
