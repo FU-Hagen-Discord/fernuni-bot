@@ -1,4 +1,3 @@
-import json
 import os
 
 import discord
@@ -6,7 +5,6 @@ from discord.ext import commands
 from dotenv import load_dotenv
 
 # from welcome_cog import WelcomeCog
-import utils
 from appointments_cog import AppointmentsCog
 from armin import Armin
 from christmas_cog import ChristmasCog
@@ -22,6 +20,7 @@ from text_commands_cog import TextCommandsCog
 from voice_cog import VoiceCog
 from welcome_cog import WelcomeCog
 from help.help import Help
+from calmdown import Calmdown
 
 # .env file is necessary in the same directory, that contains several strings.
 load_dotenv()
@@ -53,6 +52,7 @@ bot.add_cog(EasterCog(bot))
 bot.add_cog(Armin(bot))
 bot.add_cog(LearningGroups(bot))
 bot.add_cog(Help(bot))
+bot.add_cog(Calmdown(bot))
 
 
 def get_reaction(reactions):
