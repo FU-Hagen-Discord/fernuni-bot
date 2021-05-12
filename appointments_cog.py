@@ -6,25 +6,12 @@ import re
 
 import discord
 from discord.ext import tasks, commands
+
+import utils
 from help.help import help, handle_error, help_category
 
 
-def is_valid_time(time):
-    return re.match(r"^\d+[mhd]?$", time)
 
-
-def to_minutes(time):
-    if time[-1:] == "m":
-        return int(time[:-1])
-    elif time[-1:] == "h":
-        h = int(time[:-1])
-        return h * 60
-    elif time[-1:] == "d":
-        d = int(time[:-1])
-        h = d * 24
-        return h * 60
-
-    return int(time)
 
 
 @help_category("appointments", "Appointments", "Mit Appointments kannst du Termine zu einem Kanal hinzufügen. "
@@ -137,18 +124,18 @@ class AppointmentsCog(commands.Cog):
             await channel.send("Fehler! Ungültiges Datums und/oder Zeit Format!")
             return
 
-        if not is_valid_time(reminder):
+        if not utils.is_valid_time(reminder):
             await channel.send("Fehler! Benachrichtigung in ungültigem Format!")
             return
         else:
-            reminder = to_minutes(reminder)
+            reminder = utils.to_minutes(reminder)
 
         if recurring:
-            if not is_valid_time(recurring):
+            if not utils.is_valid_time(recurring):
                 await channel.send("Fehler! Wiederholung in ungültigem Format!")
                 return
             else:
-                recurring = to_minutes(recurring)
+                recurring = utils.to_minutes(recurring)
 
         embed = discord.Embed(title="Neuer Termin hinzugefügt!",
                               description=f"Wenn du eine Benachrichtigung zum Beginn des Termins"
