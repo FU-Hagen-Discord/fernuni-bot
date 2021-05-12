@@ -28,7 +28,7 @@ class PollCog(commands.Cog):
     async def cmd_add_poll(self, ctx, question, *answers):
         channel = await self.bot.fetch_channel(self.poll_sugg_channel)
         msg = f"<@!{ctx.author.id}> hat folgende Umfrage vorgeschlagen:\nFrage:{question}\n\nAntwortoptionen:\n"
-        poll = f"!poll \"{queestion}\""
+        poll = f"!poll \"{question}\""
         
         for answer in answers:
             msg += f"{answer}\n"
