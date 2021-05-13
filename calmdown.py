@@ -67,7 +67,8 @@ class Calmdown(commands.Cog):
             "user": "Mention des Users der eine Auszeit benötigt",
             "duration": "Länge der Auszeit (24h für 24 Stunden 7d für 7 Tage oder 10m oder 10 für 10 Minuten. 0 hebt die Sperre auf).",
         },
-        description="In der Zeit auf der stillen Treppe darf der User noch alle Kanäle lesen. Das Schreiben ist für ihn allerdings bis zum Ablauf der Zeit gesperrt."
+        description="In der Zeit auf der stillen Treppe darf der User noch alle Kanäle lesen. Das Schreiben ist für ihn allerdings bis zum Ablauf der Zeit gesperrt.",
+        mod=True
     )
     @commands.command(name="calmdown", aliases=["auszeit", "mute"])
     @commands.check(utils.is_mod)
