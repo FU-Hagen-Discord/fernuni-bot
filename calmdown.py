@@ -81,7 +81,7 @@ class Calmdown(commands.Cog):
             guild = ctx.guild
             role = guild.get_role(self.role_id)
             if not role:
-                ctx.channel.send("Fehler! Rolle nicht vorhanden")
+                ctx.channel.send("Fehler! Rolle nicht vorhanden!")
                 return
             duration = utils.to_minutes(duration)
             if duration == 0:
