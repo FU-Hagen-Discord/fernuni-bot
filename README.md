@@ -11,14 +11,14 @@
 
 * Begrüßung von neuen Servermitgliedern
   * Direktnachricht
-  * Text in #welcome (WIP - [Issue zum Thema](https://github.com/FU-Hagen-Discord/fernuni-bot/issues/27))
+  * Text in #welcome (WIP - [PR "Documentation increases"](https://github.com/FU-Hagen-Discord/fernuni-bot/pull/35))
 * Rollenzuschreibung / -entfernung
   * Studiengangszugehörigkeit
   * [Newsrolle](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/news_cog.py) -> Ping bei Neuigkeiten der Fak. für Informatik und Mathematik
   * Farben für Usernames
   * *Sonstige Rollen bei saisonalen Events*
 * Wissensmanagement
-  * Modulinformationen : [PR zur Funktion](https://github.com/FU-Hagen-Discord/fernuni-bot/pull/3)
+  * Modulinformationen (WIP - [PR zur Funktion](https://github.com/FU-Hagen-Discord/fernuni-bot/pull/3))
   * Sammlung Nützlicher [Links](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/links_cog.py) in den Channels
 * [Lerngruppenverwaltung](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/learninggroups.py)
   * Anfragen/ Erstellen/ Umbenennen/ Löschen
@@ -31,7 +31,12 @@
   * [Arminsagt-Sprüche](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/armin.py)
 * (Saisonal) Event-Funktionen
 
-## Contributing guide</h2>
-Tipp: [Issues](https://github.com/FU-Hagen-Discord/fernuni-bot/issues) anschauen und
-* eine nicht-attribuierte Issue, die den Label **good first issue** trägt, bearbeiten.
-* Bedürfnis entdeckt, der noch keine Issue hat? Issue erstellen und auf Rückmeldung warten 👍
+## Weiterentwicklung
+
+### Features, die aktuell in Entwicklung sind
+* Moderationswerkzeug Namens *stille Treppe* - entzieht die Schreibrechte für eine gewisse Zeit ([PR](https://github.com/FU-Hagen-Discord/fernuni-bot/pull/37))
+* XKCD-Kommando ([PR](https://github.com/FU-Hagen-Discord/fernuni-bot/pull/29))
+
+### Neue Features vorschlagen
+Dir fehlt bei Boty eine Funktion? Dann kannst du `!idee <Deine Idee>` in #bot-development auf dem Server eingeben.  
+Außerdem gibt es vielleicht offene [Issues](https://github.com/FU-Hagen-Discord/fernuni-bot/issues), die  du in Angriff nehmen möchtest?
