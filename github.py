@@ -73,7 +73,7 @@ class Github(commands.Cog):
                         if reaction.count >= int(os.getenv("DISCORD_IDEE_REACT_QTY")) and not idea.get("created"):
                             await self.create_issue(idea, message)
 
-                self.save()
+                            self.save()
 
     async def cog_command_error(self, ctx, error):
         await handle_error(ctx, error)
