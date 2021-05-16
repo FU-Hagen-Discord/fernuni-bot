@@ -101,10 +101,11 @@ class ModuleInformation(commands.Cog):
         except NoCourseChannelError:
             return None
         except ModuleInformationNotFoundError as e:
-            if not e.args[0]:
-                await ctx.channel.send("Leider konnte ich keine Informationen zu diesem Modul/Kurs finden.")
-            else:
+            if e.args and e.args[0]:
                 await ctx.channel.send(e.args[0])
+            else:
+                await ctx.channel.send("Leider konnte ich keine Informationen zu diesem Modul/Kurs finden.")
+
             return None
 
     async def get_stg_short(self, ctx, stg):
