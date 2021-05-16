@@ -65,8 +65,8 @@ class AppointmentsCog(commands.Cog):
 
                         if appointment["reminder"] > 0 and diff > 0:
                             answer += f"in {diff} Minuten fällig."
-                            if appointment["recurring"]:
-                                appointment["original_reminder"] = str(appointment["reminder"])
+                            if (reminder := appointment.get("reminder")) and appointment.get("recurring"):
+                                appointment["original_reminder"] = str(reminder)
                             appointment["reminder"] = 0
                         else:
                             answer += f"jetzt fällig. :loudspeaker: "
@@ -90,17 +90,19 @@ class AppointmentsCog(commands.Cog):
                 for key in delete:
                     channel_appointment = channel_appointments.get(key)
                     if channel_appointment:
-                        if channel_appointment["recurring"]:
+                        if channel_appointment.get("recurring"):
                             recurring = channel_appointment["recurring"]
                             date_time_str = channel_appointment["date_time"]
                             date_time = datetime.datetime.strptime(date_time_str, self.fmt)
                             new_date_time = date_time + datetime.timedelta(minutes=recurring)
                             new_date_time_str = new_date_time.strftime(self.fmt)
                             splitted_new_date_time_str = new_date_time_str.split(" ")
+                            reminder = channel_appointment.get("original_reminder")
+                            reminder = reminder if reminder else 0
                             await self.add_appointment(channel, channel_appointment["author_id"],
                                                        splitted_new_date_time_str[0],
                                                        splitted_new_date_time_str[1],
-                                                       str(channel_appointment["original_reminder"]),
+                                                       str(reminder),
                                                        channel_appointment["title"],
                                                        str(channel_appointment["recurring"]))
                         channel_appointments.pop(key)
