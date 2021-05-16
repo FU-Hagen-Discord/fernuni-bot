@@ -114,7 +114,7 @@ async def on_raw_reaction_remove(payload):
 
 @bot.event
 async def on_voice_state_update(member, before, after):
-    if before.channel != after.channel and after.channel and "Lerngruppen-Voice" in after.channel.name:
+    if before.channel != after.channel and after.channel and "Lerngruppen-Voicy" in after.channel.name:
         category = await bot.fetch_channel(CATEGORY_LERNGRUPPEN)
         voice_channels = category.voice_channels
 
@@ -122,7 +122,7 @@ async def on_voice_state_update(member, before, after):
             if len(voice_channel.members) == 0:
                 return
 
-        await category.create_voice_channel(f"Lerngruppen-Voice-{len(voice_channels) + 1}")
+        await category.create_voice_channel(f"Lerngruppen-Voicy-{len(voice_channels) + 1}", bitrate=256000)
 
 
 bot.run(TOKEN)
