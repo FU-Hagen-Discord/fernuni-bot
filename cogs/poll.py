@@ -1,15 +1,14 @@
 import os
 
-import discord
 from discord.ext import commands
 
 import utils
-from help.help import help, handle_error, help_category
+from cogs.help import help, handle_error, help_category
+from cogs.components.poll import Poll as ThePoll
 
-OPTIONS = ["🇦", "🇧", "🇨", "🇩", "🇪", "🇫", "🇬", "🇭", "🇮", "🇯", "🇰", "🇱", "🇲", "🇳", "🇴", "🇵", "🇶", "🇷"]
 
 @help_category("poll", "Umfragen", "Erstelle eine Umfrage in einem Kanal oder schlage eine Server-Umfrage vor.", "Umfragen erstellen oder bearbeiten.")
-class PollCog(commands.Cog):
+class Poll(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.poll_sugg_channel = int(os.getenv("DISCORD_POLL_SUGG_CHANNEL"))
@@ -54,8 +53,8 @@ class PollCog(commands.Cog):
         message = await ctx.fetch_message(message_id)
         if message:
             if message.embeds[0].title == "Umfrage":
-                old_poll = Poll(self.bot, message=message)
-                new_poll = Poll(self.bot, question=question, answers=answers, author=old_poll.author)
+                old_poll = ThePoll(self.bot, message=message)
+                new_poll = ThePoll(self.bot, question=question, answers=answers, author=old_poll.author)
                 await new_poll.send_poll(ctx.channel, message=message)
         else:
             ctx.send("Fehler! Umfrage nicht gefunden!")
@@ -75,7 +74,7 @@ class PollCog(commands.Cog):
     async def cmd_poll(self, ctx, question, *answers):
         """ Create poll """
 
-        await Poll(self.bot, question, answers, ctx.author.id).send_poll(ctx)
+        await ThePoll(self.bot, question, answers, ctx.author.id).send_poll(ctx)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
@@ -86,7 +85,7 @@ class PollCog(commands.Cog):
             channel = await self.bot.fetch_channel(payload.channel_id)
             message = await channel.fetch_message(payload.message_id)
             if len(message.embeds) > 0 and message.embeds[0].title == "Umfrage":
-                poll = Poll(self.bot, message=message)
+                poll = ThePoll(self.bot, message=message)
                 if str(payload.user_id) == poll.author:
                     if payload.emoji.name == "🗑️":
                         await poll.delete_poll()
@@ -95,96 +94,3 @@ class PollCog(commands.Cog):
 
     async def cog_command_error(self, ctx, error):
         await handle_error(ctx, error)
-
-
-class Poll:
-
-    def __init__(self, bot, question=None, answers=None, author=None, message=None):
-        self.bot = bot
-        self.question = question
-        self.answers = answers
-        self.author = author
-
-        if message:
-            self.message = message
-            self.answers = []
-            embed = message.embeds[0]
-            self.author = embed.fields[0].value[3:-1]
-            self.question = embed.description
-            for i in range(2, len(embed.fields)):
-                self.answers.append(embed.fields[i].value)
-
-    async def send_poll(self, channel, result=False, message=None):
-        option_ctr = 0
-        title = "Umfrage"
-        participants = {}
-
-        if result:
-            title += " Ergebnis"
-
-        if len(self.answers) > len(OPTIONS):
-            await channel.send(
-                f"Fehler beim Erstellen der Umfrage! Es werden nicht mehr als {len(OPTIONS)} Optionen unterstützt!")
-            return
-
-        embed = discord.Embed(title=title, description=self.question)
-        embed.add_field(name="Erstellt von", value=f'<@!{self.author}>', inline=False)
-        embed.add_field(name="\u200b", value="\u200b", inline=False)
-
-        for i in range(0, len(self.answers)):
-            name = f'{OPTIONS[i]}'
-            value = f'{self.answers[i]}'
-
-            if result:
-                reaction = self.get_reaction(name)
-                if reaction:
-                    name += f' : {reaction.count - 1}'
-                    async for user in reaction.users():
-                        if user != self.bot.user:
-                            participants[str(user.id)] = 1
-
-            embed.add_field(name=name, value=value, inline=False)
-            option_ctr += 1
-
-        if result:
-            embed.add_field(name="\u200b", value="\u200b", inline=False)
-            embed.add_field(name="Anzahl Teilnehmer an der Umfrage", value=f"{len(participants)}", inline=False)
-
-        if message:
-            await message.edit(embed=embed)
-        else:
-            message = await channel.send("", embed=embed)
-
-        reactions = []
-        for reaction in message.reactions:
-            reactions.append(reaction.emoji)
-
-        if not result:
-            await message.clear_reaction("🗑️")
-            await message.clear_reaction("🛑")
-
-            for reaction in reactions:
-                if reaction not in OPTIONS[:len(self.answers)]:
-                    await message.clear_reaction(reaction)
-
-            for i in range(0, len(self.answers)):
-                if OPTIONS[i] not in reactions:
-                    await message.add_reaction(OPTIONS[i])
-
-            await message.add_reaction("🗑️")
-            await message.add_reaction("🛑")
-
-    async def close_poll(self):
-        await self.send_poll(self.message.channel, result=True)
-        await self.delete_poll()
-
-    async def delete_poll(self):
-        await self.message.delete()
-
-    def get_reaction(self, reaction):
-        if self.message:
-            reactions = self.message.reactions
-
-            for react in reactions:
-                if react.emoji == reaction:
-                    return react

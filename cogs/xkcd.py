@@ -3,7 +3,7 @@ import aiohttp
 
 import discord
 from discord.ext import commands
-from help.help import help, handle_error, help_category
+from cogs.help import help
 
 
 class Xkcd(commands.Cog):

@@ -2,13 +2,12 @@ import asyncio
 import datetime
 import json
 import os
-import re
 
 import discord
 from discord.ext import tasks, commands
 
 import utils
-from help.help import help, handle_error, help_category
+from cogs.help import help, handle_error, help_category
 
 
 
@@ -16,7 +15,7 @@ from help.help import help, handle_error, help_category
 
 @help_category("appointments", "Appointments", "Mit Appointments kannst du Termine zu einem Kanal hinzufügen. "
 "Sehr praktisches Feature zum Organisieren von Lerngruppen.")
-class AppointmentsCog(commands.Cog):
+class Appointments(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.fmt = os.getenv("DISCORD_DATE_TIME_FORMAT")

@@ -5,25 +5,25 @@ from discord.ext import commands
 from dotenv import load_dotenv
 
 # from welcome_cog import WelcomeCog
-from appointments_cog import AppointmentsCog
-from armin import Armin
-from calmdown import Calmdown
-from christmas_cog import ChristmasCog
-from easter_cog import EasterCog
-from github import Github
-from help.help import Help
-from learninggroups import LearningGroups
-from links_cog import LinksCog
-from module_information.module_information import ModuleInformation
-from news_cog import NewsCog
-from poll_cog import PollCog
-from roles_cog import RolesCog
-from support_cog import SupportCog
-from text_commands_cog import TextCommandsCog
+from cogs.appointments import Appointments
+from cogs.armin import Armin
+from cogs.calmdown import Calmdown
+from cogs.christmas import Christmas
+from cogs.easter import Easter
+from cogs.github import Github
+from cogs.help import Help
+from cogs.learninggroups import LearningGroups
+from cogs.links import Links
+from cogs.module_information import ModuleInformation
+from cogs.news import News
+from cogs.poll import Poll
+from cogs.roles import Roles
+from cogs.support import Support
+from cogs.text_commands import TextCommands
 # from change_log import ChangeLogCog
-from voice_cog import VoiceCog
-from welcome_cog import WelcomeCog
-from xkcd import Xkcd
+from cogs.voice import Voice
+from cogs.welcome import Welcome
+from cogs.xkcd import Xkcd
 
 
 # .env file is necessary in the same directory, that contains several strings.
@@ -41,18 +41,18 @@ intents = discord.Intents.default()
 intents.members = True
 bot = commands.Bot(command_prefix='!', help_command=None, activity=discord.Game(ACTIVITY), owner_id=OWNER,
                    intents=intents)
-bot.add_cog(AppointmentsCog(bot))
-bot.add_cog(TextCommandsCog(bot))
-bot.add_cog(PollCog(bot))
-bot.add_cog(RolesCog(bot))
-bot.add_cog(WelcomeCog(bot))
-bot.add_cog(ChristmasCog(bot))
-bot.add_cog(SupportCog(bot))
-bot.add_cog(NewsCog(bot))
-bot.add_cog(LinksCog(bot))
+bot.add_cog(Appointments(bot))
+bot.add_cog(TextCommands(bot))
+bot.add_cog(Poll(bot))
+bot.add_cog(Roles(bot))
+bot.add_cog(Welcome(bot))
+bot.add_cog(Christmas(bot))
+bot.add_cog(Support(bot))
+bot.add_cog(News(bot))
+bot.add_cog(Links(bot))
 # bot.add_cog(ChangeLogCog(bot))
-bot.add_cog(VoiceCog(bot))
-bot.add_cog(EasterCog(bot))
+bot.add_cog(Voice(bot))
+bot.add_cog(Easter(bot))
 bot.add_cog(Armin(bot))
 bot.add_cog(LearningGroups(bot))
 bot.add_cog(ModuleInformation(bot))

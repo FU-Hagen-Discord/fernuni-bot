@@ -1,6 +1,6 @@
 import utils
-from help.help import help, help_category, handle_error
-from module_information.scrapper import Scrapper
+from cogs.help import help, help_category, handle_error
+from cogs.components.module_information.scrapper import Scrapper
 
 import json
 import os

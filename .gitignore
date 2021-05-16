@@ -114,16 +114,4 @@ GitHub.sublime-settings
 !.vscode/launch.json 
 !.vscode/extensions.json 
 .history
-/roles.json
-/help.json
-/appointments.json
-/tops.json
-/text_commands.json
-/news.json
-/links.json
-/easter.json
-/learninggroups.json
-/courses.json
-/module_information/courses_of_studies.json
-/module_information/data.json
-/github.json
+/data/*.json

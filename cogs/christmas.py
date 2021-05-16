@@ -7,7 +7,7 @@ from discord.ext import commands
 import utils
 
 
-class ChristmasCog(commands.Cog):
+class Christmas(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.channel_id = int(os.getenv("DISCORD_ADVENT_CALENDAR_CHANNEL"))
@@ -15,7 +15,7 @@ class ChristmasCog(commands.Cog):
         self.load_advent_calendar()
 
     def load_advent_calendar(self):
-        advent_calendar_file = open("advent_calendar.json", mode='r')
+        advent_calendar_file = open("data/advent_calendar.json", mode='r')
         self.advent_calendar = json.load(advent_calendar_file)
 
     @commands.Cog.listener()
