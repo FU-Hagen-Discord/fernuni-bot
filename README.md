@@ -30,7 +30,7 @@
   * Statistiken des Servers anzeigen
   * [Arminsagt-Sprüche](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/armin.py)
 * Moderationswerkzeuge
-  * Stille Treppe -> entzieht einem Nutzer die Schreibrechte für eine vorgegebene Zeit (WIP - [PR](https://github.com/FU-Hagen-Discord/fernuni-bot/pull/37))
+  * [Stille Treppe](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/calmdown.py) -> entzieht einem Nutzer die Schreibrechte für eine vorgegebene Zeit
   * [Voice-Kommando](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/voice_cog.py) -> schließt/ öffnet alle Voice-Channels (wurde während der Online-Klausurkampgne verwendet) 
 * XKCD-Comics (WIP - [PR](https://github.com/FU-Hagen-Discord/fernuni-bot/pull/29))
 * *Event-Funktionen* (siehe [Weihnachten](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/christmas_cog.py)und [Ostern](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/easter_cog.py))
