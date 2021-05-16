@@ -1,5 +1,5 @@
 import utils
-from help.help import help, help_category
+from help.help import help, help_category, handle_error
 from module_information.scrapper import Scrapper
 
 import json
@@ -7,6 +7,19 @@ import os
 import re
 import discord
 from discord.ext import commands, tasks
+
+
+class ModuleInformationNotFoundError(Exception):
+    pass
+
+
+class NoCourseChannelError(Exception):
+    pass
+
+
+class NoCourseOfStudyError(Exception):
+    pass
+
 
 """
   Environment Variablen:
@@ -55,184 +68,227 @@ class ModuleInformation(commands.Cog):
         try:
             data_file = open(self.data_file, mode='r')
             self.data = json.load(data_file)
-        except:
+        except FileNotFoundError:
             self.data = {}
 
     def number_of_channel(self, channel):
-        number = re.search(r"^([0-9]*)-", channel.name)[1]
-        return number
+        try:
+            number = re.search(r"^([0-9]*)-", channel.name)[1]
+            return number
+        except TypeError:
+            raise NoCourseChannelError
 
-    def stg_string_for_desc(self, result):
-        desc = f"\n*({result['stg']})*"
+    def stg_string_for_desc(self, module):
+        desc = f"\n*({module['stg']})*"
         desc += ("\n*Es wurden keine Informationen für deinen Studiengang gefunden,"
                  "daher wird der erste Eintrag angezeigt*"
-                 if 'notfound' in result else "")
+                 if 'notfound' in module else "")
         return desc
 
-    async def get_stg(self, ctx, arg_stg):
-        if not arg_stg:
-            arg_stg = await self.get_stg_from_role(ctx.author)
-        if not arg_stg:
+    async def execute_subcommand(self, ctx, arg_stg, subcommand=None):
+        try:
+            module = await self.find_module(ctx, arg_stg)
+            await subcommand(ctx, module)
+        except NoCourseOfStudyError:
             shorts = []
             for course_of_studies in self.data:
                 shorts.append(f"`{course_of_studies['short']}`")
             await ctx.channel.send(
-                f"Fehler! Wähle entweder eine Studiengangs-Rolle aus oder gebe ein Studiengangskürzel nach dem Kommando an.\nMögliche Kürzel: {', '.join(shorts)}")
-        return arg_stg
+                f"Fehler! Wähle entweder eine Studiengangs-Rolle aus oder gebe ein Studiengangskürzel"
+                f"nach dem Kommando an.\nMögliche Kürzel: {', '.join(shorts)}"
+            )
+            return None
+        except NoCourseChannelError:
+            return None
+        except ModuleInformationNotFoundError as e:
+            if not e.args[0]:
+                await ctx.channel.send("Leider konnte ich keine Informationen zu diesem Modul/Kurs finden.")
+            else:
+                await ctx.channel.send(e.args[0])
+            return None
 
-    async def find_module(self, number, stg):
+    async def get_stg_short(self, ctx, stg):
+        if not stg:
+            stg = await self.get_stg_short_from_role(ctx.author)
+        if not stg:
+            raise NoCourseOfStudyError
+        return stg
+
+    async def get_valid_modules_for_course_number(self, number):
         valid_modules = []
-        for course_of_studies in self.data:
-            for module in course_of_studies['modules']:
-                for course in module['page']['courses']:
-                    cn = re.sub(r'^0+', '', course['number'])
-                    n = re.sub(r'^0+', '', number)
-                    if n == cn:
-                        valid_modules.append(
-                            {"stg": course_of_studies['name'], "short": course_of_studies['short'], "module": module})
+        try:
+            for course_of_studies in self.data:
+                for module in course_of_studies['modules']:
+                    for course in module['page']['courses']:
+                        cn = re.sub(r'^0+', '', course['number'])
+                        n = re.sub(r'^0+', '', number)
+                        if n == cn:
+                            valid_modules.append({
+                                "stg": course_of_studies['name'],
+                                "short": course_of_studies['short'],
+                                "data": module
+                            })
+            return valid_modules
+        except:
+            return []
+
+    async def find_module(self, ctx, arg_stg):
+        short = await self.get_stg_short(ctx, arg_stg)
+        number = self.number_of_channel(ctx.channel)
+        valid_modules = await self.get_valid_modules_for_course_number(number)
+
+        if len(valid_modules) == 0:
+            raise ModuleInformationNotFoundError
+
         for module in valid_modules:
-            if module['short'] == stg:
+            if module.get('short') == short:
                 return module
 
-        if (len(valid_modules) == 0):
-            return None
         module = valid_modules[0]
         module['notfound'] = True
         return module
 
-    async def get_stg_from_role(self, user):
-        for course_of_studies in self.data:
-            if 'role' in course_of_studies:
-                for r in user.roles:
-                    if str(r.id) == course_of_studies['role']:
-                        return course_of_studies['short']
-        return None
+    async def get_stg_short_from_role(self, user):
+        try:
+            for course_of_studies in self.data:
+                if 'role' in course_of_studies:
+                    for r in user.roles:
+                        if str(r.id) == course_of_studies['role']:
+                            return course_of_studies['short']
+            return None
+        except discord.ext.commands.errors.CommandInvokeError:
+            return None
 
-    async def download_for(self, text, channel, stg):
-        number = self.number_of_channel(channel)
-        result = await self.find_module(number, stg)
-        module = result['module']
+    async def download_for(self, ctx, title, module):
+        try:
+            data = module['data']['page']['downloads']
+            if not data:
+                raise KeyError
+        except KeyError:
+            raise ModuleInformationNotFoundError
+
         desc = ""
         found = False
-        for download in module['page']['downloads']:
-            if re.search(text, download['title']):
+        for download in data:
+            if re.search(title, download['title']):
                 found = True
                 desc += f"[{download['title']}]({download['url']})\n"
-        desc += self.stg_string_for_desc(result)
-        return desc if found else None
+        desc += self.stg_string_for_desc(module)
+        if not found:
+            raise ModuleInformationNotFoundError
 
-    async def handbook(self, channel, stg):
-        desc = await self.download_for(r"Modulhandbuch", channel, stg)
-        if desc is None:
-            await channel.send("Leider habe ich kein Modulhandbuch gefunden.")
-            return
-        embed = discord.Embed(title="Modulhandbuch",
+        embed = discord.Embed(title=title,
                               description=desc,
                               color=19607)
-        await channel.send(embed=embed)
+        await ctx.channel.send(embed=embed)
 
-    async def reading_sample(self, channel, stg):
-        desc = await self.download_for(r"Leseprobe", channel, stg)
-        if desc is None:
-            await channel.send("Leider habe ich keine Leseprobe gefunden.")
-            return
-        embed = discord.Embed(title="Leseprobe",
-                              description=desc,
-                              color=19607)
-        await channel.send(embed=embed)
+    async def handbook(self, ctx, module):
+        try:
+            await self.download_for(ctx, "Modulhandbuch", module)
+        except ModuleInformationNotFoundError:
+            raise ModuleInformationNotFoundError("Leider habe ich kein Modulhandbuch gefunden.")
 
-    async def info(self, channel, stg):
-        number = self.number_of_channel(channel)
-        result = await self.find_module(number, stg)
-        if not result:
-            await channel.send("Leider konnte ich keine Informationen zu diesem Modul/Kurs finden.")
-        module = result['module']
+    async def reading_sample(self, ctx, module):
+        try:
+            await self.download_for(ctx, "Leseprobe", module)
+        except ModuleInformationNotFoundError:
+            raise ModuleInformationNotFoundError("Leider habe ich keine Leseprobe gefunden.")
 
-        infos = module['page']['infos']
-        desc = (f"Wie viele Credits bekomme ich? **{infos['ects']} ECTS**\n"
-                f"Wie lange geht das Modul? **{infos['duration']}**\n"
-                f"Wie oft wird das Modul angeboten? **{infos['interval']}**\n"
+    async def info(self, ctx, module):
+        try:
+            data = module['data']
+            info = data['page']['infos']
+            if not data or not info:
+                raise KeyError
+        except KeyError:
+            raise ModuleInformationNotFoundError
+
+        desc = (f"Wie viele Credits bekomme ich? **{info['ects']} ECTS**\n"
+                f"Wie lange geht das Modul? **{info['duration']}**\n"
+                f"Wie oft wird das Modul angeboten? **{info['interval']}**\n"
                 )
 
-        if len(infos['requirements']) > 0 and infos['requirements'] != 'keine':
-            desc += f"\nInhaltliche Voraussetzungen: \n{infos['requirements']}\n"
+        if (requirements := info.get('requirements')) and len(requirements) > 0 and requirements != 'keine':
+            desc += f"\nInhaltliche Voraussetzungen: \n{requirements}\n"
 
-        if len(infos['notes']) > 0 and infos['notes'] != '-':
-            desc += f"\nAnmerkungen: \n\n{infos['notes']}\n"
+        if (notes := info.get('notes')) and len(notes) > 0 and notes != '-':
+            desc += f"\nAnmerkungen: \n\n{notes}\n"
 
-        if len(module['page']['persons']) > 0:
+        if (persons := data['page'].get('persons')) and len(persons) > 0:
             desc += f"\nAnsprechparnter: \n"
-            desc += ', '.join(module['page']['persons']) + "\n"
+            desc += ', '.join(persons) + "\n"
 
-        if len(module['page']['courses']) > 0:
+        if (courses := data['page'].get('courses')) and len(courses) > 0:
             desc += f"\nKurse: \n"
-            for course in module['page']['courses']:
+            for course in courses:
                 desc += f"[{course['number']} - {course['name']}]({course['url']})\n"
 
-        if desc is None:
-            await channel.send("Leider habe ich keine Leseprobe gefunden")
-            return
-        desc += self.stg_string_for_desc(result)
-        embed = discord.Embed(title=f"Modul {module['title']}",
+        desc += self.stg_string_for_desc(module)
+        embed = discord.Embed(title=f"Modul {data['title']}",
                               description=desc,
                               color=19607)
-        await channel.send(embed=embed)
+        await ctx.channel.send(embed=embed)
 
-    async def load(self, channel, stg):
-        number = self.number_of_channel(channel)
-        result = await self.find_module(number, stg)
-        if not result:
-            await channel.send("Leider konnte ich keine Informationen zu diesem Modul/Kurs finden.")
+    async def load(self, ctx, module):
+        try:
+            data = module['data']['page']['infos']['time']
+            if not data:
+                raise KeyError
+        except KeyError:
+            raise ModuleInformationNotFoundError
 
-        module = result['module']
-        infos = module['page']['infos']
-        time = re.sub(r': *(\r*\n*)*', ':\n', infos['time'])
+        time = re.sub(r': *(\r*\n*)*', ':\n', data)
         desc = f"{time}"
-        desc += self.stg_string_for_desc(result)
+        desc += self.stg_string_for_desc(module)
         embed = discord.Embed(title=f"Arbeitsaufwand",
                               description=desc,
                               color=19607)
-        await channel.send(embed=embed)
+        await ctx.channel.send(embed=embed)
 
-    async def support(self, channel, stg):
-        number = self.number_of_channel(channel)
-        result = await self.find_module(number, stg)
-        if not result:
-            await channel.send("Leider konnte ich keine Informationen zu diesem Modul/Kurs finden.")
-        module = result['module']
+    async def support(self, ctx, module):
+        try:
+            data = module['data']['page']['support']
+            if not data:
+                raise KeyError
+        except KeyError:
+            raise ModuleInformationNotFoundError(f"Leider habe ich keine Mentoriate gefunden.")
+
         desc = ""
-        if not module['page']['support']:
-            await channel.send(f"Leider habe ich keine Mentoriate gefunden.")
-            return
-        for support in module['page']['support']:
+        for support in data:
             desc += f"[{support['title']}]({support['url']})\n"
-        desc += self.stg_string_for_desc(result)
+        desc += self.stg_string_for_desc(module)
         embed = discord.Embed(title=f"Mentoriate ",
                               description=desc,
                               color=19607)
-        await channel.send(embed=embed)
+        await ctx.channel.send(embed=embed)
 
-    async def exams(self, channel, stg):
-        number = self.number_of_channel(channel)
-        result = await self.find_module(number, stg)
-        if not result:
-            await channel.send("Leider konnte ich keine Informationen zu diesem Modul/Kurs finden.")
-        module = result['module']
+    async def exams(self, ctx, module):
+        try:
+            data = module['data']['page']['exams']
+            if not data:
+                raise KeyError
+        except KeyError:
+            raise ModuleInformationNotFoundError(f"Leider habe ich keine Prüfungsinformationen gefunden.")
+
         desc = ""
-        for exam in module['page']['exams']:
+        for exam in data:
             desc += f"**{exam['name']}**\n{exam['type']}\n"
-            if len(exam['weight']) > 0 and exam['weight'] != '-':
-                desc += f"Gewichtung: **{exam['weight']}**\n"
+            if (weight := exam.get('weight')) and len(weight) > 0 and weight != '-':
+                desc += f"Gewichtung: **{weight}**\n"
             desc += "\n"
-            if len(exam['requirements']) > 0 and exam['requirements'] != 'keine':
-                desc += f"Inhaltliche Voraussetzungen: \n{exam['requirements']}\n\n"
-            if len(exam['hard_requirements']) > 0 and exam['hard_requirements'] != 'keine':
-                desc += f"Formale Voraussetzungen: \n{exam['hard_requirements']}\n\n"
-        # desc += self.stg_string_for_desc(result)
+
+            if (requirements := exam.get('requirements')) and len(requirements) > 0 and requirements != 'keine':
+                desc += f"Inhaltliche Voraussetzungen: \n{requirements}\n\n"
+
+            if (hard_requirements := exam.get('hard_requirements')) and len(hard_requirements) > 0 \
+                    and hard_requirements != 'keine':
+                desc += f"Formale Voraussetzungen: \n{hard_requirements}\n\n"
+        # desc += self.stg_string_for_desc(module)
+
         embed = discord.Embed(title=f"Prüfungsinformationen",
                               description=desc,
                               color=19607)
-        await channel.send(embed=embed)
+        await ctx.channel.send(embed=embed)
 
     @help(
         category="moduleinformation",
@@ -275,10 +331,7 @@ class ModuleInformation(commands.Cog):
     )
     @cmd_module.command("handbuch", aliases=["mhb", "hb", "modulhandbuch"])
     async def cmd_module_handbuch(self, ctx, arg_stg=None):
-        stg = await self.get_stg(ctx, arg_stg)
-        if not stg:
-            return
-        await self.handbook(ctx.channel, stg)
+        await self.execute_subcommand(ctx, arg_stg, self.handbook)
 
     @help(
         command_group="module",
@@ -291,10 +344,7 @@ class ModuleInformation(commands.Cog):
     )
     @cmd_module.command("probe", aliases=["leseprobe"])
     async def cmd_module_probe(self, ctx, arg_stg=None):
-        stg = await self.get_stg(ctx, arg_stg)
-        if not stg:
-            return
-        await self.reading_sample(ctx.channel, stg)
+        await self.execute_subcommand(ctx, arg_stg, self.reading_sample)
 
     @help(
         command_group="module",
@@ -307,10 +357,7 @@ class ModuleInformation(commands.Cog):
     )
     @cmd_module.command("info")
     async def cmd_module_info(self, ctx, arg_stg=None):
-        stg = await self.get_stg(ctx, arg_stg)
-        if not stg:
-            return
-        await self.info(ctx.channel, stg)
+        await self.execute_subcommand(ctx, arg_stg, self.info)
 
     @help(
         command_group="module",
@@ -323,10 +370,7 @@ class ModuleInformation(commands.Cog):
     )
     @cmd_module.command("aufwand", aliases=["workload", "load", "zeit", "arbeitzeit"])
     async def cmd_module_aufwand(self, ctx, arg_stg=None):
-        stg = await self.get_stg(ctx, arg_stg)
-        if not stg:
-            return
-        await self.load(ctx.channel, stg)
+        await self.execute_subcommand(ctx, arg_stg, self.load)
 
     @help(
         command_group="module",
@@ -339,10 +383,7 @@ class ModuleInformation(commands.Cog):
     )
     @cmd_module.command("mentoriate", aliases=["mentoriat", "support"])
     async def cmd_module_mentoriate(self, ctx, arg_stg=None):
-        stg = await self.get_stg(ctx, arg_stg)
-        if not stg:
-            return
-        await self.support(ctx.channel, stg)
+        await self.execute_subcommand(ctx, arg_stg, self.support)
 
     @help(
         command_group="module",
@@ -355,7 +396,7 @@ class ModuleInformation(commands.Cog):
     )
     @cmd_module.command("prüfungen", aliases=["exam", "exams", "prüfung"])
     async def cmd_module_pruefungen(self, ctx, arg_stg=None):
-        stg = await self.get_stg(ctx, arg_stg)
-        if not stg:
-            return
-        await self.exams(ctx.channel, stg)
+        await self.execute_subcommand(ctx, arg_stg, self.exams)
+
+    async def cog_command_error(self, ctx, error):
+        await handle_error(ctx, error)

@@ -11,7 +11,7 @@ class Scrapper:
         self.courses_file = filename
 
     async def scrap(self):
-        courses_of_studies = self.load_courses_fo_studies()
+        courses_of_studies = self.load_courses_of_studies()
         for course in courses_of_studies:
             await self.fetch_module_infos_for_course_of_studies(course)
         return courses_of_studies
@@ -25,7 +25,7 @@ class Scrapper:
             module['page'] = self.parse_course_page(html, course)
         course['modules'] = modules
 
-    def load_courses_fo_studies(self):
+    def load_courses_of_studies(self):
         group_file = open(self.courses_file, mode='r')
         return json.load(group_file)
 
@@ -39,7 +39,7 @@ class Scrapper:
     def prepare_url(self, url):
         if re.search(r"^http(s)*://", url):
             return url
-        elif (re.search(r"^/", url)):
+        elif re.search(r"^/", url):
             return self.base_url + url
         return self.base_url + "/" + url
 
@@ -50,7 +50,7 @@ class Scrapper:
         for item in modules_source:
             module = {
                 "title": item.get_text(),
-                "number": re.sub('^0+','', re.search('^([0-9]+) ', item.get_text())[1]),
+                "number": re.sub('^0+', '', re.search('^([0-9]+) ', item.get_text())[1]),
                 "url": self.prepare_url(item['href'])
             }
             modules.append(module)
@@ -80,7 +80,7 @@ class Scrapper:
 
     def parse_infos(self, soup):
         try:
-        	info_source = soup.find(summary='Modulinformationen')
+            info_source = soup.find(summary='Modulinformationen')
         except:
             return None
         infos = {
@@ -93,7 +93,6 @@ class Scrapper:
         }
         return infos
 
-
     def parse_courses(self, soup):
         try:
             course_source = soup.find('h2', text=re.compile(r'Aktuelles Angebot')) \
@@ -105,12 +104,11 @@ class Scrapper:
         for link in course_source:
             course = {
                 "name": re.sub('^Kurs [0-9]+ ', '', link.get_text()),
-                "number": re.sub('^0+','', re.search('([^/]+)$', link['href'])[1]),
+                "number": re.sub('^0+', '', re.search('([^/]+)$', link['href'])[1]),
                 "url": self.prepare_url(link['href'])
             }
             courses.append(course)
         return courses
-
 
     def parse_support(self, soup):
         try:
@@ -131,7 +129,6 @@ class Scrapper:
                 supports.append(support)
         return supports
 
-
     def parse_exams(self, soup):
         try:
             exam_source = soup.find(summary='Prüfungsinformationen')
@@ -140,7 +137,6 @@ class Scrapper:
         stg = exam_source.findNext('th', colspan='2')
         exams = []
         while stg != None:
-            
             exam = {
                 "name": stg.get_text(),
                 "type": stg.findNext('th', text='Art der Prüfungsleistung').findNext('td').get_text(),
@@ -152,12 +148,17 @@ class Scrapper:
             stg = stg.findNext('th', colspan='2')
         return exams
 
-
     def parse_downloads(self, soup, stg):
         try:
-            download_source = soup.find('h2', text=re.compile(r'Download')) \
-                .findNext('ul', class_="pdfliste") \
-                .findAll('li', class_= re.compile(stg['short']))
+            source1 = soup.find('h2', text=re.compile(r'Download')) \
+                .findNext('ul', attrs={'class': 'pdfliste'}) \
+                .findAll('li', attrs={'class': None})
+            source2 = soup.find('h2', text=re.compile(r'Download')) \
+                .findNext('ul', attrs={'class': 'pdfliste'}) \
+                .findAll('li', attrs={'class': re.compile(stg['short'])})
+
+            download_source = [*source1, *source2]
+
         except:
             return None
 
@@ -171,7 +172,6 @@ class Scrapper:
                 }
                 downloads.append(download)
         return downloads
-
 
     def parse_persons(self, soup):
         try:
