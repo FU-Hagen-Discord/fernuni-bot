@@ -22,21 +22,19 @@
   * Sammlung Nützlicher [Links](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/links_cog.py) in den Channels
 * [Lerngruppenverwaltung](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/learninggroups.py)
   * Anfragen/ Erstellen/ Umbenennen/ Löschen
-  * Ownership -> Toggle: 🔴vollzählig/ 🌲offen für neue Mitglieder
+  * Ownership -> Toggle: 🛑vollzählig/ 🌲offen für neue Mitglieder
 * [Kalenderfunktion](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/appointments_cog.py)
 * [Umfragefunktion](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/poll_cog.py)
 * Text-commands
   * Motivations- / Prokrastinationssprüche
   * Statistiken des Servers anzeigen
   * [Arminsagt-Sprüche](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/armin.py)
-* (Saisonal) Event-Funktionen
+* Moderationswerkzeuge
+  * Stille Treppe -> entzieht einem Nutzer die Schreibrechte für eine vorgegebene Zeit (WIP - [PR](https://github.com/FU-Hagen-Discord/fernuni-bot/pull/37))
+  * [Voice-Kommando](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/voice_cog.py) -> schließt/ öffnet alle Voice-Channels (wurde während der Online-Klausurkampgne verwendet) 
+* XKCD-Comics (WIP - [PR](https://github.com/FU-Hagen-Discord/fernuni-bot/pull/29))
+* *Event-Funktionen* (siehe [Weihnachten](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/christmas_cog.py)und [Ostern](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/easter_cog.py))
 
-## Weiterentwicklung
-
-### Features, die aktuell in Entwicklung sind
-* Moderationswerkzeug Namens *stille Treppe* - entzieht die Schreibrechte für eine gewisse Zeit ([PR](https://github.com/FU-Hagen-Discord/fernuni-bot/pull/37))
-* XKCD-Kommando ([PR](https://github.com/FU-Hagen-Discord/fernuni-bot/pull/29))
-
-### Neue Features vorschlagen
+## Mitwirkung
 Dir fehlt bei Boty eine Funktion? Dann kannst du `!idee <Deine Idee>` in #bot-development auf dem Server eingeben.  
-Außerdem gibt es vielleicht offene [Issues](https://github.com/FU-Hagen-Discord/fernuni-bot/issues), die  du in Angriff nehmen möchtest?
+Außerdem gibt es möglicherweise unbearbeitete [Issues](https://github.com/FU-Hagen-Discord/fernuni-bot/issues), die du in Angriff nehmen kannst 💪
