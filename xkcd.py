@@ -3,12 +3,20 @@ import aiohttp
 
 import discord
 from discord.ext import commands
+from help.help import help, handle_error, help_category
 
 
 class Xkcd(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    @help(
+        brief="Ruft einen xkcd Comic ab",
+        syntax="!xkcd <number>",
+        parameters={
+            "number": "*(optional)* Entweder die Nummer eines spezifischen xkcd Comics, oder `latest`, für den aktuellsten",
+        },
+    )
     @commands.command(name="xkcd")
     async def cmd_xkcd(self, ctx, number=None):
 
