@@ -14,6 +14,7 @@ from github import Github
 from help.help import Help
 from learninggroups import LearningGroups
 from links_cog import LinksCog
+from module_information.module_information import ModuleInformation
 from news_cog import NewsCog
 from poll_cog import PollCog
 from roles_cog import RolesCog
@@ -54,6 +55,7 @@ bot.add_cog(VoiceCog(bot))
 bot.add_cog(EasterCog(bot))
 bot.add_cog(Armin(bot))
 bot.add_cog(LearningGroups(bot))
+bot.add_cog(ModuleInformation(bot))
 bot.add_cog(Xkcd(bot))
 bot.add_cog(Help(bot))
 bot.add_cog(Calmdown(bot))
