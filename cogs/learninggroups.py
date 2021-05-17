@@ -188,9 +188,9 @@ class LearningGroups(commands.Cog):
     async def move_channel(self, channel, category):
         for sortchannel in category.text_channels:
             if sortchannel.name[1:] > channel.name[1:]:
-                await channel.move(category=category, before=sortchannel)
+                await channel.move(category=category, before=sortchannel, sync_permissions=True)
                 return
-        await channel.move(category=category, end=True)
+        await channel.move(category=category, sync_permissions=True, end=True)
 
     async def add_requested_group_channel(self, message, direct=False):
         channel_config = self.groups["requested"].get(str(message.id))
