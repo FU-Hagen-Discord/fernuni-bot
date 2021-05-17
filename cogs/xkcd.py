@@ -3,7 +3,7 @@ import aiohttp
 
 import discord
 from discord.ext import commands
-from help.help import help, handle_error, help_category
+from cogs.help import help
 
 
 class Xkcd(commands.Cog):
@@ -11,10 +11,10 @@ class Xkcd(commands.Cog):
         self.bot = bot
 
     @help(
-        brief="Ruft einen xkcd Comic ab",
+        brief="Ruft einen xkcd Comic ab.",
         syntax="!xkcd <number>",
         parameters={
-            "number": "*(optional)* Entweder die Nummer eines spezifischen xkcd Comics, oder `latest`, für den aktuellsten",
+            "number": "*(optional)* Entweder die Nummer eines spezifischen xkcd Comics, oder `latest`, für den aktuellsten.",
         },
     )
     @commands.command(name="xkcd")

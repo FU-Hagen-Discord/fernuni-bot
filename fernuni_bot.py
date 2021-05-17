@@ -4,27 +4,8 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
-# from welcome_cog import WelcomeCog
-from appointments_cog import AppointmentsCog
-from armin import Armin
-from calmdown import Calmdown
-from christmas_cog import ChristmasCog
-from easter_cog import EasterCog
-from github import Github
-from help.help import Help
-from learninggroups import LearningGroups
-from links_cog import LinksCog
-from module_information.module_information import ModuleInformation
-from news_cog import NewsCog
-from poll_cog import PollCog
-from roles_cog import RolesCog
-from support_cog import SupportCog
-from text_commands_cog import TextCommandsCog
-# from change_log import ChangeLogCog
-from voice_cog import VoiceCog
-from welcome_cog import WelcomeCog
-from xkcd import Xkcd
-
+from cogs import appointments, armin, calmdown, christmas, easter, github, help, learninggroups, links, \
+    module_information, news, polls, roles, support, text_commands, voice, welcome, xkcd
 
 # .env file is necessary in the same directory, that contains several strings.
 load_dotenv()
@@ -41,26 +22,27 @@ intents = discord.Intents.default()
 intents.members = True
 bot = commands.Bot(command_prefix='!', help_command=None, activity=discord.Game(ACTIVITY), owner_id=OWNER,
                    intents=intents)
-bot.add_cog(AppointmentsCog(bot))
-bot.add_cog(TextCommandsCog(bot))
-bot.add_cog(PollCog(bot))
-bot.add_cog(RolesCog(bot))
-bot.add_cog(WelcomeCog(bot))
-bot.add_cog(ChristmasCog(bot))
-bot.add_cog(SupportCog(bot))
-bot.add_cog(NewsCog(bot))
-bot.add_cog(LinksCog(bot))
-# bot.add_cog(ChangeLogCog(bot))
-bot.add_cog(VoiceCog(bot))
-bot.add_cog(EasterCog(bot))
-bot.add_cog(Armin(bot))
-bot.add_cog(LearningGroups(bot))
-bot.add_cog(ModuleInformation(bot))
-bot.add_cog(Xkcd(bot))
-bot.add_cog(Help(bot))
-bot.add_cog(Calmdown(bot))
-bot.add_cog(Github(bot))
+bot.add_cog(appointments.Appointments(bot))
+bot.add_cog(text_commands.TextCommands(bot))
+bot.add_cog(polls.Polls(bot))
+bot.add_cog(roles.Roles(bot))
+bot.add_cog(welcome.Welcome(bot))
+bot.add_cog(christmas.Christmas(bot))
+bot.add_cog(support.Support(bot))
+bot.add_cog(news.News(bot))
+bot.add_cog(links.Links(bot))
+bot.add_cog(voice.Voice(bot))
+bot.add_cog(easter.Easter(bot))
+bot.add_cog(armin.Armin(bot))
+bot.add_cog(learninggroups.LearningGroups(bot))
+bot.add_cog(module_information.ModuleInformation(bot))
+bot.add_cog(xkcd.Xkcd(bot))
+bot.add_cog(help.Help(bot))
+bot.add_cog(calmdown.Calmdown(bot))
+bot.add_cog(github.Github(bot))
 
+
+# bot.add_cog(ChangeLogCog(bot))
 
 
 def get_reaction(reactions):
@@ -71,6 +53,7 @@ def get_reaction(reactions):
         if reaction.emoji == PIN_EMOJI:
             return reaction
     return None
+
 
 async def pin_message(message):
     """ Pin the given message, if it is not already pinned """

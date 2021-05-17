@@ -1,12 +1,13 @@
-import utils
-from help.help import help, help_category, handle_error
-from module_information.scrapper import Scrapper
-
 import json
 import os
 import re
+
 import discord
 from discord.ext import commands, tasks
+
+import utils
+from cogs.components.module_information.scraper import Scraper
+from cogs.help import help, help_category, handle_error
 
 
 class ModuleInformationNotFoundError(Exception):
@@ -46,9 +47,9 @@ class ModuleInformation(commands.Cog):
 
     async def refresh_data(self):
         try:
-            scrapper = Scrapper(self.courses_file)
+            scrapper = Scraper(self.courses_file)
             print("Refresh started")
-            data = await scrapper.scrap()
+            data = await scrapper.scrape()
             self.data = data
             self.save_data()
             print("Refresh finished")

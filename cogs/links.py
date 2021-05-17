@@ -2,15 +2,15 @@ import json
 
 import discord
 from discord.ext import commands
-from help.help import help, handle_error, help_category
+from cogs.help import help, handle_error, help_category
 
 
 @help_category("links", "Links", "Feature zum Verwalten von Links innerhalb eines Channels.")
-class LinksCog(commands.Cog):
+class Links(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.links = {}
-        self.links_file = "links.json"
+        self.links_file = "data/links.json"
         self.load_links()
 
     def load_links(self):

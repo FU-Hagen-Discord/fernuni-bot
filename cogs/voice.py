@@ -1,11 +1,10 @@
-import discord
 from discord.ext import commands
 
 import utils
-from help.help import help, handle_error
+from cogs.help import help, handle_error
 
 
-class VoiceCog(commands.Cog):
+class Voice(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 

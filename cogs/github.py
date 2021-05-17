@@ -6,14 +6,14 @@ from aiohttp import ClientSession
 from discord.ext import commands
 
 import utils
-from help.help import help, handle_error, help_category
+from cogs.help import help, handle_error, help_category
 
 
 @help_category("github", "Github", "Github Integration in Discord.")
 class Github(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.github_file = "github.json"
+        self.github_file = "data/github.json"
         self.data = self.load()
 
     def load(self):

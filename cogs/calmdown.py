@@ -7,7 +7,7 @@ import discord
 from discord.ext import commands, tasks
 
 import utils
-from help.help import help
+from cogs.help import help
 
 """
     DISCORD_CALMDOWN_ROLE - Die Rollen-ID der "Stille Treppe"-Rolle.
