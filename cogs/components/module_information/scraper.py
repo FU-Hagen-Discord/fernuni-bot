@@ -1,16 +1,16 @@
-from bs4 import BeautifulSoup
-import aiohttp
-import re
-import os
 import json
+import re
+
+import aiohttp
+from bs4 import BeautifulSoup
 
 
-class Scrapper:
+class Scraper:
     def __init__(self, filename):
         self.base_url = 'https://www.fernuni-hagen.de'
         self.courses_file = filename
 
-    async def scrap(self):
+    async def scrape(self):
         courses_of_studies = self.load_courses_of_studies()
         for course in courses_of_studies:
             await self.fetch_module_infos_for_course_of_studies(course)

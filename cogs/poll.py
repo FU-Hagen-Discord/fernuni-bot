@@ -3,11 +3,12 @@ import os
 from discord.ext import commands
 
 import utils
+from cogs.components.poll.Poll import Poll as ThePoll
 from cogs.help import help, handle_error, help_category
-from cogs.components.poll import Poll as ThePoll
 
 
-@help_category("poll", "Umfragen", "Erstelle eine Umfrage in einem Kanal oder schlage eine Server-Umfrage vor.", "Umfragen erstellen oder bearbeiten.")
+@help_category("poll", "Umfragen", "Erstelle eine Umfrage in einem Kanal oder schlage eine Server-Umfrage vor.",
+               "Umfragen erstellen oder bearbeiten.")
 class Poll(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -28,7 +29,7 @@ class Poll(commands.Cog):
         channel = await self.bot.fetch_channel(self.poll_sugg_channel)
         msg = f"<@!{ctx.author.id}> hat folgende Umfrage vorgeschlagen:\nFrage:{question}\n\nAntwortoptionen:\n"
         poll = f"!poll \"{question}\""
-        
+
         for answer in answers:
             msg += f"{answer}\n"
             poll += f" \"{answer}\""
