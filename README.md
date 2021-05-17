@@ -47,5 +47,5 @@ Zu dem Zeitpunkt kann Boty:
   * *Event-Funktionen* (siehe [Weihnachten](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/christmas_cog.py) und [Ostern](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/easter_cog.py))
 
 ## Mitwirkung
-Dir fehlt bei Boty eine Funktion? Dann kannst du `!idee <Deine Idee>` in #bot-development auf dem Server eingeben.  
+Dir fehlt bei Boty eine Funktion? Dann kannst du `!idee <Deine Idee>` in #anregungen-zum-discord auf dem Server eingeben.  
 Außerdem gibt es möglicherweise unbearbeitete [Issues](https://github.com/FU-Hagen-Discord/fernuni-bot/issues), die du in Angriff nehmen kannst 💪
