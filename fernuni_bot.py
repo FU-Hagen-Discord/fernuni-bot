@@ -5,7 +5,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 
 from cogs import appointments, armin, calmdown, christmas, easter, github, help, learninggroups, links, \
-    module_information, news, poll, roles, support, text_commands, voice, welcome, xkcd
+    module_information, news, polls, roles, support, text_commands, voice, welcome, xkcd
 
 # .env file is necessary in the same directory, that contains several strings.
 load_dotenv()
@@ -24,7 +24,7 @@ bot = commands.Bot(command_prefix='!', help_command=None, activity=discord.Game(
                    intents=intents)
 bot.add_cog(appointments.Appointments(bot))
 bot.add_cog(text_commands.TextCommands(bot))
-bot.add_cog(poll.Poll(bot))
+bot.add_cog(polls.Polls(bot))
 bot.add_cog(roles.Roles(bot))
 bot.add_cog(welcome.Welcome(bot))
 bot.add_cog(christmas.Christmas(bot))

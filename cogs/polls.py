@@ -3,13 +3,13 @@ import os
 from discord.ext import commands
 
 import utils
-from cogs.components.poll.Poll import Poll as ThePoll
+from cogs.components.poll.poll import Poll
 from cogs.help import help, handle_error, help_category
 
 
 @help_category("poll", "Umfragen", "Erstelle eine Umfrage in einem Kanal oder schlage eine Server-Umfrage vor.",
                "Umfragen erstellen oder bearbeiten.")
-class Poll(commands.Cog):
+class Polls(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.poll_sugg_channel = int(os.getenv("DISCORD_POLL_SUGG_CHANNEL"))
@@ -54,8 +54,8 @@ class Poll(commands.Cog):
         message = await ctx.fetch_message(message_id)
         if message:
             if message.embeds[0].title == "Umfrage":
-                old_poll = ThePoll(self.bot, message=message)
-                new_poll = ThePoll(self.bot, question=question, answers=answers, author=old_poll.author)
+                old_poll = Poll(self.bot, message=message)
+                new_poll = Poll(self.bot, question=question, answers=answers, author=old_poll.author)
                 await new_poll.send_poll(ctx.channel, message=message)
         else:
             ctx.send("Fehler! Umfrage nicht gefunden!")
@@ -75,7 +75,7 @@ class Poll(commands.Cog):
     async def cmd_poll(self, ctx, question, *answers):
         """ Create poll """
 
-        await ThePoll(self.bot, question, answers, ctx.author.id).send_poll(ctx)
+        await Poll(self.bot, question, answers, ctx.author.id).send_poll(ctx)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
@@ -86,7 +86,7 @@ class Poll(commands.Cog):
             channel = await self.bot.fetch_channel(payload.channel_id)
             message = await channel.fetch_message(payload.message_id)
             if len(message.embeds) > 0 and message.embeds[0].title == "Umfrage":
-                poll = ThePoll(self.bot, message=message)
+                poll = Poll(self.bot, message=message)
                 if str(payload.user_id) == poll.author:
                     if payload.emoji.name == "🗑️":
                         await poll.delete_poll()
