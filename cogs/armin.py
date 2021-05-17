@@ -1,6 +1,6 @@
 import random
 from discord.ext import commands
-from help.help import help, handle_error
+from cogs.help import help, handle_error
 
 class Armin(commands.Cog):
     def __init__(self, bot):

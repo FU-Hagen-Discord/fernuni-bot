@@ -5,12 +5,12 @@ import discord
 from discord.ext import commands
 
 import utils
-from help.help import help, handle_error, help_category
+from cogs.help import help, handle_error, help_category
 
 
 @help_category("updater", "Updater", "Diese Kommandos werden zum Updaten von Nachrichten benutzt, die Boty automatisch erzeugt.")
 @help_category("info", "Informationen", "Kleine Helferlein, um schnell an Informationen zu kommen.")
-class RolesCog(commands.Cog):
+class Roles(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.roles_file = os.getenv("DISCORD_ROLES_FILE")

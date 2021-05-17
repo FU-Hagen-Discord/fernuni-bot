@@ -6,11 +6,11 @@ import discord
 from discord.ext import commands
 
 import utils
-from help.help import text_command_help, help, handle_error, remove_help_for, help_category
+from cogs.help import text_command_help, help, handle_error, remove_help_for, help_category
 
 @help_category("textcommands", "Text-Kommandos", "", "Alle Werkzeuge zum Anlegen und Verwalten von Textkommandos.")
 @help_category("motivation", "Motivation (oder auch nicht)", "Manchmal braucht man einfach Zuspruch.")
-class TextCommandsCog(commands.Cog):
+class TextCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.text_commands = {}

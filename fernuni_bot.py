@@ -1,27 +1,11 @@
-import json
 import os
 
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
-# from welcome_cog import WelcomeCog
-import utils
-from appointments_cog import AppointmentsCog
-from armin import Armin
-from christmas_cog import ChristmasCog
-from easter_cog import EasterCog
-from learninggroups import LearningGroups
-from links_cog import LinksCog
-from news_cog import NewsCog
-from poll_cog import PollCog
-from roles_cog import RolesCog
-from support_cog import SupportCog
-from text_commands_cog import TextCommandsCog
-# from change_log import ChangeLogCog
-from voice_cog import VoiceCog
-from welcome_cog import WelcomeCog
-from help.help import Help
+from cogs import appointments, armin, calmdown, christmas, easter, github, help, learninggroups, links, \
+    module_information, news, polls, roles, support, text_commands, voice, welcome, xkcd
 
 # .env file is necessary in the same directory, that contains several strings.
 load_dotenv()
@@ -38,21 +22,27 @@ intents = discord.Intents.default()
 intents.members = True
 bot = commands.Bot(command_prefix='!', help_command=None, activity=discord.Game(ACTIVITY), owner_id=OWNER,
                    intents=intents)
-bot.add_cog(AppointmentsCog(bot))
-bot.add_cog(TextCommandsCog(bot))
-bot.add_cog(PollCog(bot))
-bot.add_cog(RolesCog(bot))
-bot.add_cog(WelcomeCog(bot))
-bot.add_cog(ChristmasCog(bot))
-bot.add_cog(SupportCog(bot))
-bot.add_cog(NewsCog(bot))
-bot.add_cog(LinksCog(bot))
+bot.add_cog(appointments.Appointments(bot))
+bot.add_cog(text_commands.TextCommands(bot))
+bot.add_cog(polls.Polls(bot))
+bot.add_cog(roles.Roles(bot))
+bot.add_cog(welcome.Welcome(bot))
+bot.add_cog(christmas.Christmas(bot))
+bot.add_cog(support.Support(bot))
+bot.add_cog(news.News(bot))
+bot.add_cog(links.Links(bot))
+bot.add_cog(voice.Voice(bot))
+bot.add_cog(easter.Easter(bot))
+bot.add_cog(armin.Armin(bot))
+bot.add_cog(learninggroups.LearningGroups(bot))
+bot.add_cog(module_information.ModuleInformation(bot))
+bot.add_cog(xkcd.Xkcd(bot))
+bot.add_cog(help.Help(bot))
+bot.add_cog(calmdown.Calmdown(bot))
+bot.add_cog(github.Github(bot))
+
+
 # bot.add_cog(ChangeLogCog(bot))
-bot.add_cog(VoiceCog(bot))
-bot.add_cog(EasterCog(bot))
-bot.add_cog(Armin(bot))
-bot.add_cog(LearningGroups(bot))
-bot.add_cog(Help(bot))
 
 
 def get_reaction(reactions):
@@ -63,6 +53,7 @@ def get_reaction(reactions):
         if reaction.emoji == PIN_EMOJI:
             return reaction
     return None
+
 
 async def pin_message(message):
     """ Pin the given message, if it is not already pinned """
@@ -106,7 +97,7 @@ async def on_raw_reaction_remove(payload):
 
 @bot.event
 async def on_voice_state_update(member, before, after):
-    if before.channel != after.channel and after.channel and "Lerngruppen-Voice" in after.channel.name:
+    if before.channel != after.channel and after.channel and "Lerngruppen-Voicy" in after.channel.name:
         category = await bot.fetch_channel(CATEGORY_LERNGRUPPEN)
         voice_channels = category.voice_channels
 
@@ -114,7 +105,7 @@ async def on_voice_state_update(member, before, after):
             if len(voice_channel.members) == 0:
                 return
 
-        await category.create_voice_channel(f"Lerngruppen-Voice-{len(voice_channels) + 1}")
+        await category.create_voice_channel(f"Lerngruppen-Voicy-{len(voice_channels) + 1}", bitrate=256000)
 
 
 bot.run(TOKEN)

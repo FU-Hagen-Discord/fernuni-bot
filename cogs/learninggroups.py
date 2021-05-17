@@ -5,7 +5,7 @@ import re
 import discord
 import utils
 from discord.ext import commands
-from help.help import help, handle_error, help_category
+from cogs.help import help, handle_error, help_category
 
 """
   Environment Variablen:

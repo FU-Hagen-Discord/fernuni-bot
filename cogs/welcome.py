@@ -4,10 +4,10 @@ import discord
 from discord.ext import commands
 
 import utils
-from help.help import help, handle_error
+from cogs.help import help, handle_error
 
 
-class WelcomeCog(commands.Cog):
+class Welcome(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.channel_id = int(os.getenv("DISCORD_WELCOME_CHANNEL"))

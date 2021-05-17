@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from discord.ext import commands, tasks
 
 
-class NewsCog(commands.Cog):
+class News(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.channel_id = int(os.getenv("DISCORD_NEWS_CHANNEL"))
@@ -17,11 +17,11 @@ class NewsCog(commands.Cog):
         self.news_loop.start()
 
     def load_news(self):
-        news_file = open("news.json", mode="r")
+        news_file = open("data/news.json", mode="r")
         self.news = json.load(news_file)
 
     def save_news(self):
-        news_file = open("news.json", mode="w")
+        news_file = open("data/news.json", mode="w")
         json.dump(self.news, news_file)
 
     @tasks.loop(hours=1)

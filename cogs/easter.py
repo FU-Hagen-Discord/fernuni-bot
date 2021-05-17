@@ -1,11 +1,10 @@
 import json
-import random
 import discord
-from discord.ext import commands, tasks
-from help.help import help, handle_error
+from discord.ext import commands
+from cogs.help import handle_error
 
 
-class EasterCog(commands.Cog):
+class Easter(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.data = self.load_data()
@@ -13,11 +12,11 @@ class EasterCog(commands.Cog):
         # self.reaction_timer.start()
 
     def load_data(self):
-        data_file = open("easter.json", mode="r")
+        data_file = open("data/easter.json", mode="r")
         return json.load(data_file)
 
     def save_data(self):
-        data_file = open("easter.json", mode="w")
+        data_file = open("data/easter.json", mode="w")
         json.dump(self.data, data_file)
 
     # @commands.Cog.listener(name="on_message")

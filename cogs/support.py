@@ -5,7 +5,7 @@ import discord
 from discord.ext import commands
 
 
-class SupportCog(commands.Cog):
+class Support(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.channel_id = int(os.getenv("DISCORD_SUPPORT_CHANNEL"))
