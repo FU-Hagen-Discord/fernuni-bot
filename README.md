@@ -2,9 +2,9 @@
 *Bot für den Discord Server "FU Hagen Informatik/Mathematik"*
 
 ## Funktion
-### April 2020
-✨*Geburtstunde*  
-**Ursprünglich**: Rollenzuschreibung / -entfernung auf dem Server (Studiengangszugehörigkeit).
+### April 2020 ✨*Geburtstunde*  
+* Nachrichten über die 📌-Reaktion anheften,
+* Rollenzuschreibung / -entfernung (Studiengangszugehörigkeit).
 
 ### Mai 2021
 **Rolle**: Freund und Helfer bei der Organisation des Studiums und der gelegentlichen Prokrastination 🤖  
@@ -18,7 +18,7 @@
   * Farben für Usernames
   * *Sonstige Rollen bei saisonalen Events*
 * Wissensmanagement
-  * Modulinformationen (WIP - [PR zur Funktion](https://github.com/FU-Hagen-Discord/fernuni-bot/pull/3))
+  * [Modulinformationen](https://github.com/FU-Hagen-Discord/fernuni-bot/tree/master/module_information) in den Kurschannels
   * Sammlung Nützlicher [Links](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/links_cog.py) in den Channels
 * [Lerngruppenverwaltung](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/learninggroups.py)
   * Anfragen/ Erstellen/ Umbenennen/ Löschen
@@ -28,12 +28,13 @@
 * Text-commands
   * Motivations- / Prokrastinationssprüche
   * Statistiken des Servers anzeigen
-  * [Arminsagt-Sprüche](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/armin.py)
 * Moderationswerkzeuge
   * [Stille Treppe](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/calmdown.py) -> entzieht einem Nutzer die Schreibrechte für eine vorgegebene Zeit
   * [Voice-Kommando](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/voice_cog.py) -> schließt/ öffnet alle Voice-Channels (wurde während der Online-Klausurkampgne verwendet) 
-* XKCD-Comics (WIP - [PR](https://github.com/FU-Hagen-Discord/fernuni-bot/pull/29))
-* *Event-Funktionen* (siehe [Weihnachten](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/christmas_cog.py)und [Ostern](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/easter_cog.py))
+* Fun and Games
+  * [XKCD-Comics](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/xkcd.py)
+  * [Arminsagt-Sprüche](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/armin.py)
+  * *Event-Funktionen* (siehe [Weihnachten](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/christmas_cog.py)und [Ostern](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/easter_cog.py))
 
 ## Mitwirkung
 Dir fehlt bei Boty eine Funktion? Dann kannst du `!idee <Deine Idee>` in #bot-development auf dem Server eingeben.  
