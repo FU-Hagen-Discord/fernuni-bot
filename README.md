@@ -11,40 +11,40 @@ Zu dem Zeitpunkt kann Boty:
 ### Mai 2021
 **Rolle**: Freund und Helfer bei der Organisation des Studiums und der gelegentlichen Prokrastination 🤖  
 
-* Begrüßung von neuen Servermitgliedern
+* [Begrüßung](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/cogs/welcome.py) von neuen Servermitgliedern
   * Direktnachricht
-  * Text in #welcome (WIP - [PR "Documentation increases"](https://github.com/FU-Hagen-Discord/fernuni-bot/pull/35))
+  * Text in #welcome
 
 * Rollenzuschreibung / -entfernung
   * Studiengangszugehörigkeit
-  * [Newsrolle](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/news_cog.py) -> Ping bei Neuigkeiten der Fak. für Informatik und Mathematik
+  * [Newsrolle](https://github.com/FU-Hagen-Discord/fernuni-bot/tree/master/cogs/news.py) -> Ping bei Neuigkeiten der Fak. für Informatik und Mathematik
   * Farben für Usernames
   * *Sonstige Rollen bei saisonalen Events*
 
 * Wissensmanagement
-  * [Modulinformationen](https://github.com/FU-Hagen-Discord/fernuni-bot/tree/master/module_information) in den Kurschannels
-  * Sammlung Nützlicher [Links](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/links_cog.py) in den Channels
+  * [Modulinformationen](https://github.com/FU-Hagen-Discord/fernuni-bot/tree/master/cogs/components/module_information) in den Kurschannels
+  * Sammlung Nützlicher [Links](https://github.com/FU-Hagen-Discord/fernuni-bot/tree/master/cogs/links.py) in den Channels
 
-* [Lerngruppenverwaltung](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/learninggroups.py)
+* [Lerngruppenverwaltung](https://github.com/FU-Hagen-Discord/fernuni-bot/tree/master/cogs/learninggroups.py)
   * Anfragen/ Erstellen/ Umbenennen/ Löschen
   * Ownership -> Toggle: 🛑vollzählig/ 🌲offen für neue Mitglieder
 
-* [Kalenderfunktion](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/appointments_cog.py)
+* [Kalenderfunktion](https://github.com/FU-Hagen-Discord/fernuni-bot/tree/master/cogs/appointments.py)
 
-* [Umfragefunktion](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/poll_cog.py)
+* [Umfragefunktion](https://github.com/FU-Hagen-Discord/fernuni-bot/tree/master/cogs/polls.py)
 
 * Text-commands
   * Motivations- / Prokrastinationssprüche
   * Statistiken des Servers anzeigen
 
 * Moderationswerkzeuge
-  * [Stille Treppe](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/calmdown.py) -> entzieht einem Nutzer die Schreibrechte für eine vorgegebene Zeit
-  * [Voice-Kommando](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/voice_cog.py) -> schließt/ öffnet alle Voice-Channels (wurde während der Online-Klausurkampgne verwendet) 
+  * [Stille Treppe](https://github.com/FU-Hagen-Discord/fernuni-bot/tree/master/cogs/calmdown.py) -> entzieht einem Nutzer die Schreibrechte für eine vorgegebene Zeit
+  * [Voice-Kommando](https://github.com/FU-Hagen-Discord/fernuni-bot/tree/master//cogs/voice.py) -> schließt/ öffnet alle Voice-Channels (wurde während der Online-Klausurkampgne verwendet) 
 
 * Fun and Games
-  * [XKCD-Comics](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/xkcd.py)
-  * [Arminsagt-Sprüche](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/armin.py)
-  * *Event-Funktionen* (siehe [Weihnachten](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/christmas_cog.py) und [Ostern](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/easter_cog.py))
+  * [XKCD-Comics](https://github.com/FU-Hagen-Discord/fernuni-bot/tree/master/cogs/xkcd.py)
+  * [Arminsagt-Sprüche](https://github.com/FU-Hagen-Discord/fernuni-bot/tree/master/cogs/armin.py)
+  * *Event-Funktionen* (siehe [Weihnachten](https://github.com/FU-Hagen-Discord/fernuni-bot/tree/master/cogs/christmas.py) und [Ostern](https://github.com/FU-Hagen-Discord/fernuni-bot/tree/master/cogs/easter.py))
 
 ## Mitwirkung
 Dir fehlt bei Boty eine Funktion? Dann kannst du `!idee <Deine Idee>` in #anregungen-zum-discord auf dem Server eingeben.  
