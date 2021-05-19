@@ -55,7 +55,7 @@ class TextCommands(commands.Cog):
     @help(
         category="textcommands",
         brief="Fügt ein Text-Kommando hinzu.",
-        example="!add-text-command !newcommand \"immer wenn newcommand aufgerufen wird wird das hier ausgegeben\" \"Hilfetext zu diesem Kommando\"",
+        example="!command add !newcommand \"immer wenn newcommand aufgerufen wird wird das hier ausgegeben\" \"Hilfetext zu diesem Kommando\"",
         description="Ein Text-Kommando ist ein Kommando welches über !<name des textkommandos> aufgerufen werden kann und dann zufällig einen der hinterlegten Texte ausgibt.",
         parameters={
             "cmd": "Name des anzulegenden Kommandos (z. B. !horoskop). ",
@@ -65,9 +65,9 @@ class TextCommands(commands.Cog):
         },
         mod=True
     )
-    @commands.command(name="add-text-command")
+    @commands.command(name="command add")
     @commands.check(utils.is_mod)
-    async def cmd_add_text_command(self, ctx, cmd, text, help_message=None, category=None):
+    async def cmd_command_add(self, ctx, cmd, text, help_message=None, category=None):
         texts = None
         try:
             texts = self.text_commands.get(cmd).get('data')
@@ -91,16 +91,16 @@ class TextCommands(commands.Cog):
     @help(
         category="textcommands",
         brief="Bearbeitet den Hilfetext für ein Text-Kommando.",
-        example="!edit-text-help !newcommand \"Neuer Hilfetext\"",
+        example="!command-edit-help !newcommand \"Neuer Hilfetext\"",
         parameters={
             "cmd": "Name des Kommandos, für welches der Hilfetext geändert werden soll (z. B. !horoskop).",
             "help_message": "Die Hilfenachricht, die bei !help für dieses Kommando erscheinen soll (in Anführungszeichen)."
         },
         mod=True
     )
-    @commands.command(name="edit-text-help")
+    @commands.command(name="command-edit-help")
     @commands.check(utils.is_mod)
-    async def cmd_edit_text_help(self, ctx, cmd, help_message):
+    async def cmd_command_edit_help(self, ctx, cmd, help_message):
         help_object = None
         try:
             cmd = re.sub(r"^!*", "!", cmd)
@@ -121,16 +121,16 @@ class TextCommands(commands.Cog):
     @help(
         category="textcommands",
         brief="Setzt die Kategorie für ein Text-Kommando.",
-        example="!edit-text-category !newcommand category",
+        example="!command-edit-category !newcommand category",
         parameters={
             "cmd": "Name des Kommandos, für welches die Kategorie geändert werden soll (z. B. !horoskop).",
             "category": "Die Kategorie, in die das Kommando eingeordnet werden soll"
         },
         mod=True
     )
-    @commands.command(name="edit-text-category")
+    @commands.command(name="command-edit-category")
     @commands.check(utils.is_mod)
-    async def cmd_edit_text_category(self, ctx, cmd, category):
+    async def cmd_command_edit_category(self, ctx, cmd, category):
         help_object = None
         try:
             help_object = self.text_commands.get(re.sub("^!*", "!", cmd)).get('help')
@@ -152,9 +152,9 @@ class TextCommands(commands.Cog):
         brief="Gibt eine Liste der verfügbaren Text-Kommandos aus.",
         mod=True
     )
-    @commands.command(name="text-commands")
+    @commands.command(name="commands-list")
     @commands.check(utils.is_mod)
-    async def cmd_text_commands(self, ctx):
+    async def cmd_commands_list(self, ctx):
         answer = f"Text Commands:\n"
 
         ctr = 0
@@ -170,12 +170,12 @@ class TextCommands(commands.Cog):
         parameters={
             "cmd": "Text-Kommandos, für welches die hinterlegten Texte ausgegeben werden sollen (z. B. !horoskop)."
         },
-        example="!texts !horoskop",
+        example="!command-list !horoskop",
         mod=True
     )
-    @commands.command(name="texts")
+    @commands.command(name="command-list")
     @commands.check(utils.is_mod)
-    async def cmd_texts(self, ctx, cmd):
+    async def cmd_command_list(self, ctx, cmd):
         texts = self.text_commands.get(cmd).get('data')
         answer = f"Für {cmd} hinterlegte Texte: \n"
 
@@ -194,15 +194,15 @@ class TextCommands(commands.Cog):
         brief="Editiert für ein Text-Kommando einen Text an einer bestimmten Position.",
         parameters={
             "cmd": "Text-Kommandos, für welches die hinterlegte Text bearbeitet werden soll (z. B. !horoskop).",
-            "id": "Nummer des Textes. Diese kann durch !texts ermittelt werden.",
+            "id": "Nummer des Textes. Diese kann durch !command-list <command> ermittelt werden.",
             "text": "Der neue Text, der an dieser Stelle stehen soll (in Anführungszeichen eingeschlossen)."
         },
-        example="!edit-text !horoskop 2 \"Wassermann: bricht sich eine Zacke ab. Hat leider nur noch einen Zweizack.\"",
+        example="!command-edit !horoskop 2 \"Wassermann: bricht sich eine Zacke ab. Hat leider nur noch einen Zweizack.\"",
         mod=True
     )
-    @commands.command(name="edit-text")
+    @commands.command(name="command-edit")
     @commands.check(utils.is_mod)
-    async def cmd_edit_text(self, ctx, cmd, id, text):
+    async def cmd_command_edit(self, ctx, cmd, id, text):
         texts = self.text_commands.get(cmd).get('data')
 
         if texts:
