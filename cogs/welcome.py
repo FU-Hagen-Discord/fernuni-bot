@@ -31,7 +31,7 @@ class Welcome(commands.Cog):
             url="https://cdn.discordapp.com/avatars/697842294279241749/c7d3063f39d33862e9b950f72ab71165.webp")
                
         embed.add_field(name="Boty McBotface",
-                        value=f"Boty ist der Server-Bot und kann dein Freund und Helfer sein, wenn es um die Organisation deines Studiums geht. In <#{os.getenv('DISCORD_BOTUEBUNGSPLATZ_CHANNEL')}> kann man mit den verschiedenen Befehlen rumprobieren, bei `help` wird er dir per Direktnachricht einen Überblick von seinen Funktionen geben.", 
+                        value=f"Boty ist der Server-Bot und kann dein Freund und Helfer sein, wenn es um die Organisation deines Studiums geht. In <#{os.getenv('DISCORD_BOTUEBUNGSPLATZ_CHANNEL')}> kann man mit den verschiedenen Befehlen rumprobieren, bei `!help` wird er dir per Direktnachricht einen Überblick von seinen Funktionen geben.", 
                         #channelverlinkung anders?
                         inline=False)
 
