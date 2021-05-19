@@ -91,7 +91,7 @@ class TextCommands(commands.Cog):
     @help(
         category="textcommands",
         brief="Bearbeitet den Hilfetext für ein Text-Kommando.",
-        example="!exit-text-help !newcommand \"Neuer Hilfetext\"",
+        example="!edit-text-help !newcommand \"Neuer Hilfetext\"",
         parameters={
             "cmd": "Name des Kommandos, für welches der Hilfetext geändert werden soll (z. B. !horoskop).",
             "help_message": "Die Hilfenachricht, die bei !help für dieses Kommando erscheinen soll (in Anführungszeichen)."
@@ -121,7 +121,7 @@ class TextCommands(commands.Cog):
     @help(
         category="textcommands",
         brief="Setzt die Kategorie für ein Text-Kommando.",
-        example="!exit-text-help !newcommand \"Neuer Hilfetext\"",
+        example="!edit-text-category !newcommand category",
         parameters={
             "cmd": "Name des Kommandos, für welches die Kategorie geändert werden soll (z. B. !horoskop).",
             "category": "Die Kategorie, in die das Kommando eingeordnet werden soll"
