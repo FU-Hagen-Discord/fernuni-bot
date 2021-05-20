@@ -63,7 +63,7 @@ class Appointments(commands.Cog):
                             if reaction.emoji == "👍":
                                 async for user in reaction.users():
                                     if user != self.bot.user:
-                                        answer += f"<@!{str(user.id)}>"
+                                        answer += f"<@!{str(user.id)}> "
 
                         await channel.send(answer)
 
