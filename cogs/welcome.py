@@ -57,7 +57,7 @@ class Welcome(commands.Cog):
                         inline=False)
         
         embed.add_field(name="Discord Tipps",
-                        value="Mit `Strg` + `#` (deutscher Tastaturlayout) erhält man einen Überblick über die Discord-Shortcuts. \n- Zur Übersichtlichkeit kann man stummgeschaltete Channels ausblenden: https://support.discord.com/hc/de/articles/213599277-Wie-verstecke-Ich-stumme-Kanäle-,\n- Markdown (und damit Code-Blöcke) gibt es hier auch: https://support.discord.com/hc/en-us/articles/210298617-Markdown-Text-101-Chat-Formatting-Bold-Italic-Underline-",
+                        value="Mit `Strg` + `#` (deutsches Tastaturlayout) erhält man einen Überblick über die Discord-Shortcuts. \n- Zur Übersichtlichkeit kann man stummgeschaltete Channels ausblenden: https://support.discord.com/hc/de/articles/213599277-Wie-verstecke-Ich-stumme-Kanäle-,\n- Markdown (und damit Code-Blöcke) gibt es hier auch: https://support.discord.com/hc/en-us/articles/210298617-Markdown-Text-101-Chat-Formatting-Bold-Italic-Underline-",
                         inline=False)   
 
         await message.edit(content="", embed=embed)
