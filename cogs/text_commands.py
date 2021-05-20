@@ -218,54 +218,45 @@ class TextCommands(commands.Cog):
 
     @help(
         category="textcommands",
-        brief="Löscht für ein Text-Kommando einen Text an einer bestimmten Position.",
+        brief="Löscht ein Text-Kommando bzw. einen der Einträge des Kommandos anhand seiner Position.",
         parameters={
-            "cmd": "Text-Kommandos, für welches der hinterlegte Text gelöscht werden soll (z. B. !horoskop).",
-            "id": "Nummer des Textes der gelöscht werden soll.",
+            "cmd": "Text-Kommando, das selbst oder dessen Eintrag gelöscht werden soll (z. B. !horoskop).",
+            "id": "Nummer des Textes, der gelöscht werden soll.",
         },
-        example="!remove-text !horoskop 2",
+        example="!command-remove !horoskop 2",
         mod=True
     )
-    @commands.command(name="remove-text")
+    @commands.command(name="command-remove")
     @commands.check(utils.is_mod)
-    async def cmd_remove_text(self, ctx, cmd, id):
+    async def cmd_command_remove(self, ctx, cmd, id=None):
         texts = self.text_commands.get(cmd).get('data')
 
         if texts:
-            i = int(id)
-            if i < len(texts):
-                del texts[i]
-                await ctx.send(f"Text {i} für Command {cmd} wurde erfolgreich entfernt")
+            if id:                              #checkt erst, ob man lediglich einen Eintrag (und nicht das ganze Command) löschen möchte
+                i = int(id)
+                if i < len(texts):              #schließt Aufrufe von Indizen aus, die außerhalb des Felds wären
+                    del texts[i]
+                    await ctx.send(f"Text {i} für Command {cmd} wurde erfolgreich entfernt")
 
-                if len(texts) == 0:
+                    if len(texts) == 0:
+                        self.text_commands.pop(cmd)
+
+                    self.save_text_commands()
+                else:
+                    await ctx.send(f"Ungültiger Index")
+            else:                               #jetzt kommt man zum vollständigen command removal (ursprünglich "remove-text-command")
+                                                #Hier könnte eine Bestätigung angefordert werden (Möchtest du wirklich das Command vollständig löschen? 👍👎)
+                if cmd in self.text_commands:
                     self.text_commands.pop(cmd)
-
-                self.save_text_commands()
-            else:
-                await ctx.send(f"Ungültiger Index")
+                    remove_help_for(re.sub(r"^!", "", cmd))
+                    await ctx.send(f"Text Command {cmd} wurde erfolgreich entfernt.")
+                    self.save_text_commands()
+                else:
+                    await ctx.send(f"Text Command {cmd} nicht vorhanden!")            
         else:
             await ctx.send("Command {cmd} nicht vorhanden!")
 
-    @help(
-        category="textcommands",
-        brief="Löscht ein Text-Kommando.",
-        parameters={
-            "cmd": "Text-Kommando, welches gelöscht werden soll (z. B. !horoskop).",
-        },
-        example="!remove-text-command !horoskop",
-        mod=True
-    )
-    @commands.command(name="remove-text-command")
-    @commands.check(utils.is_mod)
-    async def cmd_remove_text_command(self, ctx, cmd):
-        if cmd in self.text_commands:
-            self.text_commands.pop(cmd)
-            remove_help_for(re.sub(r"^!", "", cmd))
-            await ctx.send(f"Text Command {cmd} wurde erfolgreich entfernt")
-            self.save_text_commands()
-        else:
-            await ctx.send(f"Text Command {cmd} nicht vorhanden")
-
+    #todo Fallunterscheidung: mod=false -> Bestätigung bei #mods-only (!motivation dann weg vom Fenster)            
     @help(
         category="motivation",
         brief="reicht deinen Motivationstext zur Genehmigung ein.",
