@@ -1,6 +1,16 @@
 import discord
+import emoji
 
-OPTIONS = ["🇦", "🇧", "🇨", "🇩", "🇪", "🇫", "🇬", "🇭", "🇮", "🇯", "🇰", "🇱", "🇲", "🇳", "🇴", "🇵", "🇶", "🇷"]
+DEFAULT_OPTIONS = ["🇦", "🇧", "🇨", "🇩", "🇪", "🇫", "🇬", "🇭", "🇮", "🇯", "🇰", "🇱", "🇲", "🇳", "🇴", "🇵", "🇶",
+                   "🇷"]
+DELETE_POLL = "🗑️"
+CLOSE_POLL = "🛑"
+
+
+def get_unique_option(options):
+    for option in DEFAULT_OPTIONS:
+        if option not in options:
+            return option
 
 
 class Poll:
@@ -20,6 +30,40 @@ class Poll:
             for i in range(2, len(embed.fields)):
                 self.answers.append(embed.fields[i].value)
 
+        self.options = self.get_options()
+
+    def get_options(self):
+        options = []
+
+        for i in range(min(len(self.answers), len(DEFAULT_OPTIONS))):
+            option = ""
+            answer = self.answers[i].strip()
+            index = answer.find(" ")
+
+            if index > -1:
+                possible_option = answer[:index]
+                if len(possible_option) == 1:
+                    if possible_option in emoji.UNICODE_EMOJI_ALIAS_ENGLISH:
+                        if len(answer[index:].strip()) > 0:
+                            option = possible_option
+                            self.answers[i] = answer[index:].strip()
+                elif len(possible_option) > 1:
+                    if possible_option[0:2] == "<:" and possible_option[-1] == ">":
+                        splitted_custom_emoji = possible_option.strip("<:>").split(":")
+                        if len(splitted_custom_emoji) == 2:
+                            id = splitted_custom_emoji[1]
+                            custom_emoji = self.bot.get_emoji(int(id))
+                            if custom_emoji and len(answer[index:].strip()) > 0:
+                                option = custom_emoji
+                                self.answers[i] = answer[index:].strip()
+
+            if (isinstance(option, str) and len(option) == 0) or option in options or option in [DELETE_POLL,
+                                                                                                 CLOSE_POLL]:
+                option = get_unique_option(options)
+            options.append(option)
+
+        return options
+
     async def send_poll(self, channel, result=False, message=None):
         option_ctr = 0
         title = "Umfrage"
@@ -28,9 +72,9 @@ class Poll:
         if result:
             title += " Ergebnis"
 
-        if len(self.answers) > len(OPTIONS):
+        if len(self.answers) > len(DEFAULT_OPTIONS):
             await channel.send(
-                f"Fehler beim Erstellen der Umfrage! Es werden nicht mehr als {len(OPTIONS)} Optionen unterstützt!")
+                f"Fehler beim Erstellen der Umfrage! Es werden nicht mehr als {len(DEFAULT_OPTIONS)} Optionen unterstützt!")
             return
 
         embed = discord.Embed(title=title, description=self.question)
@@ -38,7 +82,7 @@ class Poll:
         embed.add_field(name="\u200b", value="\u200b", inline=False)
 
         for i in range(0, len(self.answers)):
-            name = f'{OPTIONS[i]}'
+            name = f'{self.options[i]}'
             value = f'{self.answers[i]}'
 
             if result:
@@ -70,12 +114,12 @@ class Poll:
             await message.clear_reaction("🛑")
 
             for reaction in reactions:
-                if reaction not in OPTIONS[:len(self.answers)]:
+                if reaction not in self.options:
                     await message.clear_reaction(reaction)
 
             for i in range(0, len(self.answers)):
-                if OPTIONS[i] not in reactions:
-                    await message.add_reaction(OPTIONS[i])
+                if self.options[i] not in reactions:
+                    await message.add_reaction(self.options[i])
 
             await message.add_reaction("🗑️")
             await message.add_reaction("🛑")

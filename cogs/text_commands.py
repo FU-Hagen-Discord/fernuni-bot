@@ -2,11 +2,13 @@ import json
 import os
 import random
 import re
+
 import discord
 from discord.ext import commands
 
 import utils
 from cogs.help import text_command_help, help, handle_error, remove_help_for, help_category
+
 
 @help_category("textcommands", "Text-Kommandos", "", "Alle Werkzeuge zum Anlegen und Verwalten von Textkommandos.")
 @help_category("motivation", "Motivation (oder auch nicht)", "Manchmal braucht man einfach Zuspruch.")
@@ -145,7 +147,6 @@ class TextCommands(commands.Cog):
         self.save_text_commands()
 
         await ctx.send(f"[{cmd}] => Erfolgreich auf Kategorie [{category}] geändert.")
-
 
     @help(
         category="textcommands",

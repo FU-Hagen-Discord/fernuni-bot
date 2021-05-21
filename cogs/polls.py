@@ -55,7 +55,7 @@ class Polls(commands.Cog):
         if message:
             if message.embeds[0].title == "Umfrage":
                 old_poll = Poll(self.bot, message=message)
-                new_poll = Poll(self.bot, question=question, answers=answers, author=old_poll.author)
+                new_poll = Poll(self.bot, question=question, answers=list(answers), author=old_poll.author)
                 await new_poll.send_poll(ctx.channel, message=message)
         else:
             ctx.send("Fehler! Umfrage nicht gefunden!")
@@ -75,7 +75,7 @@ class Polls(commands.Cog):
     async def cmd_poll(self, ctx, question, *answers):
         """ Create poll """
 
-        await Poll(self.bot, question, answers, ctx.author.id).send_poll(ctx)
+        await Poll(self.bot, question, list(answers), ctx.author.id).send_poll(ctx)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
