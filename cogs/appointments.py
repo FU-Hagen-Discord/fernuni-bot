@@ -1,7 +1,9 @@
 import asyncio
 import datetime
+import io
 import json
 import os
+import uuid
 
 import discord
 from discord.ext import tasks, commands
@@ -10,11 +12,49 @@ import utils
 from cogs.help import help, handle_error, help_category
 
 
-
+def get_ics_file(title, date_time, reminder, recurring):
+    fmt = "%Y%m%dT%H%M"
+    appointment = f"BEGIN:VCALENDAR\n" \
+                  f"PRODID:Boty McBotface\n" \
+                  f"VERSION:2.0\n" \
+                  f"BEGIN:VTIMEZONE\n" \
+                  f"TZID:Europe/Berlin\n" \
+                  f"BEGIN:DAYLIGHT\n" \
+                  f"TZOFFSETFROM:+0100\n" \
+                  f"TZOFFSETTO:+0200\n" \
+                  f"TZNAME:CEST\n" \
+                  f"DTSTART:19700329T020000\n" \
+                  f"RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=3\n" \
+                  f"END:DAYLIGHT\n" \
+                  f"BEGIN:STANDARD\n" \
+                  f"TZOFFSETFROM:+0200\n" \
+                  f"TZOFFSETTO:+0100\n" \
+                  f"TZNAME:CET\n" \
+                  f"DTSTART:19701025T030000\n" \
+                  f"RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=10\n" \
+                  f"END:STANDARD\n" \
+                  f"END:VTIMEZONE\n" \
+                  f"BEGIN:VEVENT\n" \
+                  f"DTSTAMP:{datetime.datetime.now().strftime(fmt)}00Z\n" \
+                  f"UID:{uuid.uuid4()}\n" \
+                  f"SUMMARY:{title}\n"
+    appointment += f"RRULE:FREQ=MINUTELY;INTERVAL={recurring}\n" if recurring else f""
+    appointment += f"DTSTART;TZID=Europe/Berlin:{date_time.strftime(fmt)}00\n" \
+                   f"DTEND;TZID=Europe/Berlin:{date_time.strftime(fmt)}00\n" \
+                   f"TRANSP:OPAQUE\n" \
+                   f"BEGIN:VALARM\n" \
+                   f"ACTION:DISPLAY\n" \
+                   f"TRIGGER;VALUE=DURATION:-PT{reminder}M\n" \
+                   f"DESCRIPTION:Halloooo, dein Termin findest bald statt!!!!\n" \
+                   f"END:VALARM\n" \
+                   f"END:VEVENT\n" \
+                   f"END:VCALENDAR"
+    ics_file = io.BytesIO(appointment.encode("utf-8"))
+    return ics_file
 
 
 @help_category("appointments", "Appointments", "Mit Appointments kannst du Termine zu einem Kanal hinzufügen. "
-"Sehr praktisches Feature zum Organisieren von Lerngruppen.")
+                                               "Sehr praktisches Feature zum Organisieren von Lerngruppen.")
 class Appointments(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -149,7 +189,8 @@ class Appointments(commands.Cog):
         if recurring:
             embed.add_field(name="Wiederholung", value=f"Alle {recurring} Minuten", inline=False)
 
-        message = await channel.send(embed=embed)
+        message = await channel.send(embed=embed, file=discord.File(get_ics_file(title, date_time, reminder, recurring),
+                                                                    filename=f"{title}.ics"))
         await message.add_reaction("👍")
         await message.add_reaction("🗑️")
 
