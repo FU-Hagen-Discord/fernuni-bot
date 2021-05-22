@@ -16,15 +16,31 @@ class Polls(commands.Cog):
 
     @help(
         category="poll",
-        syntax="!add-poll <question> <answers...>",
+        syntax="!poll <question> <answers...>",
+        brief="Erstellt eine Umfrage im aktuellen Kanal.",
+        parameters={
+            "question": "Die Frage, die gestellt werden soll (in Anführungszeichen).",
+            "answers...": "Durch Leerzeichen getrennte Antwortmöglichkeiten (die einzelnen Antworten in Anführungszeichen einschließen)."
+        },
+        example="!poll \"Wie ist das Wetter?\" \"echt gut\" \"weniger gut\" \"Boar nee, nicht schon wieder Regen\""
+    )
+    @commands.group(name="poll", pass_context=True, invoke_without_command=True)
+    async def cmd_poll(self, ctx, question, *answers):
+        """ Create poll """
+
+        await Poll(self.bot, question, list(answers), ctx.author.id).send_poll(ctx)
+
+    @help(
+        category="poll",
+        syntax="!poll suggest <question> <answers...>",
         brief="Schlägt eine Umfrage für den Umfrage-Kanal vor.",
         parameters={
             "question": "Die Frage die gestellt werden soll (in Anführungszeichen).",
             "answers...": "Durch Leerzeichen getrennte Antwortmöglichkeiten (die einzelnen Antworten in Anführungszeichen einschließen)."
         },
-        example="!add-poll \"Wie ist das Wetter?\" \"echt gut\" \"weniger gut\" \"Boar nee, nicht schon wieder Regen\""
+        example="!poll suggest \"Wie ist das Wetter?\" \"echt gut\" \"weniger gut\" \"Boar nee, nicht schon wieder Regen\""
     )
-    @commands.command(name="add-poll")
+    @cmd_poll.command(name="suggest")
     async def cmd_add_poll(self, ctx, question, *answers):
         channel = await self.bot.fetch_channel(self.poll_sugg_channel)
         msg = f"<@!{ctx.author.id}> hat folgende Umfrage vorgeschlagen:\nFrage:{question}\n\nAntwortoptionen:\n"
@@ -39,16 +55,16 @@ class Polls(commands.Cog):
     @help(
         category="poll",
         brief="Bearbeitet eine bereits vorhandene Umfrage.",
-        syntax="!edit-poll <message_id> <question> <answers...>",
+        syntax="!poll edit <message_id> <question> <answers...>",
         parameters={
             "message_id": "die Message-ID ist der Nachricht mit einem Rechtsklick auf die Umfrage zu entnehmen (Entwicklermodus in Discord müssen aktiv sein).",
             "question": "Die Frage, die gestellt werden soll (in Anführungszeichen).",
             "answers...": "Durch Leerzeichen getrennte Antwortmöglichkeiten (die einzelnen Antworten in Anführungszeichen einschließen).",
         },
-        example="!edit-poll 838752355595059230 \"Wie ist das Wetter?\" \"echt gut\" \"weniger gut\" \"Boar nee, nicht schon wieder Regen\"",
+        example="!poll edit 838752355595059230 \"Wie ist das Wetter?\" \"echt gut\" \"weniger gut\" \"Boar nee, nicht schon wieder Regen\"",
         mod=True
     )
-    @commands.command(name="edit-poll")
+    @cmd_poll.command(name="edit")
     @commands.check(utils.is_mod)
     async def cmd_edit_poll(self, ctx, message_id, question, *answers):
         message = await ctx.fetch_message(message_id)
@@ -60,22 +76,6 @@ class Polls(commands.Cog):
         else:
             ctx.send("Fehler! Umfrage nicht gefunden!")
         pass
-
-    @help(
-        category="poll",
-        syntax="!poll <question> <answers...>",
-        brief="Erstellt eine Umfrage im aktuellen Kanal.",
-        parameters={
-            "question": "Die Frage, die gestellt werden soll (in Anführungszeichen).",
-            "answers...": "Durch Leerzeichen getrennte Antwortmöglichkeiten (die einzelnen Antworten in Anführungszeichen einschließen)."
-        },
-        example="!poll \"Wie ist das Wetter?\" \"echt gut\" \"weniger gut\" \"Boar nee, nicht schon wieder Regen\""
-    )
-    @commands.command(name="poll")
-    async def cmd_poll(self, ctx, question, *answers):
-        """ Create poll """
-
-        await Poll(self.bot, question, list(answers), ctx.author.id).send_poll(ctx)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):

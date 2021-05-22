@@ -13,8 +13,40 @@ def get_unique_option(options):
             return option
 
 
-class Poll:
+def get_options(bot, answers):
+    options = []
 
+    for i in range(min(len(answers), len(DEFAULT_OPTIONS))):
+        option = ""
+        answer = answers[i].strip()
+        index = answer.find(" ")
+
+        if index > -1:
+            possible_option = answer[:index]
+            if len(possible_option) == 1:
+                if possible_option in emoji.UNICODE_EMOJI_ALIAS_ENGLISH:
+                    if len(answer[index:].strip()) > 0:
+                        option = possible_option
+                        answers[i] = answer[index:].strip()
+            elif len(possible_option) > 1:
+                if possible_option[0:2] == "<:" and possible_option[-1] == ">":
+                    splitted_custom_emoji = possible_option.strip("<:>").split(":")
+                    if len(splitted_custom_emoji) == 2:
+                        id = splitted_custom_emoji[1]
+                        custom_emoji = bot.get_emoji(int(id))
+                        if custom_emoji and len(answer[index:].strip()) > 0:
+                            option = custom_emoji
+                            answers[i] = answer[index:].strip()
+
+        if (isinstance(option, str) and len(option) == 0) or option in options or option in [DELETE_POLL,
+                                                                                             CLOSE_POLL]:
+            option = get_unique_option(options)
+        options.append(option)
+
+    return options
+
+
+class Poll:
     def __init__(self, bot, question=None, answers=None, author=None, message=None):
         self.bot = bot
         self.question = question
@@ -30,39 +62,7 @@ class Poll:
             for i in range(2, len(embed.fields)):
                 self.answers.append(embed.fields[i].value)
 
-        self.options = self.get_options()
-
-    def get_options(self):
-        options = []
-
-        for i in range(min(len(self.answers), len(DEFAULT_OPTIONS))):
-            option = ""
-            answer = self.answers[i].strip()
-            index = answer.find(" ")
-
-            if index > -1:
-                possible_option = answer[:index]
-                if len(possible_option) == 1:
-                    if possible_option in emoji.UNICODE_EMOJI_ALIAS_ENGLISH:
-                        if len(answer[index:].strip()) > 0:
-                            option = possible_option
-                            self.answers[i] = answer[index:].strip()
-                elif len(possible_option) > 1:
-                    if possible_option[0:2] == "<:" and possible_option[-1] == ">":
-                        splitted_custom_emoji = possible_option.strip("<:>").split(":")
-                        if len(splitted_custom_emoji) == 2:
-                            id = splitted_custom_emoji[1]
-                            custom_emoji = self.bot.get_emoji(int(id))
-                            if custom_emoji and len(answer[index:].strip()) > 0:
-                                option = custom_emoji
-                                self.answers[i] = answer[index:].strip()
-
-            if (isinstance(option, str) and len(option) == 0) or option in options or option in [DELETE_POLL,
-                                                                                                 CLOSE_POLL]:
-                option = get_unique_option(options)
-            options.append(option)
-
-        return options
+        self.options = get_options(self.bot, self.answers)
 
     async def send_poll(self, channel, result=False, message=None):
         option_ctr = 0
