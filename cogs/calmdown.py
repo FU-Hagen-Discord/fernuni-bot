@@ -40,8 +40,8 @@ class Calmdown(commands.Cog):
     async def unsilence(self, user, guild):
         role = guild.get_role(self.role_id)
         await user.remove_roles(role)
-        if self.silenced_users.get(user.id):
-            del self.silenced_users[user.id]
+        if self.silenced_users.get(str(user.id)):
+            del self.silenced_users[str(user.id)]
             self.save()
 
     @tasks.loop(minutes=1)
@@ -91,7 +91,7 @@ class Calmdown(commands.Cog):
                 return
             now = datetime.datetime.now()
             till = now + datetime.timedelta(minutes=duration)
-            self.silenced_users[user.id] = {"duration": till.strftime(self.fmt), "guild_id": guild.id}
+            self.silenced_users[str(user.id)] = {"duration": till.strftime(self.fmt), "guild_id": guild.id}
             self.save()
             await ctx.channel.send(f"{ctx.author.mention} hat {user.mention} auf die **stille Treppe** geschickt.")
             await user.add_roles(role)
