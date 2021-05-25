@@ -37,11 +37,22 @@ class Calmdown(commands.Cog):
         file = open(self.file, mode='w')
         json.dump(self.silenced_users, file)
 
-    async def unsilence(self, user, guild):
+    async def unsilence(self, user_id, guild_id, inform_user=False):
+        guild = await self.bot.fetch_guild(int(guild_id))
         role = guild.get_role(self.role_id)
-        await user.remove_roles(role)
-        if self.silenced_users.get(str(user.id)):
-            del self.silenced_users[str(user.id)]
+
+        try:
+            user = await guild.fetch_member(int(user_id))
+        except discord.errors.NotFound:
+            user = None
+
+        if user:
+            if inform_user:
+                await utils.send_dm(user, f"Du darfst die **stille Treppe** nun wieder verlassen.")
+            await user.remove_roles(role)
+
+        if self.silenced_users.get(str(user_id)):
+            del self.silenced_users[str(user_id)]
             self.save()
 
     @tasks.loop(minutes=1)
@@ -49,16 +60,12 @@ class Calmdown(commands.Cog):
         now = datetime.datetime.now()
         silenced_users = self.silenced_users.copy()
         for user_id, data in silenced_users.items():
-            guild = await self.bot.fetch_guild(int(data['guild_id']))
-            user = await guild.fetch_member(int(user_id))
             duration = data.get('duration')
             if not duration:
                 return
             till = datetime.datetime.strptime(duration, self.fmt)
-            if user and now >= till:
-                guild = await self.bot.fetch_guild(data['guild_id'])
-                await utils.send_dm(user, f"Du darfst die **stille Treppe** nun wieder verlassen.")
-                await self.unsilence(user, guild)
+            if now >= till:
+                await self.unsilence(user_id, data['guild_id'], inform_user=True)
 
     @help(
         brief="Setzt einen User auf die stille Treppe.",
@@ -87,8 +94,9 @@ class Calmdown(commands.Cog):
             duration = utils.to_minutes(duration)
             if duration == 0:
                 await ctx.channel.send(f"{ctx.author.mention} hat {user.mention} von der **stillen Treppe** geholt.")
-                await self.unsilence(user, guild)
+                await self.unsilence(user.id, guild.id, inform_user=False)
                 return
+
             now = datetime.datetime.now()
             till = now + datetime.timedelta(minutes=duration)
             self.silenced_users[str(user.id)] = {"duration": till.strftime(self.fmt), "guild_id": guild.id}
