@@ -43,13 +43,11 @@ class Calmdown(commands.Cog):
 
         try:
             user = await guild.fetch_member(int(user_id))
-        except discord.errors.NotFound:
-            user = None
-
-        if user:
             if inform_user:
                 await utils.send_dm(user, f"Du darfst die **stille Treppe** nun wieder verlassen.")
             await user.remove_roles(role)
+        except discord.errors.NotFound:
+            pass
 
         if self.silenced_users.get(str(user_id)):
             del self.silenced_users[str(user_id)]
