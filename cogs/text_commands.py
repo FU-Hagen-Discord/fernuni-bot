@@ -55,7 +55,7 @@ class TextCommands(commands.Cog):
     @help(
         category="textcommands",
         brief="Fügt ein Text-Kommando hinzu.",
-        example="!add-text-command !newcommand \"immer wenn newcommand aufgerufen wird wird das hier ausgegeben\" \"Hilfetext zu diesem Kommando\"",
+        example="!command add !newcommand \"immer wenn newcommand aufgerufen wird wird das hier ausgegeben\" \"Hilfetext zu diesem Kommando\"",
         description="Ein Text-Kommando ist ein Kommando welches über !<name des textkommandos> aufgerufen werden kann und dann zufällig einen der hinterlegten Texte ausgibt.",
         parameters={
             "cmd": "Name des anzulegenden Kommandos (z. B. !horoskop). ",
@@ -65,9 +65,9 @@ class TextCommands(commands.Cog):
         },
         mod=True
     )
-    @commands.command(name="add-text-command")
+    @commands.command(name="command add")
     @commands.check(utils.is_mod)
-    async def cmd_add_text_command(self, ctx, cmd, text, help_message=None, category=None):
+    async def cmd_command_add(self, ctx, cmd, text, help_message=None, category=None):
         texts = None
         try:
             texts = self.text_commands.get(cmd).get('data')
@@ -91,16 +91,16 @@ class TextCommands(commands.Cog):
     @help(
         category="textcommands",
         brief="Bearbeitet den Hilfetext für ein Text-Kommando.",
-        example="!exit-text-help !newcommand \"Neuer Hilfetext\"",
+        example="!command-edit-help !newcommand \"Neuer Hilfetext\"",
         parameters={
             "cmd": "Name des Kommandos, für welches der Hilfetext geändert werden soll (z. B. !horoskop).",
             "help_message": "Die Hilfenachricht, die bei !help für dieses Kommando erscheinen soll (in Anführungszeichen)."
         },
         mod=True
     )
-    @commands.command(name="edit-text-help")
+    @commands.command(name="command-edit-help")
     @commands.check(utils.is_mod)
-    async def cmd_edit_text_help(self, ctx, cmd, help_message):
+    async def cmd_command_edit_help(self, ctx, cmd, help_message):
         help_object = None
         try:
             cmd = re.sub(r"^!*", "!", cmd)
@@ -121,16 +121,16 @@ class TextCommands(commands.Cog):
     @help(
         category="textcommands",
         brief="Setzt die Kategorie für ein Text-Kommando.",
-        example="!exit-text-help !newcommand \"Neuer Hilfetext\"",
+        example="!command-edit-category !newcommand category",
         parameters={
             "cmd": "Name des Kommandos, für welches die Kategorie geändert werden soll (z. B. !horoskop).",
             "category": "Die Kategorie, in die das Kommando eingeordnet werden soll"
         },
         mod=True
     )
-    @commands.command(name="edit-text-category")
+    @commands.command(name="command-edit-category")
     @commands.check(utils.is_mod)
-    async def cmd_edit_text_category(self, ctx, cmd, category):
+    async def cmd_command_edit_category(self, ctx, cmd, category):
         help_object = None
         try:
             help_object = self.text_commands.get(re.sub("^!*", "!", cmd)).get('help')
@@ -152,9 +152,9 @@ class TextCommands(commands.Cog):
         brief="Gibt eine Liste der verfügbaren Text-Kommandos aus.",
         mod=True
     )
-    @commands.command(name="text-commands")
+    @commands.command(name="commands-list")
     @commands.check(utils.is_mod)
-    async def cmd_text_commands(self, ctx):
+    async def cmd_commands_list(self, ctx):
         answer = f"Text Commands:\n"
 
         ctr = 0
@@ -170,12 +170,12 @@ class TextCommands(commands.Cog):
         parameters={
             "cmd": "Text-Kommandos, für welches die hinterlegten Texte ausgegeben werden sollen (z. B. !horoskop)."
         },
-        example="!texts !horoskop",
+        example="!command-list !horoskop",
         mod=True
     )
-    @commands.command(name="texts")
+    @commands.command(name="command-list")
     @commands.check(utils.is_mod)
-    async def cmd_texts(self, ctx, cmd):
+    async def cmd_command_list(self, ctx, cmd):
         texts = self.text_commands.get(cmd).get('data')
         answer = f"Für {cmd} hinterlegte Texte: \n"
 
@@ -194,15 +194,15 @@ class TextCommands(commands.Cog):
         brief="Editiert für ein Text-Kommando einen Text an einer bestimmten Position.",
         parameters={
             "cmd": "Text-Kommandos, für welches die hinterlegte Text bearbeitet werden soll (z. B. !horoskop).",
-            "id": "Nummer des Textes. Diese kann durch !texts ermittelt werden.",
+            "id": "Nummer des Textes. Diese kann durch !command-list <command> ermittelt werden.",
             "text": "Der neue Text, der an dieser Stelle stehen soll (in Anführungszeichen eingeschlossen)."
         },
-        example="!edit-text !horoskop 2 \"Wassermann: bricht sich eine Zacke ab. Hat leider nur noch einen Zweizack.\"",
+        example="!command-edit !horoskop 2 \"Wassermann: bricht sich eine Zacke ab. Hat leider nur noch einen Zweizack.\"",
         mod=True
     )
-    @commands.command(name="edit-text")
+    @commands.command(name="command-edit")
     @commands.check(utils.is_mod)
-    async def cmd_edit_text(self, ctx, cmd, id, text):
+    async def cmd_command_edit(self, ctx, cmd, id, text):
         texts = self.text_commands.get(cmd).get('data')
 
         if texts:
@@ -218,54 +218,45 @@ class TextCommands(commands.Cog):
 
     @help(
         category="textcommands",
-        brief="Löscht für ein Text-Kommando einen Text an einer bestimmten Position.",
+        brief="Löscht ein Text-Kommando bzw. einen der Einträge des Kommandos anhand seiner Position.",
         parameters={
-            "cmd": "Text-Kommandos, für welches der hinterlegte Text gelöscht werden soll (z. B. !horoskop).",
-            "id": "Nummer des Textes der gelöscht werden soll.",
+            "cmd": "Text-Kommando, das selbst oder dessen Eintrag gelöscht werden soll (z. B. !horoskop).",
+            "id": "Nummer des Textes, der gelöscht werden soll.",
         },
-        example="!remove-text !horoskop 2",
+        example="!command-remove !horoskop 2",
         mod=True
     )
-    @commands.command(name="remove-text")
+    @commands.command(name="command-remove")
     @commands.check(utils.is_mod)
-    async def cmd_remove_text(self, ctx, cmd, id):
+    async def cmd_command_remove(self, ctx, cmd, id=None):
         texts = self.text_commands.get(cmd).get('data')
 
         if texts:
-            i = int(id)
-            if i < len(texts):
-                del texts[i]
-                await ctx.send(f"Text {i} für Command {cmd} wurde erfolgreich entfernt")
+            if id:                              #checkt erst, ob man lediglich einen Eintrag (und nicht das ganze Command) löschen möchte
+                i = int(id)
+                if i < len(texts):              #schließt Aufrufe von Indizen aus, die außerhalb des Felds wären
+                    del texts[i]
+                    await ctx.send(f"Text {i} für Command {cmd} wurde erfolgreich entfernt")
 
-                if len(texts) == 0:
+                    if len(texts) == 0:
+                        self.text_commands.pop(cmd)
+
+                    self.save_text_commands()
+                else:
+                    await ctx.send(f"Ungültiger Index")
+            else:                               #jetzt kommt man zum vollständigen command removal (ursprünglich "remove-text-command")
+                                                #Hier könnte eine Bestätigung angefordert werden (Möchtest du wirklich das Command vollständig löschen? 👍👎)
+                if cmd in self.text_commands:
                     self.text_commands.pop(cmd)
-
-                self.save_text_commands()
-            else:
-                await ctx.send(f"Ungültiger Index")
+                    remove_help_for(re.sub(r"^!", "", cmd))
+                    await ctx.send(f"Text Command {cmd} wurde erfolgreich entfernt.")
+                    self.save_text_commands()
+                else:
+                    await ctx.send(f"Text Command {cmd} nicht vorhanden!")            
         else:
             await ctx.send("Command {cmd} nicht vorhanden!")
 
-    @help(
-        category="textcommands",
-        brief="Löscht ein Text-Kommando.",
-        parameters={
-            "cmd": "Text-Kommando, welches gelöscht werden soll (z. B. !horoskop).",
-        },
-        example="!remove-text-command !horoskop",
-        mod=True
-    )
-    @commands.command(name="remove-text-command")
-    @commands.check(utils.is_mod)
-    async def cmd_remove_text_command(self, ctx, cmd):
-        if cmd in self.text_commands:
-            self.text_commands.pop(cmd)
-            remove_help_for(re.sub(r"^!", "", cmd))
-            await ctx.send(f"Text Command {cmd} wurde erfolgreich entfernt")
-            self.save_text_commands()
-        else:
-            await ctx.send(f"Text Command {cmd} nicht vorhanden")
-
+    #todo Fallunterscheidung: mod=false -> Bestätigung bei #mods-only (!motivation dann weg vom Fenster)            
     @help(
         category="motivation",
         brief="reicht deinen Motivationstext zur Genehmigung ein.",
