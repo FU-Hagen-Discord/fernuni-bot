@@ -294,7 +294,7 @@ class LearningGroups(commands.Cog):
     @help(
         category="learninggroups",
         syntax="!add-group <coursenumber> <name> <semester> <status> <@usermention>",
-        example="!add-group 1142 mathegenies sose22 clsoed @someuser",
+        example="!add-group 1142 mathegenies sose22 closed @someuser",
         brief="Fügt einen Lerngruppen-Kanal hinzu. Der Name darf keine Leerzeichen enthalten.",
         parameters={
             "coursenumber": "Nummer des Kurses wie von der Fernuni angegeben (ohne führende Nullen z. B. 1142).",
