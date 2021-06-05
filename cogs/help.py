@@ -69,12 +69,21 @@ async def handle_error(ctx, error):
     if isinstance(error, commands.errors.MissingRequiredArgument):
         # syntax = data[ctx.command.name]['syntax']
         # example = data[ctx.command.name]['example']
-
-        msg = (
-            f"Fehler! Du hast ein Argument vergessen. Für weitere Hilfe gib `!help {ctx.command.name}` ein. \n"
-         f"`Syntax: {data['command'][ctx.command.name]['syntax']}`\n"
-        )
-        await ctx.channel.send(msg)
+        
+        if utils.is_mod:
+            msg = (
+                f"Fehler! Du hast ein Argument vergessen. Für weitere Hilfe gib `!mod-help {ctx.command.name}` ein. \n"
+             f"`Syntax: {data['command'][ctx.command.name]['syntax']}`\n"
+            )
+            await ctx.channel.send(msg)
+            
+        else:
+            msg = (
+                f"Fehler! Du hast ein Argument vergessen. Für weitere Hilfe gib `!help {ctx.command.name}` ein. \n"
+             f"`Syntax: {data['command'][ctx.command.name]['syntax']}`\n"
+            )
+            await ctx.channel.send(msg)
+            
     else:
         raise error
 
