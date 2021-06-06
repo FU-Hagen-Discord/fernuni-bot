@@ -107,6 +107,8 @@ class Links(commands.Cog):
                     title = " ".join(title)
                     if topic_links.get(title):
                         topic_links.pop(title)
+                        if not topic_links:
+                            channel_links.pop(topic)
                     else:
                         await ctx.channel.send('Ich konnte den Link leider nicht finden.')
                 else:
