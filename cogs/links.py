@@ -28,10 +28,11 @@ class Links(commands.Cog):
             "category": "*(optional)* Schränkt die angezeigten Links auf die übergebene Kategorie ein. "
         }
     )
-    @commands.command(name="links")
+    @commands.group(name="links", pass_context=True, invoke_without_command=True)
     async def cmd_links(self, ctx, category=None):
         if channel_links := self.links.get(str(ctx.channel.id)):
             embed = discord.Embed(title=f"Folgende Links sind in diesem Channel hinterlegt:\n")
+            """
             if category:
                 category = category.lower()
                 if group_links := channel_links.get(category):
@@ -44,27 +45,28 @@ class Links(commands.Cog):
                     await ctx.send(
                         f" Für die Kategorie `{category}` sind in diesem Channel keine Links hinterlegt. Versuch es noch mal mit einer anderen Gruppe, oder lass dir mit `!links` alle Links in diesem Channel ausgeben")
             else:
-                for category, links in channel_links.items():
-                    value = f""
-                    for title, link in links.items():
-                        value += f"- [{title}]({link})\n"
-                    embed.add_field(name=category.capitalize(), value=value, inline=False)
-                await ctx.send(embed=embed)
+            """
+            for category, links in channel_links.items():
+                value = f""
+                for title, link in links.items():
+                    value += f"- [{title}]({link})\n"
+                embed.add_field(name=category.capitalize(), value=value, inline=False)
+            await ctx.send(embed=embed)
         else:
             await ctx.send("Für diesen Channel sind noch keine Links hinterlegt.")
 
     @help(
         category="links",
-        syntax="!add-link <category> <link> <title...>",
+        syntax="!links add <category> <link> <title...>",
         brief="Fügt einen Link zum Channel hinzu.",
         parameters={
             "category": "Name der Kategorie, der der Link zugeordnet werden soll. ",
             "link": "die URL, die aufgerufen werden soll (z. B. https://www.fernuni-hagen.de). ",
             "title...": "Titel, der für diesen Link angezeigt werden soll (darf Leerzeichen enthalten). ",
         },
-        description="Die mit !add-link zu einem Kanal hinzugefügten Links können über das Kommando !links in diesem Kanal wieder abgerufen werden."
+        description="Die mit !links add zu einem Kanal hinzugefügten Links können über das Kommando !links in diesem Kanal wieder abgerufen werden."
     )
-    @commands.command(name="add-link")
+    @cmd_links.command(name="add")
     async def cmd_add_link(self, ctx, category, link, *title):
         category = category.lower()
         if not (channel_links := self.links.get(str(ctx.channel.id))):
@@ -83,6 +85,45 @@ class Links(commands.Cog):
             self.add_link(group_links, link, title + str(1))
         else:
             group_links[title] = link
+
+    """
+    //TODO:
+    !links edit - Link editieren
+    !links edit-category - Titel editieren
+    """
+
+    @help(
+        category="links",
+        syntax="!links remove <category> <title...?>",
+        brief="Löscht eine Kategorie oder einen Link aus dem Channel.",
+        parameters={
+            "category": "Name der Kategorie, aus der der Link entfernt werden soll. ",
+            "title...": "Titel des Links, der entfernt werden soll. ",
+        },
+        description="Mit !links remove kann eine ganze Kategorie oder ein einzelner fehlerhafter oder veralteter Link "
+                    "aus der Linkliste des Channels entfernt werden. Wenn die Kategorie länger als ein Wort ist, muss "
+                    "sie in Anführungszeichen gesetzt werden."
+    )
+    @cmd_links.command(name="remove")
+    async def cmd_remove_link(self, ctx, category, *title):
+        category = category.lower()
+
+        if channel_links := self.links.get(str(ctx.channel.id)):
+            if group_links := channel_links.get(category):
+                if title:
+                    title = " ".join(title)
+                    if group_links.get(title):
+                        group_links.pop(title)
+                    else:
+                        await ctx.channel.send('Ich konnte den Link leider nicht finden.')
+                else:
+                    channel_links.pop(category)
+            else:
+                await ctx.channel.send('Ich konnte die Kategorie leider nicht finden.')
+        else:
+            await ctx.channel.send('Für diesen Channel sind keine Links hinterlegt.')
+
+        self.save_links()
 
     async def cog_command_error(self, ctx, error):
         await handle_error(ctx, error)
