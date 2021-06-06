@@ -138,10 +138,31 @@ class Links(commands.Cog):
         await self.cmd_remove_link(ctx, topic, title)
         await self.cmd_add_link(ctx, new_topic, new_link, *new_title)
 
-    """
-    //TODO:
-    !links edit-topic - Thema editieren
-    """
+    @help(
+        category="links",
+        syntax="!links edit-topic <topic> <new_topic>",
+        brief="Bearbeitet den Namen eines Themas.",
+        parameters={
+            "topic": "Name des Themas, das bearbeitet werden soll. ",
+            "new_topic": "Neuer Name des Themas. "
+        },
+        description="Mit !links edit-topic kann der Name eines Themas geändert werden."
+    )
+    @cmd_links.command(name="edit-topic")
+    async def cmd_edit_topic(self, ctx, topic, new_topic):
+        topic = topic.lower()
+        new_topic = new_topic.lower()
+        if channel_links := self.links.get(str(ctx.channel.id)):
+            if topic_links := channel_links.get(topic):
+                channel_links[new_topic] = topic_links
+                await self.cmd_remove_link(ctx, topic)
+            else:
+                await ctx.channel.send('Ich konnte das Thema leider nicht finden.')
+        else:
+            await ctx.channel.send('Für diesen Channel sind keine Links hinterlegt.')
+
+        self.save_links()
+
 
     async def cog_command_error(self, ctx, error):
         await handle_error(ctx, error)
