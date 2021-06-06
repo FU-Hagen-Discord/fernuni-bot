@@ -86,12 +86,6 @@ class Links(commands.Cog):
         else:
             group_links[title] = link
 
-    """
-    //TODO:
-    !links edit - Link editieren
-    !links edit-category - Titel editieren
-    """
-
     @help(
         category="links",
         syntax="!links remove <category> <title...?>",
@@ -124,6 +118,32 @@ class Links(commands.Cog):
             await ctx.channel.send('Für diesen Channel sind keine Links hinterlegt.')
 
         self.save_links()
+
+
+    """
+    //TODO:
+    !links edit-category - Titel editieren
+    """
+
+    @help(
+        category="links",
+        syntax="!links edit <category> <title> <new_category> <new_link> <new_title...>",
+        brief="Bearbeitet einen Link.",
+        parameters={
+            "category": "Name der Kategorie, aus der der zu bearbeitende Link stammt. ",
+            "title": "Titel des Links, der bearbeitet werden soll. ",
+            "new_category": "Neue Kategorie für den geänderten Link. ",
+            "new_link": "Der neue Link. ",
+            "new_title...": "Neuer Titel für den geänderten Link. "
+        },
+        description="Mit !links edit kann ein fehlerhafter oder veralteter Link bearbeitet werden."
+    )
+    @cmd_links.command(name="edit")
+    async def cmd_edit_link(self, ctx, category, title, new_category, new_link, *new_title):
+        await self.cmd_remove_link(ctx, category, title)
+        await self.cmd_add_link(ctx, new_category, new_link, *new_title)
+
+
 
     async def cog_command_error(self, ctx, error):
         await handle_error(ctx, error)
