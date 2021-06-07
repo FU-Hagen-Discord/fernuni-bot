@@ -61,7 +61,7 @@ class Links(commands.Cog):
         parameters={
             "topic": "Name des Themas, dem der Link zugeordnet werden soll. ",
             "link": "die URL, die aufgerufen werden soll (z. B. https://www.fernuni-hagen.de). ",
-            "title...": "Titel, der für diesen Link angezeigt werden soll (darf Leerzeichen enthalten). ",
+            "title...": "Titel, der für diesen Link angezeigt werden soll (darf Leerzeichen enthalten). "
         },
         description="Die mit !links add zu einem Kanal hinzugefügten Links können über das Kommando !links in diesem "
                     "Kanal wieder abgerufen werden."
@@ -92,7 +92,7 @@ class Links(commands.Cog):
         brief="Löscht ein Thema oder einen Link aus dem Channel.",
         parameters={
             "topic": "Name des Themas, aus dem der Link entfernt werden soll. ",
-            "title...": "Titel des Links, der entfernt werden soll. ",
+            "title...": "*(optional)* Titel des Links, der entfernt werden soll. "
         },
         description="Mit !links remove kann ein ganzes Thema oder ein einzelner fehlerhafter oder veralteter Link "
                     "aus der Linkliste des Channels entfernt werden."
@@ -122,7 +122,7 @@ class Links(commands.Cog):
 
     @help(
         category="links",
-        syntax="!links edit <topic> <title> <new_topic> <new_link> <new_title...>",
+        syntax="!links edit-link <topic> <title> <new_topic> <new_link> <new_title...>",
         brief="Bearbeitet einen Link.",
         parameters={
             "topic": "Name des Themas, aus dem der zu bearbeitende Link stammt. ",
@@ -133,7 +133,7 @@ class Links(commands.Cog):
         },
         description="Mit !links edit kann ein fehlerhafter oder veralteter Link bearbeitet werden."
     )
-    @cmd_links.command(name="edit")
+    @cmd_links.command(name="edit-link")
     async def cmd_edit_link(self, ctx, topic, title, new_topic, new_link, *new_title):
         await self.cmd_remove_link(ctx, topic, title)
         await self.cmd_add_link(ctx, new_topic, new_link, *new_title)
