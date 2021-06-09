@@ -46,40 +46,61 @@ class Welcome(commands.Cog):
         await message.edit(content="", embed=embed)
 #TODO: Damit die einzelne Links auf exitierende Nachrichten zeigen, müsste man den Inhaltsverzeichnis separat (nachträglich) aktualisieren können.
 
+#Neue Nachricht
         """
-        ##🖼 Boty McBotface 
+        ##🖼 Regeln
+        
+            Es sind vier Regeln, die unbedingt einzuhalten sind: 
+```md
+1. Behandle alle mit Respekt. Keine diskriminierenden Äußerungen. Keine Belästigung.
+2. Unterlasse das Einstellen von Werbung und Mehrfachpostings.
+3. Betrüge nicht bei Prüfungsleistungen. Aufruf und Versuch werden mit einem Ban geahndet.
+4. Teile oder erfrage keine Dateien, welche urheberrechtlich geschützt sind.
+```
+:mag: Link vom BMBF zur Orientierung in Sachen Urheberrecht: https://www.bmbf.de/de/was-forschende-und-lehrende-wissen-sollten-9523.html
+
+:bulb: Ein Verstoß kann durch eine ernst gemeinte Entschuldigung wieder gut gemacht werden. 
+```md
+1. Bei Verstößen wird zunächst darauf hingewiesen. Sollte es danach weiterhin zu einem Regelverstoß kommen, so wird eine Verwarnung ausgesprochen.
+2. Sollte die ausgesprochene Verwarnung keine Besserung bringen, so ist die nächste Maßnahme ein Kick von diesem Server. 
+3. Bei weiteren Regelverstößen bleibt, als letzte und hoffentlich nicht notwendige Maßnahme, nur der Bann von diesem Server.
+```
         """
 
+#Neue Nachricht
         """
-        ##🖼 Lerngruppen 
+        ##🖼 Boty McBotface
         """
-
+    
+#Neue Nachricht
+        """
+        ##🖼 Lerngruppen
+        """
+        
+#Neue Nachricht
         """
         ##🖼 Rollen 
         """
 
+#Neue Nachricht
         """
         ##🖼 Fun & Games 
         """
-
+        
+#Neue Nachricht
         """
         ##🖼 FernUni 101 
         """
 
+#Neue Nachricht
         """
         ##🖼 Discord 101
         """
 
-
+#Neue Nachricht
     """
     #🖼 Server    
     """
-
-        """
-        ##🖼 Regeln
-        """
-
-
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
