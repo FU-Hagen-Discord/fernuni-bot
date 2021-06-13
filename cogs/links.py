@@ -131,7 +131,7 @@ class Links(commands.Cog):
             "new_link": "Der neue Link. ",
             "new_title...": "Neuer Titel für den geänderten Link. "
         },
-        description="Mit !links edit kann ein fehlerhafter oder veralteter Link bearbeitet werden."
+        description="Mit !links edit-link kann ein fehlerhafter oder veralteter Link bearbeitet werden."
     )
     @cmd_links.command(name="edit-link")
     async def cmd_edit_link(self, ctx, topic, title, new_topic, new_link, *new_title):
