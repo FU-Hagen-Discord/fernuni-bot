@@ -21,7 +21,6 @@ class Timer(commands.Cog):
         break_time = bt
         name = name if name else random.choice(self.default_names)
         zeiten = f"{learning_time} Minuten lernen\n{break_time} Minuten Pause"
-        running = True
         status = ["lernen", lt]
         angemeldet = [ctx.author.mention]
 
@@ -68,7 +67,7 @@ class Timer(commands.Cog):
         embed = create_embed()
         msg = await ctx.send(embed=embed, components=[button_row])
 
-        on_click = msg.create_click_listener()
+        on_click = msg.create_click_listener()      # ClickListener für die Buttons
 
         @on_click.matching_id("beenden")
         async def on_beenden_button(inter):
@@ -90,6 +89,7 @@ class Timer(commands.Cog):
                 status = ["lernen", lt]
                 embed = create_embed()
                 await inter.reply(embed=embed, components=[button_row], type=7)
+                await pling()
             else:
                 # Reply with a hidden message
                 await inter.reply("Nur die Person, die den Timer erstellt hat, kann ihn auch neu starten.",
@@ -102,6 +102,7 @@ class Timer(commands.Cog):
                 switch_phase()
                 embed = create_embed()
                 await inter.reply(embed=embed, components=[button_row], type=7)
+                await pling()
             else:
                 # Reply with a hidden message
                 await inter.reply("Nur die Person, die den Timer erstellt hat, kann ihn auch bedienen.",
@@ -137,6 +138,23 @@ class Timer(commands.Cog):
             else:
                 status = ["lernen", lt]
 
+        async def pling():
+            async def disconnect():
+                for vc in self.bot.voice_clients:
+                    await vc.disconnect()
+
+            if ctx.author.voice:
+                channel = ctx.author.voice.channel
+                if channel:  # If user is in a channel
+                    voice_client = await channel.connect()
+                    try:
+                        voice_client.play(discord.FFmpegPCMAudio('cogs/sounds/bikehorn.mp3'))
+                        await sleep(2)
+                    except discord.errors.ClientException as e:
+                        await ctx.send(e)
+                    await disconnect()
+
+
         while status[0] != "Beendet":
             await sleep(self.countdown)
             if status[0] == "Beendet":
@@ -147,8 +165,6 @@ class Timer(commands.Cog):
             if not switch:
                 await msg.edit(embed=embed, components=[button_row])
             else:
-                # bei Switch Ping und Sound
+                # bei Switch Sound
                 await msg.edit(embed=embed, components=[button_row])
-
-
-
+                await pling()
