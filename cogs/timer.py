@@ -57,16 +57,23 @@ class Timer(commands.Cog):
                 for vc in self.bot.voice_clients:
                     await vc.disconnect()
 
-            if ctx.author.voice:
-                channel = ctx.author.voice.channel
-                if channel:  # If user is in a channel
-                    voice_client = await channel.connect()
-                    try:
-                        voice_client.play(discord.FFmpegPCMAudio(f'cogs/sounds/{filename}'))
-                        await sleep(2)
-                    except discord.errors.ClientException as e:
-                        await ctx.send(e)
-                    await disconnect()
+            for user in angemeldet:
+                if user.voice:
+                    channel = user.voice.channel
+                    if channel:  # If user is in a channel
+                        voice_client = await channel.connect()
+                        try:
+                            voice_client.play(discord.FFmpegPCMAudio(f'cogs/sounds/{filename}'))
+                            await sleep(2)
+                        except discord.errors.ClientException as e:
+                            await ctx.send(e)
+                        await disconnect()
+                    break
+
+        async def ping_users():
+            mentions = ", ".join([user.mention for user in angemeldet])
+            message = f'{name}: {status[0]}\n{mentions}'
+            await ctx.send(message, reference=msg.to_reference(),)
 
         def create_embed():
             color = discord.Colour.green() if status[0]=="lernen" else 0xFFC63A if status[0]=="Pause" else discord.Colour.red()
@@ -94,6 +101,7 @@ class Timer(commands.Cog):
                 nonlocal status
                 status = ["Beendet", 0]
                 button_row.disable_buttons()
+                await ping_users()
                 angemeldet = []
                 embed = create_embed()
                 await inter.reply(embed=embed, components=[button_row], type=7)
@@ -111,6 +119,7 @@ class Timer(commands.Cog):
                 embed = create_embed()
                 await inter.reply(embed=embed, components=[button_row], type=7)
                 await make_sound('boxingbell.mp3')
+                await ping_users()
             else:
                 # Reply with a hidden message
                 await inter.reply("Nur angemeldete Personen können den Timer neu starten.", ephemeral=True)
@@ -161,6 +170,7 @@ class Timer(commands.Cog):
             else:
                 status = ["lernen", lt]
                 await make_sound('bikehorn.mp3')
+            await ping_users()
 
         while status[0] != "Beendet":
             await sleep(self.countdown)
