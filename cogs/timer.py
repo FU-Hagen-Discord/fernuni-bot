@@ -62,15 +62,22 @@ class Timer(commands.Cog):
         )
 
         async def make_sound(filename):
+            async def disconnect():
+                for vc in self.bot.voice_clients:
+                    await vc.disconnect()
+
             for user in angemeldet:
                 if user.voice:
                     channel = user.voice.channel
                     if channel:  # If user is in a channel
                         voice_client = await channel.connect()
-                        voice_client.play(discord.FFmpegPCMAudio(f'cogs/sounds/{filename}'))
-                        await sleep(2)
-                        await voice_client.disconnect()
-                        return
+                        try:
+                            voice_client.play(discord.FFmpegPCMAudio(f'cogs/sounds/{filename}'))
+                            await sleep(2)
+                        except discord.errors.ClientException as e:
+                            await ctx.send(e)
+                        await disconnect()
+                    break
 
         async def ping_users():
             mentions = ", ".join([user.mention for user in angemeldet])
@@ -156,7 +163,7 @@ class Timer(commands.Cog):
             await inter.reply(embed=embed, components=[button_row], type=7)
 
         async def decrease_remaining_time():
-            if status[1] > 0:
+            if status[1] > 1:
                 status[1] -= 1
             else:
                 await switch_phase()
