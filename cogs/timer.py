@@ -16,21 +16,21 @@ class Timer(commands.Cog):
         SlashClient(bot)        # Stellt den Zugriff auf die Buttons bereit
 
     @help(
-        syntax="!timer <learning-time?> <break-time?> <name?>",
+        syntax="!timer <working-time?> <break-time?> <name?>",
         brief="Deine persönliche Eieruhr",
         parameters={
-            "learning-time": "Länge der Lernphase in Minuten. Default: 25",
+            "learning-time": "Länge der Arbeitsphase in Minuten. Default: 25",
             "break-time": "Länge der Pausenphase in Minuten. Default: 5",
             "name": "So soll der Timer heißen. Wird ihm kein Name gegeben, nimmt er sich selbst einen."
         }
     )
     @commands.command(name="timer")
-    async def cmd_timer(self, ctx, lt=25, bt=5, name=None):
-        learning_time = lt
+    async def cmd_timer(self, ctx, wt=25, bt=5, name=None):
+        learning_time = wt
         break_time = bt
         name = name if name else random.choice(self.default_names)
-        zeiten = f"{learning_time} Minuten lernen\n{break_time} Minuten Pause"
-        status = ["lernen", lt]
+        zeiten = f"{learning_time} Minuten Arbeiten\n{break_time} Minuten Pause"
+        status = ["Arbeiten", wt]
         angemeldet = [ctx.author]
 
         button_row = ActionRow(
@@ -85,7 +85,7 @@ class Timer(commands.Cog):
             await ctx.send(message, reference=msg.to_reference(),)
 
         def create_embed():
-            color = discord.Colour.green() if status[0]=="lernen" else 0xFFC63A if status[0]=="Pause" else discord.Colour.red()
+            color = discord.Colour.green() if status[0]=="Arbeiten" else 0xFFC63A if status[0]=="Pause" else discord.Colour.red()
             descr = "Jetzt: " + status[0]
             remaining = f"{status[1]} Minuten"
             angemeldet_value = ", ".join([user.mention for user in angemeldet])
@@ -124,7 +124,7 @@ class Timer(commands.Cog):
         async def on_neustart_button(inter):
             if inter.author in angemeldet:
                 nonlocal status
-                status = ["lernen", lt]
+                status = ["Arbeiten", wt]
                 embed = create_embed()
                 await inter.reply(embed=embed, components=[button_row], type=7)
                 await make_sound('boxingbell.mp3')
@@ -170,11 +170,11 @@ class Timer(commands.Cog):
 
         async def switch_phase():
             nonlocal status
-            if status[0] == "lernen":
+            if status[0] == "Arbeiten":
                 status = ["Pause", bt]
                 await make_sound('pling.mp3')
             else:
-                status = ["lernen", lt]
+                status = ["Arbeiten", wt]
                 await make_sound('bikehorn.mp3')
             await ping_users()
 
