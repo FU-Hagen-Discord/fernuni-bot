@@ -2,10 +2,10 @@ from asyncio import sleep
 import random
 
 import discord
-from discord.ext import tasks, commands
+from discord.ext import commands
 from dislash import *
 
-from cogs.help import help, help_category
+from cogs.help import help
 
 class Timer(commands.Cog):
 
@@ -15,6 +15,15 @@ class Timer(commands.Cog):
         self.default_names = ["Rapunzel", "Aschenputtel", "Schneewittchen", "Frau Holle", "Schneeweißchen und Rosenrot"]
         SlashClient(bot)        # Stellt den Zugriff auf die Buttons bereit
 
+    @help(
+        syntax="!timer <learning-time?> <break-time?> <name?>",
+        brief="Deine persönliche Eieruhr",
+        parameters={
+            "learning-time": "Länge der Lernphase in Minuten. Default: 25",
+            "break-time": "Länge der Pausenphase in Minuten. Default: 5",
+            "name": "So soll der Timer heißen. Wird ihm kein Name gegeben, nimmt er sich selbst einen."
+        }
+    )
     @commands.command(name="timer")
     async def cmd_timer(self, ctx, lt=25, bt=5, name=None):
         learning_time = lt
@@ -53,22 +62,14 @@ class Timer(commands.Cog):
         )
 
         async def make_sound(filename):
-            async def disconnect():
-                for vc in self.bot.voice_clients:
-                    await vc.disconnect()
-
             for user in angemeldet:
                 if user.voice:
                     channel = user.voice.channel
                     if channel:  # If user is in a channel
                         voice_client = await channel.connect()
-                        try:
-                            voice_client.play(discord.FFmpegPCMAudio(f'cogs/sounds/{filename}'))
-                            await sleep(2)
-                        except discord.errors.ClientException as e:
-                            await ctx.send(e)
-                        await disconnect()
-                    break
+                        voice_client.play(discord.FFmpegPCMAudio(f'cogs/sounds/{filename}'))
+                        await sleep(2)
+                        await voice_client.disconnect()
 
         async def ping_users():
             mentions = ", ".join([user.mention for user in angemeldet])
@@ -102,10 +103,10 @@ class Timer(commands.Cog):
                 status = ["Beendet", 0]
                 button_row.disable_buttons()
                 await ping_users()
+                await make_sound('applause.mp3')
                 angemeldet = []
                 embed = create_embed()
                 await inter.reply(embed=embed, components=[button_row], type=7)
-                await make_sound('applause.mp3')
                 on_click.kill()
             else:
                 # Reply with a hidden message
@@ -154,13 +155,10 @@ class Timer(commands.Cog):
             await inter.reply(embed=embed, components=[button_row], type=7)
 
         async def decrease_remaining_time():
-            switch = False
             if status[1] > 0:
                 status[1] -= 1
             else:
                 await switch_phase()
-                switch = True
-            return switch
 
         async def switch_phase():
             nonlocal status
@@ -176,11 +174,7 @@ class Timer(commands.Cog):
             await sleep(self.countdown)
             if status[0] == "Beendet":
                 break
-            switch = await decrease_remaining_time()
+            await decrease_remaining_time()
             embed = create_embed()
 
-            if not switch:
-                await msg.edit(embed=embed, components=[button_row])
-            else:
-                #TODO: Ping angemeldete User
-                await msg.edit(embed=embed, components=[button_row])
+            await msg.edit(embed=embed, components=[button_row])
