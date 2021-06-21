@@ -63,10 +63,6 @@ class Timer(commands.Cog):
         )
 
         async def make_sound(filename):
-            async def disconnect():
-                for vc in self.bot.voice_clients:
-                    await vc.disconnect()
-
             for user in angemeldet:
                 if user.voice:
                     channel = user.voice.channel
@@ -77,7 +73,8 @@ class Timer(commands.Cog):
                             await sleep(2)
                         except discord.errors.ClientException as e:
                             await ctx.send(e)
-                        await disconnect()
+                        for vc in self.bot.voice_clients:
+                            await vc.disconnect()
                     break
 
         async def ping_users():
