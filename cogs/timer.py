@@ -70,6 +70,7 @@ class Timer(commands.Cog):
                         voice_client.play(discord.FFmpegPCMAudio(f'cogs/sounds/{filename}'))
                         await sleep(2)
                         await voice_client.disconnect()
+                        return
 
         async def ping_users():
             mentions = ", ".join([user.mention for user in angemeldet])
