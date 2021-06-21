@@ -1,5 +1,6 @@
 from asyncio import sleep
 import random
+from datetime import datetime, timedelta
 
 import discord
 from discord.ext import commands
@@ -88,12 +89,14 @@ class Timer(commands.Cog):
             color = discord.Colour.green() if status[0]=="Arbeiten" else 0xFFC63A if status[0]=="Pause" else discord.Colour.red()
             descr = "Jetzt: " + status[0]
             remaining = f"{status[1]} Minuten"
+            endzeit = (datetime.now() + timedelta(minutes=status[1])).strftime("%H:%M")
+            end_value = f" [um {endzeit} Uhr]"
             angemeldet_value = ", ".join([user.mention for user in angemeldet])
             embed = discord.Embed(title=name,
                                   description=descr,
                                   color=color)
             embed.add_field(name="Zeiten:", value=zeiten, inline=False)
-            embed.add_field(name="verbleibende Zeit:", value=remaining, inline=False)
+            embed.add_field(name="verbleibende Zeit:", value=remaining+end_value, inline=False)
             embed.add_field(name="angemeldete User:", value=angemeldet_value if angemeldet else "-", inline=False)
             return embed
 
