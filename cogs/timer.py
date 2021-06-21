@@ -186,3 +186,8 @@ class Timer(commands.Cog):
             embed = create_embed()
 
             await msg.edit(embed=embed, components=[button_row])
+
+    @cmd_timer.error
+    async def timer_error(self, ctx, error):
+        await ctx.send("Das habe ich nicht verstanden. Die Timer-Syntax ist:\n"
+                       "`!timer <learning-time?> <break-time?> <name?>`\n")
