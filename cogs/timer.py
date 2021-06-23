@@ -70,7 +70,7 @@ class Timer(commands.Cog):
                         voice_client = await channel.connect()
                         try:
                             voice_client.play(discord.FFmpegPCMAudio(f'cogs/sounds/{filename}'))
-                            await sleep(2)
+                            await sleep(3)
                         except discord.errors.ClientException as e:
                             await ctx.send(e)
                         for vc in self.bot.voice_clients:
@@ -99,7 +99,7 @@ class Timer(commands.Cog):
 
         embed = create_embed()
         msg = await ctx.send(embed=embed, components=[button_row])
-        await make_sound('boxingbell.mp3')
+        await make_sound('roll_with_it-outro.mp3')
 
         on_click = msg.create_click_listener()      # ClickListener für die Buttons
 
@@ -128,7 +128,7 @@ class Timer(commands.Cog):
                 status = ["Arbeiten", wt]
                 embed = create_embed()
                 await inter.reply(embed=embed, components=[button_row], type=7)
-                await make_sound('boxingbell.mp3')
+                await make_sound('roll_with_it-outro.mp3')
                 await ping_users()
             else:
                 # Reply with a hidden message
