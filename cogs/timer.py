@@ -3,16 +3,16 @@ import random
 from datetime import datetime, timedelta
 
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 from dislash import *
 
 from cogs.help import help
-
 
 class Timer(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        self.countdown = 60     # Sekunden bis zum Refresh der Zeitanzeige
         self.default_names = ["Rapunzel", "Aschenputtel", "Schneewittchen", "Frau Holle", "Schneeweißchen und Rosenrot"]
         SlashClient(bot)        # Stellt den Zugriff auf die Buttons bereit
 
@@ -63,6 +63,10 @@ class Timer(commands.Cog):
         )
 
         async def make_sound(filename):
+            async def disconnect():
+                for vc in self.bot.voice_clients:
+                    await vc.disconnect()
+
             for user in angemeldet:
                 if user.voice:
                     channel = user.voice.channel
@@ -70,11 +74,10 @@ class Timer(commands.Cog):
                         voice_client = await channel.connect()
                         try:
                             voice_client.play(discord.FFmpegPCMAudio(f'cogs/sounds/{filename}'))
-                            await sleep(3)
+                            await sleep(2)
                         except discord.errors.ClientException as e:
                             await ctx.send(e)
-                        for vc in self.bot.voice_clients:
-                            await vc.disconnect()
+                        await disconnect()
                     break
 
         async def ping_users():
@@ -99,7 +102,7 @@ class Timer(commands.Cog):
 
         embed = create_embed()
         msg = await ctx.send(embed=embed, components=[button_row])
-        await make_sound('roll_with_it-outro.mp3')
+        await make_sound('boxingbell.mp3')
 
         on_click = msg.create_click_listener()      # ClickListener für die Buttons
 
@@ -116,7 +119,6 @@ class Timer(commands.Cog):
                 embed = create_embed()
                 await inter.reply(embed=embed, components=[button_row], type=7)
                 on_click.kill()
-                run_timer.stop()
             else:
                 # Reply with a hidden message
                 await inter.reply("Nur angemeldete Personen können den Timer beenden.", ephemeral=True)
@@ -128,7 +130,7 @@ class Timer(commands.Cog):
                 status = ["Arbeiten", wt]
                 embed = create_embed()
                 await inter.reply(embed=embed, components=[button_row], type=7)
-                await make_sound('roll_with_it-outro.mp3')
+                await make_sound('boxingbell.mp3')
                 await ping_users()
             else:
                 # Reply with a hidden message
@@ -171,28 +173,22 @@ class Timer(commands.Cog):
 
         async def switch_phase():
             nonlocal status
-            if not status[0] == "Beendet":
-                if status[0] == "Arbeiten":
-                    status = ["Pause", bt]
-                    await make_sound('groove-intro.mp3')
-                else:
-                    status = ["Arbeiten", wt]
-                    await make_sound('roll_with_it-outro.mp3')
-                await ping_users()
+            if status[0] == "Arbeiten":
+                status = ["Pause", bt]
+                await make_sound('pling.mp3')
             else:
-                run_timer.cancel()
+                status = ["Arbeiten", wt]
+                await make_sound('bikehorn.mp3')
+            await ping_users()
 
-        @tasks.loop(minutes=1)
-        async def run_timer():
+        while status[0] != "Beendet":
+            await sleep(self.countdown)
+            if status[0] == "Beendet":
+                break
             await decrease_remaining_time()
             embed = create_embed()
+
             await msg.edit(embed=embed, components=[button_row])
-
-        @run_timer.before_loop
-        async def before_timer():
-            await sleep(60)
-
-        run_timer.start()
 
     @cmd_timer.error
     async def timer_error(self, ctx, error):
