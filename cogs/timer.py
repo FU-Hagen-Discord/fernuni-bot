@@ -87,7 +87,7 @@ class Timer(commands.Cog):
             descr = "Jetzt: " + status[0]
             remaining = f"{status[1]} Minuten"
             endzeit = (datetime.now() + timedelta(minutes=status[1])).strftime("%H:%M")
-            end_value = f" [bis {endzeit} Uhr]"
+            end_value = f" [bis {endzeit} Uhr]" if status[0]!="Beendet" else ""
             angemeldet_value = ", ".join([user.mention for user in angemeldet])
             embed = discord.Embed(title=name,
                                   description=descr,
@@ -116,6 +116,7 @@ class Timer(commands.Cog):
                 embed = create_embed()
                 await inter.reply(embed=embed, components=[button_row], type=7)
                 on_click.kill()
+                run_timer.stop()
             else:
                 # Reply with a hidden message
                 await inter.reply("Nur angemeldete Personen können den Timer beenden.", ephemeral=True)
@@ -170,21 +171,22 @@ class Timer(commands.Cog):
 
         async def switch_phase():
             nonlocal status
-            if status[0] == "Arbeiten":
-                status = ["Pause", bt]
-                await make_sound('pling.mp3')
+            if not status[0] == "Beendet":
+                if status[0] == "Arbeiten":
+                    status = ["Pause", bt]
+                    await make_sound('groove-intro.mp3')
+                else:
+                    status = ["Arbeiten", wt]
+                    await make_sound('roll_with_it-outro.mp3')
+                await ping_users()
             else:
-                status = ["Arbeiten", wt]
-                await make_sound('bikehorn.mp3')
-            await ping_users()
+                run_timer.cancel()
 
         @tasks.loop(minutes=1)
         async def run_timer():
             await decrease_remaining_time()
             embed = create_embed()
             await msg.edit(embed=embed, components=[button_row])
-            if status[0] == "Beendet":
-                run_timer.stop()
 
         @run_timer.before_loop
         async def before_timer():
