@@ -3,16 +3,16 @@ import random
 from datetime import datetime, timedelta
 
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 from dislash import *
 
 from cogs.help import help
+
 
 class Timer(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.countdown = 60     # Sekunden bis zum Refresh der Zeitanzeige
         self.default_names = ["Rapunzel", "Aschenputtel", "Schneewittchen", "Frau Holle", "Schneeweißchen und Rosenrot"]
         SlashClient(bot)        # Stellt den Zugriff auf die Buttons bereit
 
@@ -87,7 +87,7 @@ class Timer(commands.Cog):
             descr = "Jetzt: " + status[0]
             remaining = f"{status[1]} Minuten"
             endzeit = (datetime.now() + timedelta(minutes=status[1])).strftime("%H:%M")
-            end_value = f" [um {endzeit} Uhr]"
+            end_value = f" [bis {endzeit} Uhr]"
             angemeldet_value = ", ".join([user.mention for user in angemeldet])
             embed = discord.Embed(title=name,
                                   description=descr,
@@ -178,14 +178,19 @@ class Timer(commands.Cog):
                 await make_sound('bikehorn.mp3')
             await ping_users()
 
-        while status[0] != "Beendet":
-            await sleep(self.countdown)
-            if status[0] == "Beendet":
-                break
+        @tasks.loop(minutes=1)
+        async def run_timer():
             await decrease_remaining_time()
             embed = create_embed()
-
             await msg.edit(embed=embed, components=[button_row])
+            if status[0] == "Beendet":
+                run_timer.stop()
+
+        @run_timer.before_loop
+        async def before_timer():
+            await sleep(60)
+
+        run_timer.start()
 
     @cmd_timer.error
     async def timer_error(self, ctx, error):
