@@ -53,17 +53,20 @@ class Welcome(commands.Cog):
             Es sind vier Regeln, die unbedingt einzuhalten sind: 
 ```md
 1. Behandle alle mit Respekt. Keine diskriminierenden Äußerungen. Keine Belästigung.
-2. Unterlasse das Einstellen von Werbung und Mehrfachpostings.
-3. Betrüge nicht bei Prüfungsleistungen. Aufruf und Versuch werden mit einem Ban geahndet.
-4. Teile oder erfrage keine Dateien, welche urheberrechtlich geschützt sind.
+2. Konstruktive und spezifische Kritik ist erwünscht, Trolls sind es nicht. 
+3. Dies ist eine werbefreie Zone. Für andere Posts suche dir am Besten erst den richtigen Channel.
+4. Betrug bei Prüfungsleistungen und der Aufruf zu solchem wird mit sofortigem Ban geahndet.
+5. Überprüfe, bevor du eine Datei hochlädst / einen Link teilst, ob der Inhalt urheberrechtlich geschützt ist.
 ```
 :mag: Link vom BMBF zur Orientierung in Sachen Urheberrecht: https://www.bmbf.de/de/was-forschende-und-lehrende-wissen-sollten-9523.html
 
 :bulb: Ein Verstoß kann durch eine ernst gemeinte Entschuldigung wieder gut gemacht werden. 
 ```md
-1. Bei Verstößen wird zunächst darauf hingewiesen. Sollte es danach weiterhin zu einem Regelverstoß kommen, so wird eine Verwarnung ausgesprochen.
-2. Sollte die ausgesprochene Verwarnung keine Besserung bringen, so ist die nächste Maßnahme ein Kick von diesem Server. 
-3. Bei weiteren Regelverstößen bleibt, als letzte und hoffentlich nicht notwendige Maßnahme, nur der Bann von diesem Server.
+1. Bei Verstößen wird zunächst darauf hingewiesen. 
+2. Sollte es danach weiterhin zu einem Regelverstoß kommen, so wird eine Verwarnung ausgesprochen.
+3. Wer auf die "stille Treppe" geschickt wird, kann für eine vorgegebene Zeit nicht mehr schreiben oder sprechen, nur noch lesen und hören.
+4. Sollte die ausgesprochene Verwarnung keine Besserung bringen, so ist die nächste Maßnahme ein Kick von diesem Server. 
+5. Die letzte und hoffentlich nicht notwendige Maßnahme ist der Bann von diesem Server.
 ```
         """
 
