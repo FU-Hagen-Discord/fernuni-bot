@@ -2,6 +2,7 @@ import os
 
 import discord
 from discord.ext import commands
+from dislash import *
 from dotenv import load_dotenv
 
 from cogs import appointments, armin, calmdown, christmas, easter, github, help, learninggroups, links, \
@@ -42,8 +43,9 @@ bot.add_cog(calmdown.Calmdown(bot))
 bot.add_cog(github.Github(bot))
 bot.add_cog(timer.Timer(bot))
 
-
 # bot.add_cog(ChangeLogCog(bot))
+
+SlashClient(bot)  # Stellt den Zugriff auf die Buttons bereit
 
 
 def get_reaction(reactions):
