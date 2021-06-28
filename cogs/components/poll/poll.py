@@ -60,7 +60,7 @@ class Poll:
             self.author = embed.fields[0].value[3:-1]
             self.question = embed.description
             for i in range(2, len(embed.fields)):
-                self.answers.append(embed.fields[i].value)
+                self.answers.append(f"{embed.fields[i].name} {embed.fields[i].value}")
 
         self.options = get_options(self.bot, self.answers)
 
