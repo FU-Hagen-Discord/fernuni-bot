@@ -16,6 +16,7 @@ class Timer(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        self.guild_id = int(os.getenv('DISCORD_GUILD'))
         self.default_names = ["Rapunzel", "Aschenputtel", "Schneewittchen", "Frau Holle", "Schneeweißchen und Rosenrot",
                               "Gestiefelter Kater", "Bremer Stadtmusikanten"]
         self.running_timers = {}
@@ -72,7 +73,8 @@ class Timer(commands.Cog):
         remaining_value = f"{remaining} Minuten"
         endzeit = (datetime.now() + timedelta(minutes=remaining)).strftime("%H:%M")
         end_value = f" [bis {endzeit} Uhr]" if status != "Beendet" else ""
-        angemeldet_value = ", ".join([user for user in registered])
+        user_list = [self.bot.get_user(int(user_id)) for user_id in registered]
+        angemeldet_value = ", ".join([user.mention for user in user_list])
 
         embed = discord.Embed(title=name,
                               description=descr,
@@ -97,7 +99,7 @@ class Timer(commands.Cog):
         name = name if name else random.choice(self.default_names)
         remaining = working_time
         status = "Arbeiten"
-        registered = [ctx.author.mention]
+        registered = [str(ctx.author.id)]
 
         embed = self.create_embed(name, status, working_time, break_time, remaining, registered)
         msg = await ctx.send(embed=embed, components=[self.get_button_row()])
@@ -110,6 +112,7 @@ class Timer(commands.Cog):
                                             'registered': registered,
                                             'channel': ctx.channel.id}
         self.save_timers()
+        await self.make_sound(registered, 'roll_with_it-outro.mp3')
 
     @commands.Cog.listener()
     async def on_button_click(self, inter):
@@ -128,34 +131,34 @@ class Timer(commands.Cog):
 
     async def on_beenden_button(self, inter):
         msg_id = str(inter.message.id)
-        if inter.author.mention in self.running_timers[msg_id]['registered']:
+        registered = self.running_timers[msg_id]['registered']
+        if str(inter.author.id) in self.running_timers[msg_id]['registered']:
             self.running_timers[msg_id]['status'] = "Beendet"
             self.running_timers[msg_id]['remaining'] = 0
             self.running_timers[msg_id]['registered'] = []
 
-            #TODO:
-            #await make_sound('applause.mp3')
-
             await inter.reply(type=7)
             new_msg_id = await self.edit_message(msg_id)
+            await self.make_sound(registered, 'applause.mp3')
             self.running_timers.pop(new_msg_id)
             self.save_timers()
+
         else:
             # Reply with a hidden message
             await inter.reply("Nur angemeldete Personen können den Timer beenden.", ephemeral=True)
 
     async def on_neustart_button(self, inter):
         msg_id = str(inter.message.id)
-        if inter.author.mention in self.running_timers[msg_id]['registered']:
+        registered = self.running_timers[msg_id]['registered']
+        if str(inter.author.id) in self.running_timers[msg_id]['registered']:
             self.running_timers[msg_id]['status'] = 'Arbeiten'
             self.running_timers[msg_id]['remaining'] = self.running_timers[msg_id]['working_time']
             self.save_timers()
 
             await inter.reply(type=7)
-            await self.edit_message(msg_id)
+            new_msg_id = await self.edit_message(msg_id)
 
-            #TODO:
-            #await make_sound('roll_with_it-outro.mp3')
+            await self.make_sound(registered, 'roll_with_it-outro.mp3')
 
         else:
             # Reply with a hidden message
@@ -163,30 +166,35 @@ class Timer(commands.Cog):
 
     async def on_skip_button(self, inter):
         msg_id = str(inter.message.id)
-        if inter.author.mention in self.running_timers[msg_id]['registered']:
-            await self.switch_phase(msg_id)
+        registered = self.running_timers[msg_id]['registered']
+        if str(inter.author.id) in self.running_timers[msg_id]['registered']:
+            new_phase = await self.switch_phase(msg_id)
+            if new_phase == "Pause":
+                await self.make_sound(registered, 'groove-intro.mp3')
+            else:
+                await self.make_sound(registered, 'roll_with_it-outro.mp3')
         else:
             # Reply with a hidden message
             await inter.reply("Nur angemeldete Personen können den Timer bedienen.", ephemeral=True)
 
     async def on_anmelden_button(self, inter):
         msg_id = str(inter.message.id)
-        if inter.author.mention not in self.running_timers[msg_id]['registered']:
-            self.running_timers[msg_id]['registered'].append(inter.author.mention)
+        if str(inter.author.id) not in self.running_timers[msg_id]['registered']:
+            self.running_timers[msg_id]['registered'].append(str(inter.author.id))
             self.save_timers()
-        name, status, wt, bt, remaining, registered, _ = self.get_details(msg_id)
-        embed = self.create_embed(name, status, wt, bt, remaining, registered)
-        await inter.reply(embed=embed, components=[self.get_button_row()], type=7)
+            name, status, wt, bt, remaining, registered, _ = self.get_details(msg_id)
+            embed = self.create_embed(name, status, wt, bt, remaining, registered)
+            await inter.reply(embed=embed, components=[self.get_button_row()], type=7)
 
     async def on_abmelden_button(self, inter):
         msg_id = str(inter.message.id)
         registered = self.running_timers[msg_id]['registered']
-        if inter.author.mention in registered:
+        if str(inter.author.id) in registered:
             if len(registered) == 1:
                 await self.on_beenden_button(inter)
                 return
             else:
-                self.running_timers[msg_id]['registered'].remove(inter.author.mention)
+                self.running_timers[msg_id]['registered'].remove(str(inter.author.id))
                 self.save_timers()
                 name, status, wt, bt, remaining, registered, _ = self.get_details(msg_id)
                 embed = self.create_embed(name, status, wt, bt, remaining, registered)
@@ -201,7 +209,8 @@ class Timer(commands.Cog):
             self.running_timers[msg_id]['remaining'] = self.running_timers[msg_id]['working_time']
         self.save_timers()
 
-        await self.edit_message(msg_id)
+        new_msg_id = await self.edit_message(msg_id)
+        return self.running_timers[new_msg_id]['status']
 
     def get_details(self, msg_id):
         name = self.running_timers[msg_id]['name']
@@ -222,7 +231,10 @@ class Timer(commands.Cog):
         embed = self.create_embed(name, status, wt, bt, remaining, registered)
 
         if create_new:
-            new_msg = await channel.send(embed=embed, components=[self.get_button_row()])
+            if status == "Beendet":
+                new_msg = await channel.send(embed=embed, components=[self.get_button_row(enabled=False)])
+            else:
+                new_msg = await channel.send(embed=embed, components=[self.get_button_row()])
             self.running_timers[str(new_msg.id)] = self.running_timers[msg_id]
             self.running_timers.pop(msg_id)
             self.save_timers()
@@ -232,13 +244,35 @@ class Timer(commands.Cog):
             await msg.edit(embed=embed, components=[self.get_button_row()])
         return str(msg.id)
 
+    async def make_sound(self, registered_users, filename):
+        guild = self.bot.get_guild(self.guild_id)
+        for user_id in registered_users:
+            member = guild.get_member(int(user_id))
+            if member.voice:
+                channel = member.voice.channel
+                if channel:  # If user is in a channel
+                    try:
+                        voice_client = await channel.connect()
+                        voice_client.play(discord.FFmpegPCMAudio(f'cogs/sounds/{filename}'))
+                        await sleep(3)
+                    except discord.errors.ClientException as e:
+                        print(e)
+                    for vc in self.bot.voice_clients:
+                        await vc.disconnect()
+                break
+
     @tasks.loop(minutes=1)
     async def run_timer(self):
         timers_copy = deepcopy(self.running_timers)
         for msg_id in timers_copy:
+            registered = self.running_timers[msg_id]['registered']
             self.running_timers[msg_id]['remaining'] -= 1
             if self.running_timers[msg_id]['remaining'] == 0:
-                await self.switch_phase(msg_id)
+                new_phase = await self.switch_phase(msg_id)
+                if new_phase == "Pause":
+                    await self.make_sound(registered, 'groove-intro.mp3')
+                else:
+                    await self.make_sound(registered, 'roll_with_it-outro.mp3')
             else:
                 await self.edit_message(msg_id, create_new=False)
 
