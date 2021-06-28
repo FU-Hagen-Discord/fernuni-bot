@@ -3,6 +3,7 @@ import os
 from asyncio import sleep
 import random
 from datetime import datetime, timedelta
+from copy import deepcopy
 
 import discord
 from discord.ext import commands, tasks
@@ -15,10 +16,12 @@ class Timer(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.default_names = ["Rapunzel", "Aschenputtel", "Schneewittchen", "Frau Holle", "Schneeweißchen und Rosenrot"]
+        self.default_names = ["Rapunzel", "Aschenputtel", "Schneewittchen", "Frau Holle", "Schneeweißchen und Rosenrot",
+                              "Gestiefelter Kater", "Bremer Stadtmusikanten"]
         self.running_timers = {}
         self.timer_file_path = os.getenv("DISCORD_TIMER_FILE")
         self.load_timers()
+        self.run_timer.start()
 
     def load_timers(self):
         timer_file = open(self.timer_file_path, mode='r')
@@ -100,11 +103,12 @@ class Timer(commands.Cog):
         msg = await ctx.send(embed=embed, components=[self.get_button_row()])
 
         self.running_timers[str(msg.id)] = {'name': name,
-                                       'status': status,
-                                       'working_time': working_time,
-                                       'break_time': break_time,
-                                       'remaining': remaining,
-                                       'registered': registered}
+                                            'status': status,
+                                            'working_time': working_time,
+                                            'break_time': break_time,
+                                            'remaining': remaining,
+                                            'registered': registered,
+                                            'channel': ctx.channel.id}
         self.save_timers()
 
     @commands.Cog.listener()
@@ -130,13 +134,11 @@ class Timer(commands.Cog):
             self.running_timers[msg_id]['registered'] = []
 
             #TODO:
-            #await ping_users()
             #await make_sound('applause.mp3')
 
-            name, status, wt, bt, remaining, registered = self.get_details(msg_id)
-            embed = self.create_embed(name, status, wt, bt, remaining, registered)
-            await inter.reply(embed=embed, components=[self.get_button_row(enabled=False)], type=7)
-            self.running_timers.pop(msg_id)
+            await inter.reply(type=7)
+            new_msg_id = await self.edit_message(msg_id)
+            self.running_timers.pop(new_msg_id)
             self.save_timers()
         else:
             # Reply with a hidden message
@@ -149,13 +151,11 @@ class Timer(commands.Cog):
             self.running_timers[msg_id]['remaining'] = self.running_timers[msg_id]['working_time']
             self.save_timers()
 
-            name, status, wt, bt, remaining, registered = self.get_details(msg_id)
-            embed = self.create_embed(name, status, wt, bt, remaining, registered)
-            await inter.reply(embed=embed, components=[self.get_button_row()], type=7)
+            await inter.reply(type=7)
+            await self.edit_message(msg_id)
 
             #TODO:
             #await make_sound('roll_with_it-outro.mp3')
-            #await ping_users()
 
         else:
             # Reply with a hidden message
@@ -164,10 +164,7 @@ class Timer(commands.Cog):
     async def on_skip_button(self, inter):
         msg_id = str(inter.message.id)
         if inter.author.mention in self.running_timers[msg_id]['registered']:
-            self.switch_phase(msg_id)
-            name, status, wt, bt, remaining, registered = self.get_details(msg_id)
-            embed = self.create_embed(name, status, wt, bt, remaining, registered)
-            await inter.reply(embed=embed, components=[self.get_button_row()], type=7)
+            await self.switch_phase(msg_id)
         else:
             # Reply with a hidden message
             await inter.reply("Nur angemeldete Personen können den Timer bedienen.", ephemeral=True)
@@ -177,7 +174,7 @@ class Timer(commands.Cog):
         if inter.author.mention not in self.running_timers[msg_id]['registered']:
             self.running_timers[msg_id]['registered'].append(inter.author.mention)
             self.save_timers()
-        name, status, wt, bt, remaining, registered = self.get_details(msg_id)
+        name, status, wt, bt, remaining, registered, _ = self.get_details(msg_id)
         embed = self.create_embed(name, status, wt, bt, remaining, registered)
         await inter.reply(embed=embed, components=[self.get_button_row()], type=7)
 
@@ -191,11 +188,11 @@ class Timer(commands.Cog):
             else:
                 self.running_timers[msg_id]['registered'].remove(inter.author.mention)
                 self.save_timers()
-                name, status, wt, bt, remaining, registered = self.get_details(msg_id)
+                name, status, wt, bt, remaining, registered, _ = self.get_details(msg_id)
                 embed = self.create_embed(name, status, wt, bt, remaining, registered)
                 await inter.reply(embed=embed, components=[self.get_button_row()], type=7)
 
-    def switch_phase(self, msg_id):
+    async def switch_phase(self, msg_id):
         if self.running_timers[msg_id]['status'] == "Arbeiten":
             self.running_timers[msg_id]['status'] = "Pause"
             self.running_timers[msg_id]['remaining'] = self.running_timers[msg_id]['break_time']
@@ -204,6 +201,8 @@ class Timer(commands.Cog):
             self.running_timers[msg_id]['remaining'] = self.running_timers[msg_id]['working_time']
         self.save_timers()
 
+        await self.edit_message(msg_id)
+
     def get_details(self, msg_id):
         name = self.running_timers[msg_id]['name']
         status = self.running_timers[msg_id]['status']
@@ -211,7 +210,41 @@ class Timer(commands.Cog):
         bt = self.running_timers[msg_id]['break_time']
         remaining = self.running_timers[msg_id]['remaining']
         registered = self.running_timers[msg_id]['registered']
-        return name, status, wt, bt, remaining, registered
+        channel = self.running_timers[msg_id]['channel']
+        return name, status, wt, bt, remaining, registered, channel
+
+    async def edit_message(self, msg_id, create_new=True):
+        channel_id = self.running_timers[msg_id]['channel']
+        channel = await self.bot.fetch_channel(int(channel_id))
+        msg = await channel.fetch_message(int(msg_id))
+
+        name, status, wt, bt, remaining, registered, _ = self.get_details(msg_id)
+        embed = self.create_embed(name, status, wt, bt, remaining, registered)
+
+        if create_new:
+            new_msg = await channel.send(embed=embed, components=[self.get_button_row()])
+            self.running_timers[str(new_msg.id)] = self.running_timers[msg_id]
+            self.running_timers.pop(msg_id)
+            self.save_timers()
+            await msg.delete()
+            msg = new_msg
+        else:
+            await msg.edit(embed=embed, components=[self.get_button_row()])
+        return str(msg.id)
+
+    @tasks.loop(minutes=1)
+    async def run_timer(self):
+        timers_copy = deepcopy(self.running_timers)
+        for msg_id in timers_copy:
+            self.running_timers[msg_id]['remaining'] -= 1
+            if self.running_timers[msg_id]['remaining'] == 0:
+                await self.switch_phase(msg_id)
+            else:
+                await self.edit_message(msg_id, create_new=False)
+
+    @run_timer.before_loop
+    async def before_timer(self):
+        await sleep(60)
 
     @cmd_timer.error
     async def timer_error(self, ctx, error):
