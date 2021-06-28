@@ -7,6 +7,13 @@ DELETE_POLL = "🗑️"
 CLOSE_POLL = "🛑"
 
 
+def is_emoji(word):
+    if word in emoji.UNICODE_EMOJI_ALIAS_ENGLISH:
+        return True
+    elif word[:-1] in emoji.UNICODE_EMOJI_ALIAS_ENGLISH:
+        return True
+
+
 def get_unique_option(options):
     for option in DEFAULT_OPTIONS:
         if option not in options:
@@ -23,11 +30,10 @@ def get_options(bot, answers):
 
         if index > -1:
             possible_option = answer[:index]
-            if len(possible_option) == 1:
-                if possible_option in emoji.UNICODE_EMOJI_ALIAS_ENGLISH:
-                    if len(answer[index:].strip()) > 0:
-                        option = possible_option
-                        answers[i] = answer[index:].strip()
+            if is_emoji(possible_option):
+                if len(answer[index:].strip()) > 0:
+                    option = possible_option
+                    answers[i] = answer[index:].strip()
             elif len(possible_option) > 1:
                 if possible_option[0:2] == "<:" and possible_option[-1] == ">":
                     splitted_custom_emoji = possible_option.strip("<:>").split(":")
