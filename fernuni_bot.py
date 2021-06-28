@@ -45,7 +45,7 @@ bot.add_cog(timer.Timer(bot))
 
 # bot.add_cog(ChangeLogCog(bot))
 
-SlashClient(bot)  # Stellt den Zugriff auf die Buttons bereit
+SlashClient(bot, show_warnings=True)  # Stellt den Zugriff auf die Buttons bereit
 
 
 def get_reaction(reactions):
