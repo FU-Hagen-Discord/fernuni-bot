@@ -131,86 +131,106 @@ class Timer(commands.Cog):
 
     async def on_beenden_button(self, inter):
         msg_id = str(inter.message.id)
-        registered = self.running_timers[msg_id]['registered']
-        if str(inter.author.id) in self.running_timers[msg_id]['registered']:
-            self.running_timers[msg_id]['status'] = "Beendet"
-            self.running_timers[msg_id]['remaining'] = 0
-            self.running_timers[msg_id]['registered'] = []
+        if timer := self.running_timers.get(msg_id):
+            registered = timer['registered']
+            if str(inter.author.id) in timer['registered']:
+                timer['status'] = "Beendet"
+                timer['remaining'] = 0
+                timer['registered'] = []
 
-            await inter.reply(type=7)
-            new_msg_id = await self.edit_message(msg_id)
-            await self.make_sound(registered, 'applause.mp3')
-            self.running_timers.pop(new_msg_id)
-            self.save_timers()
-
+                await inter.reply(type=6)
+                new_msg_id = await self.edit_message(msg_id)
+                await self.make_sound(registered, 'applause.mp3')
+                self.running_timers.pop(new_msg_id)
+                self.save_timers()
+            else:
+                # Reply with a hidden message
+                await inter.reply("Nur angemeldete Personen können den Timer beenden.", ephemeral=True)
         else:
-            # Reply with a hidden message
-            await inter.reply("Nur angemeldete Personen können den Timer beenden.", ephemeral=True)
+            await inter.reply("Etwas ist schiefgelaufen...", ephemeral=True)
 
     async def on_neustart_button(self, inter):
         msg_id = str(inter.message.id)
-        registered = self.running_timers[msg_id]['registered']
-        if str(inter.author.id) in self.running_timers[msg_id]['registered']:
-            self.running_timers[msg_id]['status'] = 'Arbeiten'
-            self.running_timers[msg_id]['remaining'] = self.running_timers[msg_id]['working_time']
-            self.save_timers()
+        if timer := self.running_timers.get(msg_id):
+            registered = timer['registered']
+            if str(inter.author.id) in timer['registered']:
+                timer['status'] = 'Arbeiten'
+                timer['remaining'] = timer['working_time']
+                self.save_timers()
 
-            await inter.reply(type=7)
-            new_msg_id = await self.edit_message(msg_id)
-
-            await self.make_sound(registered, 'roll_with_it-outro.mp3')
-
+                await inter.reply(type=7)
+                new_msg_id = await self.edit_message(msg_id)
+                await self.make_sound(registered, 'roll_with_it-outro.mp3')
+            else:
+                # Reply with a hidden message
+                await inter.reply("Nur angemeldete Personen können den Timer neu starten.", ephemeral=True)
         else:
-            # Reply with a hidden message
-            await inter.reply("Nur angemeldete Personen können den Timer neu starten.", ephemeral=True)
+            await inter.reply("Etwas ist schiefgelaufen...", ephemeral=True)
 
     async def on_skip_button(self, inter):
         msg_id = str(inter.message.id)
-        registered = self.running_timers[msg_id]['registered']
-        if str(inter.author.id) in self.running_timers[msg_id]['registered']:
-            new_phase = await self.switch_phase(msg_id)
-            if new_phase == "Pause":
-                await self.make_sound(registered, 'groove-intro.mp3')
+        if timer := self.running_timers.get(msg_id):
+            registered = timer['registered']
+            if str(inter.author.id) in timer['registered']:
+                new_phase = await self.switch_phase(msg_id)
+                if new_phase == "Pause":
+                    await self.make_sound(registered, 'groove-intro.mp3')
+                else:
+                    await self.make_sound(registered, 'roll_with_it-outro.mp3')
             else:
-                await self.make_sound(registered, 'roll_with_it-outro.mp3')
+                # Reply with a hidden message
+                await inter.reply("Nur angemeldete Personen können den Timer bedienen.", ephemeral=True)
         else:
-            # Reply with a hidden message
-            await inter.reply("Nur angemeldete Personen können den Timer bedienen.", ephemeral=True)
+            await inter.reply("Etwas ist schiefgelaufen...", ephemeral=True)
 
     async def on_anmelden_button(self, inter):
         msg_id = str(inter.message.id)
-        if str(inter.author.id) not in self.running_timers[msg_id]['registered']:
-            self.running_timers[msg_id]['registered'].append(str(inter.author.id))
-            self.save_timers()
-            name, status, wt, bt, remaining, registered, _ = self.get_details(msg_id)
-            embed = self.create_embed(name, status, wt, bt, remaining, registered)
-            await inter.reply(embed=embed, components=[self.get_button_row()], type=7)
-
-    async def on_abmelden_button(self, inter):
-        msg_id = str(inter.message.id)
-        registered = self.running_timers[msg_id]['registered']
-        if str(inter.author.id) in registered:
-            if len(registered) == 1:
-                await self.on_beenden_button(inter)
-                return
-            else:
-                self.running_timers[msg_id]['registered'].remove(str(inter.author.id))
+        if timer := self.running_timers.get(msg_id):
+            if str(inter.author.id) not in timer['registered']:
+                timer['registered'].append(str(inter.author.id))
                 self.save_timers()
                 name, status, wt, bt, remaining, registered, _ = self.get_details(msg_id)
                 embed = self.create_embed(name, status, wt, bt, remaining, registered)
                 await inter.reply(embed=embed, components=[self.get_button_row()], type=7)
+            else:
+                await inter.reply(type=6)
+        else:
+            await inter.reply("Etwas ist schiefgelaufen...", ephemeral=True)
+
+    async def on_abmelden_button(self, inter):
+        msg_id = str(inter.message.id)
+        if timer := self.running_timers.get(msg_id):
+            registered = timer['registered']
+            if str(inter.author.id) in registered:
+                if len(registered) == 1:
+                    await self.on_beenden_button(inter)
+                    return
+                else:
+                    timer['registered'].remove(str(inter.author.id))
+                    self.save_timers()
+                    name, status, wt, bt, remaining, registered, _ = self.get_details(msg_id)
+                    embed = self.create_embed(name, status, wt, bt, remaining, registered)
+                    await inter.reply(embed=embed, components=[self.get_button_row()], type=7)
+            else:
+                await inter.reply(type=6)
+        else:
+            await inter.reply("Etwas ist schiefgelaufen...", ephemeral=True)
 
     async def switch_phase(self, msg_id):
-        if self.running_timers[msg_id]['status'] == "Arbeiten":
-            self.running_timers[msg_id]['status'] = "Pause"
-            self.running_timers[msg_id]['remaining'] = self.running_timers[msg_id]['break_time']
-        else:
-            self.running_timers[msg_id]['status'] = "Arbeiten"
-            self.running_timers[msg_id]['remaining'] = self.running_timers[msg_id]['working_time']
-        self.save_timers()
+        if timer := self.running_timers.get(msg_id):
+            if timer['status'] == "Arbeiten":
+                timer['status'] = "Pause"
+                timer['remaining'] = timer['break_time']
+            elif timer['status'] == "Pause":
+                timer['status'] = "Arbeiten"
+                timer['remaining'] = timer['working_time']
+            else:
+                self.running_timers.pop(msg_id)
+                return "Beendet"
+            self.save_timers()
 
-        new_msg_id = await self.edit_message(msg_id)
-        return self.running_timers[new_msg_id]['status']
+            new_msg_id = await self.edit_message(msg_id)
+            return self.running_timers[new_msg_id]['status']
 
     def get_details(self, msg_id):
         name = self.running_timers[msg_id]['name']
@@ -223,26 +243,27 @@ class Timer(commands.Cog):
         return name, status, wt, bt, remaining, registered, channel
 
     async def edit_message(self, msg_id, create_new=True):
-        channel_id = self.running_timers[msg_id]['channel']
-        channel = await self.bot.fetch_channel(int(channel_id))
-        msg = await channel.fetch_message(int(msg_id))
+        if timer := self.running_timers.get(msg_id):
+            channel_id = timer['channel']
+            channel = await self.bot.fetch_channel(int(channel_id))
+            msg = await channel.fetch_message(int(msg_id))
 
-        name, status, wt, bt, remaining, registered, _ = self.get_details(msg_id)
-        embed = self.create_embed(name, status, wt, bt, remaining, registered)
+            name, status, wt, bt, remaining, registered, _ = self.get_details(msg_id)
+            embed = self.create_embed(name, status, wt, bt, remaining, registered)
 
-        if create_new:
-            if status == "Beendet":
-                new_msg = await channel.send(embed=embed, components=[self.get_button_row(enabled=False)])
+            if create_new:
+                await msg.delete()
+                if status == "Beendet":
+                    new_msg = await channel.send(embed=embed, components=[self.get_button_row(enabled=False)])
+                else:
+                    new_msg = await channel.send(embed=embed, components=[self.get_button_row()])
+                self.running_timers[str(new_msg.id)] = self.running_timers[msg_id]
+                self.running_timers.pop(msg_id)
+                self.save_timers()
+                msg = new_msg
             else:
-                new_msg = await channel.send(embed=embed, components=[self.get_button_row()])
-            self.running_timers[str(new_msg.id)] = self.running_timers[msg_id]
-            self.running_timers.pop(msg_id)
-            self.save_timers()
-            await msg.delete()
-            msg = new_msg
-        else:
-            await msg.edit(embed=embed, components=[self.get_button_row()])
-        return str(msg.id)
+                await msg.edit(embed=embed, components=[self.get_button_row()])
+            return str(msg.id)
 
     async def make_sound(self, registered_users, filename):
         guild = self.bot.get_guild(self.guild_id)
@@ -267,11 +288,11 @@ class Timer(commands.Cog):
         for msg_id in timers_copy:
             registered = self.running_timers[msg_id]['registered']
             self.running_timers[msg_id]['remaining'] -= 1
-            if self.running_timers[msg_id]['remaining'] == 0:
+            if self.running_timers[msg_id]['remaining'] <= 0:
                 new_phase = await self.switch_phase(msg_id)
                 if new_phase == "Pause":
                     await self.make_sound(registered, 'groove-intro.mp3')
-                else:
+                elif new_phase == "Arbeiten":
                     await self.make_sound(registered, 'roll_with_it-outro.mp3')
             else:
                 await self.edit_message(msg_id, create_new=False)
