@@ -68,7 +68,7 @@ class Timer(commands.Cog):
 
     def create_embed(self, name, status, working_time, break_time, remaining, registered):
         color = discord.Colour.green() if status == "Arbeiten" else 0xFFC63A if status == "Pause" else discord.Colour.red()
-        descr = f"👍 beim Timer anmelen\n\n" \
+        descr = f"👍 beim Timer anmelden\n\n" \
                 f"👎 beim Timer abmelden\n\n" \
                 f"⏩ Phase überspringen\n\n" \
                 f"🔄 Timer neu starten\n\n" \
