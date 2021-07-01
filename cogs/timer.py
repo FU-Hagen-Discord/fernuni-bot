@@ -36,13 +36,13 @@ class Timer(commands.Cog):
         button_row = ActionRow(
             Button(
                 style=ButtonStyle.grey,
-                emoji="🛑",
-                custom_id="beenden"
+                emoji="👍",
+                custom_id="anmelden"
             ),
             Button(
                 style=ButtonStyle.grey,
-                emoji="🔄",
-                custom_id="neustart"
+                emoji="👎",
+                custom_id="abmelden"
             ),
             Button(
                 style=ButtonStyle.grey,
@@ -51,13 +51,13 @@ class Timer(commands.Cog):
             ),
             Button(
                 style=ButtonStyle.grey,
-                emoji="👍",
-                custom_id="anmelden"
+                emoji="🔄",
+                custom_id="neustart"
             ),
             Button(
                 style=ButtonStyle.grey,
-                emoji="👎",
-                custom_id="abmelden"
+                emoji="🛑",
+                custom_id="beenden"
             )
         )
         if enabled:
@@ -68,7 +68,11 @@ class Timer(commands.Cog):
 
     def create_embed(self, name, status, working_time, break_time, remaining, registered):
         color = discord.Colour.green() if status == "Arbeiten" else 0xFFC63A if status == "Pause" else discord.Colour.red()
-        descr = "Jetzt: " + status
+        descr = f"👍 beim Timer anmelen\n\n" \
+                f"👎 beim Timer abmelden\n\n" \
+                f"⏩ Phase überspringen\n\n" \
+                f"🔄 Timer neu starten\n\n" \
+                f"🛑 Timer beenden\n"
         zeiten = f"{working_time} Minuten Arbeiten\n{break_time} Minuten Pause"
         remaining_value = f"{remaining} Minuten"
         endzeit = (datetime.now() + timedelta(minutes=remaining)).strftime("%H:%M")
@@ -77,8 +81,9 @@ class Timer(commands.Cog):
         angemeldet_value = ", ".join([user.mention for user in user_list])
 
         embed = discord.Embed(title=name,
-                              description=descr,
+                              description=f'Jetzt: {status}',
                               color=color)
+        embed.add_field(name="Bedienung:", value=descr, inline=False)
         embed.add_field(name="Zeiten:", value=zeiten, inline=False)
         embed.add_field(name="verbleibende Zeit:", value=remaining_value + end_value, inline=False)
         embed.add_field(name="angemeldete User:", value=angemeldet_value if registered else "-", inline=False)
