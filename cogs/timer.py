@@ -139,12 +139,13 @@ class Timer(commands.Cog):
         if timer := self.running_timers.get(msg_id):
             registered = timer['registered']
             if str(inter.author.id) in timer['registered']:
+                mentions = self.get_mentions(msg_id)
                 timer['status'] = "Beendet"
                 timer['remaining'] = 0
                 timer['registered'] = []
 
-                await inter.reply(type=6)
-                new_msg_id = await self.edit_message(msg_id)
+                await inter.reply(type=7)
+                new_msg_id = await self.edit_message(msg_id, mentions=mentions)
                 await self.make_sound(registered, 'applause.mp3')
                 self.running_timers.pop(new_msg_id)
                 self.save_timers()
@@ -198,7 +199,7 @@ class Timer(commands.Cog):
                 embed = self.create_embed(name, status, wt, bt, remaining, registered)
                 await inter.reply(embed=embed, components=[self.get_button_row()], type=7)
             else:
-                await inter.reply(type=6)
+                await inter.reply(type=7)
         else:
             await inter.reply("Etwas ist schiefgelaufen...", ephemeral=True)
 
@@ -217,7 +218,7 @@ class Timer(commands.Cog):
                     embed = self.create_embed(name, status, wt, bt, remaining, registered)
                     await inter.reply(embed=embed, components=[self.get_button_row()], type=7)
             else:
-                await inter.reply(type=6)
+                await inter.reply(type=7)
         else:
             await inter.reply("Etwas ist schiefgelaufen...", ephemeral=True)
 
@@ -247,7 +248,7 @@ class Timer(commands.Cog):
         channel = self.running_timers[msg_id]['channel']
         return name, status, wt, bt, remaining, registered, channel
 
-    async def edit_message(self, msg_id, create_new=True):
+    async def edit_message(self, msg_id, mentions=None, create_new=True):
         if timer := self.running_timers.get(msg_id):
             channel_id = timer['channel']
             channel = await self.bot.fetch_channel(int(channel_id))
@@ -258,10 +259,12 @@ class Timer(commands.Cog):
 
             if create_new:
                 await msg.delete()
+                if not mentions:
+                    mentions = self.get_mentions(msg_id)
                 if status == "Beendet":
-                    new_msg = await channel.send(embed=embed, components=[self.get_button_row(enabled=False)])
+                    new_msg = await channel.send(mentions, embed=embed, components=[self.get_button_row(enabled=False)])
                 else:
-                    new_msg = await channel.send(embed=embed, components=[self.get_button_row()])
+                    new_msg = await channel.send(mentions, embed=embed, components=[self.get_button_row()])
                 self.running_timers[str(new_msg.id)] = self.running_timers[msg_id]
                 self.running_timers.pop(msg_id)
                 self.save_timers()
@@ -269,6 +272,13 @@ class Timer(commands.Cog):
             else:
                 await msg.edit(embed=embed, components=[self.get_button_row()])
             return str(msg.id)
+
+    def get_mentions(self, msg_id):
+        guild = self.bot.get_guild(self.guild_id)
+        registered = self.running_timers.get(msg_id)['registered']
+        members = [guild.get_member(int(user_id)) for user_id in registered]
+        mentions = ", ".join([member.mention for member in members])
+        return mentions
 
     async def make_sound(self, registered_users, filename):
         guild = self.bot.get_guild(self.guild_id)
