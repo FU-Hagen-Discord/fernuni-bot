@@ -1,9 +1,9 @@
 import json
 import os
-from asyncio import sleep
 import random
-from datetime import datetime, timedelta
+from asyncio import sleep
 from copy import deepcopy
+from datetime import datetime, timedelta
 
 import discord
 from discord.ext import commands, tasks
@@ -145,10 +145,10 @@ class Timer(commands.Cog):
                 timer['registered'] = []
 
                 await inter.reply(type=7)
-                new_msg_id = await self.edit_message(msg_id, mentions=mentions)
-                await self.make_sound(registered, 'applause.mp3')
-                self.running_timers.pop(new_msg_id)
-                self.save_timers()
+                if new_msg_id := await self.edit_message(msg_id, mentions=mentions):
+                    await self.make_sound(registered, 'applause.mp3')
+                    self.running_timers.pop(new_msg_id)
+                    self.save_timers()
             else:
                 # Reply with a hidden message
                 await inter.reply("Nur angemeldete Personen können den Timer beenden.", ephemeral=True)
@@ -165,7 +165,7 @@ class Timer(commands.Cog):
                 self.save_timers()
 
                 await inter.reply(type=7)
-                new_msg_id = await self.edit_message(msg_id)
+                await self.edit_message(msg_id)
                 await self.make_sound(registered, 'roll_with_it-outro.mp3')
             else:
                 # Reply with a hidden message
@@ -235,8 +235,10 @@ class Timer(commands.Cog):
                 return "Beendet"
             self.save_timers()
 
-            new_msg_id = await self.edit_message(msg_id)
-            return self.running_timers[new_msg_id]['status']
+            if new_msg_id := await self.edit_message(msg_id):
+                return self.running_timers[new_msg_id]['status']
+            else:
+                return "Beendet"
 
     def get_details(self, msg_id):
         name = self.running_timers[msg_id]['name']
@@ -252,26 +254,32 @@ class Timer(commands.Cog):
         if timer := self.running_timers.get(msg_id):
             channel_id = timer['channel']
             channel = await self.bot.fetch_channel(int(channel_id))
-            msg = await channel.fetch_message(int(msg_id))
+            try:
+                msg = await channel.fetch_message(int(msg_id))
 
-            name, status, wt, bt, remaining, registered, _ = self.get_details(msg_id)
-            embed = self.create_embed(name, status, wt, bt, remaining, registered)
+                name, status, wt, bt, remaining, registered, _ = self.get_details(msg_id)
+                embed = self.create_embed(name, status, wt, bt, remaining, registered)
 
-            if create_new:
-                await msg.delete()
-                if not mentions:
-                    mentions = self.get_mentions(msg_id)
-                if status == "Beendet":
-                    new_msg = await channel.send(mentions, embed=embed, components=[self.get_button_row(enabled=False)])
+                if create_new:
+                    await msg.delete()
+                    if not mentions:
+                        mentions = self.get_mentions(msg_id)
+                    if status == "Beendet":
+                        new_msg = await channel.send(mentions, embed=embed,
+                                                     components=[self.get_button_row(enabled=False)])
+                    else:
+                        new_msg = await channel.send(mentions, embed=embed, components=[self.get_button_row()])
+                    self.running_timers[str(new_msg.id)] = self.running_timers[msg_id]
+                    self.running_timers.pop(msg_id)
+                    self.save_timers()
+                    msg = new_msg
                 else:
-                    new_msg = await channel.send(mentions, embed=embed, components=[self.get_button_row()])
-                self.running_timers[str(new_msg.id)] = self.running_timers[msg_id]
+                    await msg.edit(embed=embed, components=[self.get_button_row()])
+                return str(msg.id)
+            except discord.errors.NotFound:
                 self.running_timers.pop(msg_id)
                 self.save_timers()
-                msg = new_msg
-            else:
-                await msg.edit(embed=embed, components=[self.get_button_row()])
-            return str(msg.id)
+                return None
 
     def get_mentions(self, msg_id):
         guild = self.bot.get_guild(self.guild_id)
