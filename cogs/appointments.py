@@ -38,7 +38,7 @@ def get_ics_file(title, date_time, reminder, recurring):
                   f"DTSTAMP:{datetime.datetime.now().strftime(fmt)}00Z\n" \
                   f"UID:{uuid.uuid4()}\n" \
                   f"SUMMARY:{title}\n"
-    appointment += f"RRULE:FREQ=MINUTELY;INTERVAL={recurring}\n" if recurring else f""
+    appointment += f"RRULE:FREQ=DAILY;INTERVAL={recurring}\n" if recurring else f""
     appointment += f"DTSTART;TZID=Europe/Berlin:{date_time.strftime(fmt)}00\n" \
                    f"DTEND;TZID=Europe/Berlin:{date_time.strftime(fmt)}00\n" \
                    f"TRANSP:OPAQUE\n" \
@@ -120,7 +120,7 @@ class Appointments(commands.Cog):
                             recurring = channel_appointment["recurring"]
                             date_time_str = channel_appointment["date_time"]
                             date_time = datetime.datetime.strptime(date_time_str, self.fmt)
-                            new_date_time = date_time + datetime.timedelta(minutes=recurring)
+                            new_date_time = date_time + datetime.timedelta(days=recurring)
                             new_date_time_str = new_date_time.strftime(self.fmt)
                             splitted_new_date_time_str = new_date_time_str.split(" ")
                             reminder = channel_appointment.get("original_reminder")
@@ -130,7 +130,7 @@ class Appointments(commands.Cog):
                                                        splitted_new_date_time_str[1],
                                                        str(reminder),
                                                        channel_appointment["title"],
-                                                       str(channel_appointment["recurring"]))
+                                                       channel_appointment["recurring"])
                         channel_appointments.pop(key)
                 self.save_appointments()
 
@@ -147,14 +147,14 @@ class Appointments(commands.Cog):
             "time": "Uhrzeit des Termins im Format hh:mm (z. B. 10:00).",
             "reminder": "Anzahl an Minuten die vor dem Termin erinnert werden soll.",
             "title": "der Titel des Termins (in Anführungszeichen).",
-            "recurring": "*(optional)* Interval für die Terminwiederholung (z. B. 24h für 24 Stunden 7d für 7 Tage oder 10m für 10 Minuten)."
+            "recurring": "*(optional)* Interval für die Terminwiederholung in Tagen"
         }
     )
     @commands.command(name="add-appointment")
-    async def cmd_add_appointment(self, ctx, date, time, reminder, title, recurring=None):
+    async def cmd_add_appointment(self, ctx, date, time, reminder, title, recurring: int = None):
         await self.add_appointment(ctx.channel, ctx.author.id, date, time, reminder, title, recurring)
 
-    async def add_appointment(self, channel, author_id, date, time, reminder, title, recurring=None):
+    async def add_appointment(self, channel, author_id, date, time, reminder, title, recurring: int = None):
         """ Add appointment to a channel """
 
         try:
@@ -169,13 +169,6 @@ class Appointments(commands.Cog):
         else:
             reminder = utils.to_minutes(reminder)
 
-        if recurring:
-            if not utils.is_valid_time(recurring):
-                await channel.send("Fehler! Wiederholung in ungültigem Format!")
-                return
-            else:
-                recurring = utils.to_minutes(recurring)
-
         embed = discord.Embed(title="Neuer Termin hinzugefügt!",
                               description=f"Wenn du eine Benachrichtigung zum Beginn des Termins"
                                           f"{f', sowie {reminder} Minuten vorher, ' if reminder > 0 else f''} "
@@ -187,7 +180,7 @@ class Appointments(commands.Cog):
         if reminder > 0:
             embed.add_field(name="Benachrichtigung", value=f"{reminder} Minuten vor dem Start", inline=False)
         if recurring:
-            embed.add_field(name="Wiederholung", value=f"Alle {recurring} Minuten", inline=False)
+            embed.add_field(name="Wiederholung", value=f"Alle {recurring} Tage", inline=False)
 
         message = await channel.send(embed=embed, file=discord.File(get_ics_file(title, date_time, reminder, recurring),
                                                                     filename=f"{title}.ics"))
