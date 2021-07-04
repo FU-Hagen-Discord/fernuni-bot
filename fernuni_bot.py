@@ -2,10 +2,11 @@ import os
 
 import discord
 from discord.ext import commands
+from dislash import *
 from dotenv import load_dotenv
 
 from cogs import appointments, armin, calmdown, christmas, easter, github, help, learninggroups, links, \
-    module_information, news, polls, roles, support, text_commands, voice, welcome, xkcd
+    module_information, news, polls, roles, support, text_commands, voice, welcome, xkcd, timer
 
 # .env file is necessary in the same directory, that contains several strings.
 load_dotenv()
@@ -40,9 +41,11 @@ bot.add_cog(xkcd.Xkcd(bot))
 bot.add_cog(help.Help(bot))
 bot.add_cog(calmdown.Calmdown(bot))
 bot.add_cog(github.Github(bot))
-
+bot.add_cog(timer.Timer(bot))
 
 # bot.add_cog(ChangeLogCog(bot))
+
+SlashClient(bot, show_warnings=True)  # Stellt den Zugriff auf die Buttons bereit
 
 
 def get_reaction(reactions):
