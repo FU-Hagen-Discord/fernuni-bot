@@ -63,7 +63,7 @@ class TextCommands(commands.Cog):
 
     @help(
         category="textcommands",
-        brief="Schlägt ein Text-Kommando, oder einen Text für ein bestehendes Text-Kommando vor.",
+        brief="Schlägt ein Text-Kommando oder einen Text für ein bestehendes Text-Kommando vor.",
         example="!command add !newcommand \"immer wenn newcommand aufgerufen wird wird das hier ausgegeben\" \"Hilfetext zu diesem Kommando\"",
         description="Ein Text-Kommando ist ein Kommando welches über !<name des textkommandos> aufgerufen werden kann und dann zufällig einen der hinterlegten Texte ausgibt.",
         parameters={
