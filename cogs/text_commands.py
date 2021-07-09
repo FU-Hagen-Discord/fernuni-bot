@@ -50,7 +50,7 @@ class TextCommands(commands.Cog):
 
     @help(
         category="textcommands",
-        brief="Listet alle verfügbaren Text-Commands auf, oder die Texte, die zu einem Text-Command hinterlegt sind.",
+        brief="Listet alle verfügbaren Text-Commands auf oder die Texte, die zu einem Text-Command hinterlegt sind.",
         example="!commands list !motivation",
         description="Gibt bei Angabe eines Kommandos (optionaler Parameter cmd) die Texte, die für dieses Kommandu hinterlegt sind.  ",
         parameters={
