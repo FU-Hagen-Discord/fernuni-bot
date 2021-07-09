@@ -114,7 +114,7 @@ class TextCommands(commands.Cog):
         example="!command remove !command 0",
         description="Entfernt den Text des angegebenen Text-Kommandos an entsprechendem Index. War das der einzige Text für dieses Text-Kommando, wird das gesamte Kommando entfernt. Wird kein Index übergeben, so wird ebenfalls das gesamte Text-Kommando entfernt.",
         parameters={
-            "cmd": "Name des anzulegenden Kommandos (z. B. !horoskop). ",
+            "cmd": "Name des zu entfernenden Kommandos (z. B. !horoskop). ",
             "id": "*(optional)* Id des zu löschenden Texts"
         },
         mod=True
