@@ -87,7 +87,7 @@ class TextCommands(commands.Cog):
         description="Ändert den Text eines Text-Kommandos an angegebenem Index.",
         parameters={
             "cmd": "Name des anzulegenden Kommandos (z. B. !horoskop). ",
-            "id": "Indext des zu ändernden Texts.",
+            "id": "Index des zu ändernden Texts.",
             "text": "in Anführungszeichen eingeschlossene Textnachricht, die ausgegeben werden soll, wenn das Kommando aufgerufen wird (z. B. \"Wassermann: Findet diese Woche wahrscheinlich seinen Dreizack wieder.\").",
         },
         mod=True
