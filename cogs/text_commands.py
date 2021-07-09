@@ -266,7 +266,7 @@ class TextCommands(commands.Cog):
                                 f"Herzlichen Glückwunsch, dein Vorschlag für {cmd} wurde angenommen:\n{text}")
         else:
             await utils.send_dm(member,
-                                f"Es tut mir leid, dein Vorschlag für {cmd} wurde leider abgelehnt:\n{text}")
+                                f"Dein Vorschlag für {cmd} wurde leider abgelehnt:\n{text}")
         await message.delete()
 
     @commands.Cog.listener()
