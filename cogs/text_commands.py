@@ -51,6 +51,7 @@ class TextCommands(commands.Cog):
     @help(
         category="textcommands",
         brief="Listet alle verfügbaren Text-Commands auf oder die Texte, die zu einem Text-Command hinterlegt sind.",
+        syntax="!commands list <cmd?>",
         example="!commands list !motivation",
         description="Gibt bei Angabe eines Kommandos (optionaler Parameter cmd) die Texte, die für dieses Kommandu hinterlegt sind.  ",
         parameters={
@@ -64,6 +65,7 @@ class TextCommands(commands.Cog):
     @help(
         category="textcommands",
         brief="Schlägt ein Text-Kommando oder einen Text für ein bestehendes Text-Kommando vor.",
+        syntax="!commands add <cmd> <text> <help_message?> <category?>",
         example="!command add !newcommand \"immer wenn newcommand aufgerufen wird wird das hier ausgegeben\" \"Hilfetext zu diesem Kommando\"",
         description="Ein Text-Kommando ist ein Kommando welches über !<name des textkommandos> aufgerufen werden kann und dann zufällig einen der hinterlegten Texte ausgibt.",
         parameters={
@@ -83,6 +85,7 @@ class TextCommands(commands.Cog):
     @help(
         category="textcommands",
         brief="Ändert den Text eines Text-Kommandos.",
+        syntax="!commands edit <cmd> <id> <text>",
         example="!command edit !command 1 \"Neuer Text\"",
         description="Ändert den Text eines Text-Kommandos an angegebenem Index.",
         parameters={
@@ -99,7 +102,7 @@ class TextCommands(commands.Cog):
 
         if texts:
             i = int(id)
-            if i < len(texts):
+            if 0 <= i < len(texts):
                 texts[i] = text
                 await ctx.send(f"Text {i} für Command {cmd} wurde erfolgreich geändert")
                 self.save_text_commands()
@@ -111,6 +114,7 @@ class TextCommands(commands.Cog):
     @help(
         category="textcommands",
         brief="Entfernt einen Text oder ein gesamtes Text-Kommando.",
+        syntax="!commands remove <cmd> <id?>",
         example="!command remove !command 0",
         description="Entfernt den Text des angegebenen Text-Kommandos an entsprechendem Index. War das der einzige Text für dieses Text-Kommando, wird das gesamte Kommando entfernt. Wird kein Index übergeben, so wird ebenfalls das gesamte Text-Kommando entfernt.",
         parameters={
@@ -127,7 +131,7 @@ class TextCommands(commands.Cog):
         if texts:
             if id:  # checkt erst, ob man lediglich einen Eintrag (und nicht das ganze Command) löschen möchte
                 i = int(id)
-                if i < len(texts):  # schließt Aufrufe von Indizen aus, die außerhalb des Felds wären
+                if 0 <= i < len(texts):  # schließt Aufrufe von Indizen aus, die außerhalb des Felds wären
                     del texts[i]
                     await ctx.send(f"Text {i} für Command {cmd} wurde erfolgreich entfernt")
 
