@@ -141,7 +141,7 @@ class Appointments(commands.Cog):
     @help(
         category="appointments",
         brief="Fügt eine neue Erinnerung zu einem Kanal hinzu.",
-        example="!add-appointment 20.12.2021 10:00 0 \"Toller Event\" 7d",
+        example="!add-appointment 20.12.2021 10:00 0 \"Toller Event\" 7",
         parameters={
             "date": "Datum des Termins im Format DD.MM.YYYY (z. B. 22.10.2022).",
             "time": "Uhrzeit des Termins im Format hh:mm (z. B. 10:00).",
