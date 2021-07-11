@@ -1,5 +1,5 @@
 # fernuni-bot a.k.a. Boty McBotface 
-*Bot für den Discord Server "FU Hagen Informatik/Mathematik"*
+*Bot für den Discord Server "Mathematik & Informatik FUH"*
 
 ## Funktion
 ### April 2020 ✨*Geburtsstunde*
