@@ -1,12 +1,11 @@
 import asyncio
 import datetime
-import io
-import json
 import os
 import uuid
 
 import discord
 from discord.ext import tasks, commands
+from tinydb import where
 
 import utils
 from cogs.help import help, handle_error, help_category
@@ -60,79 +59,69 @@ class Appointments(commands.Cog):
         self.bot = bot
         self.fmt = os.getenv("DISCORD_DATE_TIME_FORMAT")
         self.timer.start()
-        self.appointments = {}
-        self.app_file = os.getenv("DISCORD_APPOINTMENTS_FILE")
-        self.load_appointments()
 
-    def load_appointments(self):
-        """ Loads all appointments from APPOINTMENTS_FILE """
-
-        appointments_file = open(self.app_file, mode='r')
-        self.appointments = json.load(appointments_file)
+    @property
+    def table(self):
+        return self.bot.db.table('calendar')
 
     @tasks.loop(minutes=1)
     async def timer(self):
-        delete = []
+        now = datetime.datetime.now()
 
-        for channel_id, channel_appointments in self.appointments.items():
-            channel = None
-            for message_id, appointment in channel_appointments.items():
-                now = datetime.datetime.now()
-                date_time = datetime.datetime.strptime(appointment["date_time"], self.fmt)
-                remind_at = date_time - datetime.timedelta(minutes=appointment["reminder"])
+        for event in self.table.all():
+            date_time = datetime.datetime.strptime(event["date_time"], self.fmt)
+            remind_at = date_time - datetime.timedelta(minutes=event["reminder"])
 
-                if now >= remind_at:
-                    try:
-                        channel = await self.bot.fetch_channel(int(channel_id))
-                        message = await channel.fetch_message(int(message_id))
-                        reactions = message.reactions
-                        diff = int(round(((date_time - now).total_seconds() / 60), 0))
-                        answer = f"Benachrichtigung!\nDer Termin \"{appointment['title']}\" ist "
+            if now >= remind_at:
+                try:
+                    event_started = False
+                    channel = await self.bot.fetch_channel(event["channel_id"])
+                    message = await channel.fetch_message(event["message_id"])
+                    reactions = message.reactions
+                    diff = int(round(((date_time - now).total_seconds() / 60), 0))
+                    answer = f"Benachrichtigung!\nDer Termin \"{event['title']}\" ist "
 
-                        if appointment["reminder"] > 0 and diff > 0:
-                            answer += f"in {diff} Minuten fällig."
-                            if (reminder := appointment.get("reminder")) and appointment.get("recurring"):
-                                appointment["original_reminder"] = str(reminder)
-                            appointment["reminder"] = 0
-                        else:
-                            answer += f"jetzt fällig. :loudspeaker: "
-                            delete.append(message_id)
+                    if event["reminder"] > 0 and diff > 0:
+                        answer += f"in {diff} Minuten fällig."
+                        if (reminder := event.get("reminder")) and event.get("recurring"):
+                            event["original_reminder"] = str(reminder)
+                        event["reminder"] = 0
+                    else:
+                        answer += f"jetzt fällig. :loudspeaker: "
+                        event_started = True
 
-                        answer += f"\n"
-                        for reaction in reactions:
-                            if reaction.emoji == "👍":
-                                async for user in reaction.users():
-                                    if user != self.bot.user:
-                                        answer += f"<@!{str(user.id)}> "
+                    answer += f"\n"
+                    for reaction in reactions:
+                        if reaction.emoji == "👍":
+                            async for user in reaction.users():
+                                if user != self.bot.user:
+                                    answer += f"<@!{str(user.id)}> "
 
-                        await channel.send(answer)
+                    await channel.send(answer)
+                    if event_started:
+                        await self.event_started(event)
+                        await message.delete()
+                except discord.errors.NotFound:
+                    self.table.remove(where("message_id") == event["message_id"])
 
-                        if str(message.id) in delete:
-                            await message.delete()
-                    except discord.errors.NotFound:
-                        delete.append(message_id)
+    async def event_started(self, event):
+        if recurring := event.get("recurring"):
+            channel = await self.bot.fetch_channel(event["channel_id"])
+            date_time_str = event["date_time"]
+            date_time = datetime.datetime.strptime(date_time_str, self.fmt)
+            new_date_time = date_time + datetime.timedelta(minutes=recurring)
+            new_date_time_str = new_date_time.strftime(self.fmt)
+            splitted_new_date_time_str = new_date_time_str.split(" ")
+            reminder = event.get("original_reminder")
+            reminder = reminder if reminder else 0
+            await self.add_appointment(channel, event["author_id"],
+                                       splitted_new_date_time_str[0],
+                                       splitted_new_date_time_str[1],
+                                       str(reminder),
+                                       event["title"],
+                                       event["recurring"])
 
-            if len(delete) > 0:
-                for key in delete:
-                    channel_appointment = channel_appointments.get(key)
-                    if channel_appointment:
-                        if channel_appointment.get("recurring"):
-                            recurring = channel_appointment["recurring"]
-                            date_time_str = channel_appointment["date_time"]
-                            date_time = datetime.datetime.strptime(date_time_str, self.fmt)
-                            new_date_time = date_time + datetime.timedelta(days=recurring)
-                            new_date_time_str = new_date_time.strftime(self.fmt)
-                            splitted_new_date_time_str = new_date_time_str.split(" ")
-                            reminder = channel_appointment.get("original_reminder")
-                            reminder = reminder if reminder else 0
-                            await self.add_appointment(channel, channel_appointment["author_id"],
-                                                       splitted_new_date_time_str[0],
-                                                       splitted_new_date_time_str[1],
-                                                       str(reminder),
-                                                       channel_appointment["title"],
-                                                       channel_appointment["recurring"])
-                        channel_appointments.pop(key)
-                self.save_appointments()
+        self.table.remove(where("message_id") == event["message_id"])
 
     @timer.before_loop
     async def before_timer(self):
@@ -187,14 +176,9 @@ class Appointments(commands.Cog):
         await message.add_reaction("👍")
         await message.add_reaction("🗑️")
 
-        if str(channel.id) not in self.appointments:
-            self.appointments[str(channel.id)] = {}
-
-        channel_appointments = self.appointments.get(str(channel.id))
-        channel_appointments[str(message.id)] = {"date_time": date_time.strftime(self.fmt), "reminder": reminder,
-                                                 "title": title, "author_id": author_id, "recurring": recurring}
-
-        self.save_appointments()
+        self.table.insert({"channel_id": channel.id, "message_id": message.id,
+                           "date_time": date_time.strftime(self.fmt), "reminder": reminder, "title": title,
+                           "author_id": author_id, "recurring": recurring})
 
     @help(
         category="appointments",
@@ -204,44 +188,26 @@ class Appointments(commands.Cog):
     async def cmd_appointments(self, ctx):
         """ List (and link) all Appointments in the current channel """
 
-        if str(ctx.channel.id) in self.appointments:
-            channel_appointments = self.appointments.get(str(ctx.channel.id))
+        if events := self.table.search(where("channel_id") == ctx.channel.id):
             answer = f'Termine dieses Channels:\n'
-            delete = []
-
-            for message_id, appointment in channel_appointments.items():
+            for event in events:
                 try:
-                    message = await ctx.channel.fetch_message(int(message_id))
-                    answer += f'{appointment["date_time"]}: {appointment["title"]} => ' \
+                    message = await ctx.channel.fetch_message(event["message_id"])
+                    answer += f'{event["date_time"]}: {event["title"]} => ' \
                               f'{message.jump_url}\n'
                 except discord.errors.NotFound:
-                    delete.append(message_id)
-
-            if len(delete) > 0:
-                for key in delete:
-                    channel_appointments.pop(key)
-                self.save_appointments()
-
+                    self.table.remove(where("message_id") == event["message_id"])
             await ctx.channel.send(answer)
         else:
             await ctx.send("Für diesen Channel existieren derzeit keine Termine")
 
-    def save_appointments(self):
-        appointments_file = open(self.app_file, mode='w')
-        json.dump(self.appointments, appointments_file)
-
     async def handle_reactions(self, payload):
-        channel = await self.bot.fetch_channel(payload.channel_id)
-        channel_appointments = self.appointments.get(str(payload.channel_id))
-        if channel_appointments:
-            appointment = channel_appointments.get(str(payload.message_id))
-            if appointment:
-                if payload.user_id == appointment["author_id"]:
-                    message = await channel.fetch_message(payload.message_id)
-                    await message.delete()
-                    channel_appointments.pop(str(payload.message_id))
-
-        self.save_appointments()
+        if event := self.table.get(where("message_id") == payload.message_id):
+            if payload.user_id == event["author_id"]:
+                channel = await self.bot.fetch_channel(payload.channel_id)
+                message = await channel.fetch_message(payload.message_id)
+                await message.delete()
+                self.table.remove(where("message_id") == event["message_id"])
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):

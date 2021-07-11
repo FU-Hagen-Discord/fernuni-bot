@@ -4,6 +4,7 @@ import discord
 from discord.ext import commands
 from dislash import *
 from dotenv import load_dotenv
+from tinydb import TinyDB
 
 from cogs import appointments, armin, calmdown, christmas, easter, github, help, learninggroups, links, \
     module_information, news, polls, roles, support, text_commands, voice, welcome, xkcd, timer
@@ -16,67 +17,42 @@ ACTIVITY = os.getenv('DISCORD_ACTIVITY')
 OWNER = int(os.getenv('DISCORD_OWNER'))
 ROLES_FILE = os.getenv('DISCORD_ROLES_FILE')
 HELP_FILE = os.getenv('DISCORD_HELP_FILE')
+DISCORD_DB = os.getenv('DISCORD_DB')
 CATEGORY_LERNGRUPPEN = os.getenv("DISCORD_CATEGORY_LERNGRUPPEN")
 PIN_EMOJI = "📌"
 
-intents = discord.Intents.default()
-intents.members = True
-bot = commands.Bot(command_prefix='!', help_command=None, activity=discord.Game(ACTIVITY), owner_id=OWNER,
-                   intents=intents)
-bot.add_cog(appointments.Appointments(bot))
-bot.add_cog(text_commands.TextCommands(bot))
-bot.add_cog(polls.Polls(bot))
-bot.add_cog(roles.Roles(bot))
-bot.add_cog(welcome.Welcome(bot))
-bot.add_cog(christmas.Christmas(bot))
-bot.add_cog(support.Support(bot))
-bot.add_cog(news.News(bot))
-bot.add_cog(links.Links(bot))
-bot.add_cog(voice.Voice(bot))
-bot.add_cog(easter.Easter(bot))
-bot.add_cog(armin.Armin(bot))
-bot.add_cog(learninggroups.LearningGroups(bot))
-bot.add_cog(module_information.ModuleInformation(bot))
-bot.add_cog(xkcd.Xkcd(bot))
-bot.add_cog(help.Help(bot))
-bot.add_cog(calmdown.Calmdown(bot))
-bot.add_cog(github.Github(bot))
-bot.add_cog(timer.Timer(bot))
 
-# bot.add_cog(ChangeLogCog(bot))
+class Boty(commands.Bot):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.add_cog(appointments.Appointments(self))
+        self.add_cog(text_commands.TextCommands(self))
+        self.add_cog(polls.Polls(self))
+        self.add_cog(roles.Roles(self))
+        self.add_cog(welcome.Welcome(self))
+        self.add_cog(christmas.Christmas(self))
+        self.add_cog(support.Support(self))
+        self.add_cog(news.News(self))
+        self.add_cog(links.Links(self))
+        self.add_cog(voice.Voice(self))
+        self.add_cog(easter.Easter(self))
+        self.add_cog(armin.Armin(self))
+        self.add_cog(learninggroups.LearningGroups(self))
+        self.add_cog(module_information.ModuleInformation(self))
+        self.add_cog(xkcd.Xkcd(self))
+        self.add_cog(help.Help(self))
+        self.add_cog(calmdown.Calmdown(self))
+        self.add_cog(github.Github(self))
+        # self.add_cog(ChangeLogCog(self))
+        self.db = TinyDB(DISCORD_DB)
+
+    async def on_ready(self):
+        print("Client started!")
 
 SlashClient(bot, show_warnings=True)  # Stellt den Zugriff auf die Buttons bereit
 
-
-def get_reaction(reactions):
-    """ Returns the reaction, that is equal to the specified PIN_EMOJI,
-    or if that reaction does not exist in list of reactions, None will be returned"""
-
-    for reaction in reactions:
-        if reaction.emoji == PIN_EMOJI:
-            return reaction
-    return None
-
-
-async def pin_message(message):
-    """ Pin the given message, if it is not already pinned """
-
-    if not message.pinned:
-        await message.pin()
-
-
-async def unpin_message(message):
-    """ Unpin the given message, if it is pinned, and it has no pin reaction remaining. """
-
-    if message.pinned:
-        reaction = get_reaction(message.reactions)
-        if reaction is None:
-            await message.unpin()
-
-
-@bot.event
-async def on_ready():
-    print("Client started!")
+bot = Boty(command_prefix='!', help_command=None, activity=discord.Game(ACTIVITY), owner_id=OWNER,
+           intents=discord.Intents.all())
 
 
 @bot.event
@@ -87,7 +63,8 @@ async def on_raw_reaction_add(payload):
     if payload.emoji.name == PIN_EMOJI:
         channel = await bot.fetch_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
-        await pin_message(message)
+        if not message.pinned:
+            await message.pin()
 
 
 @bot.event
@@ -95,7 +72,8 @@ async def on_raw_reaction_remove(payload):
     if payload.emoji.name == PIN_EMOJI:
         channel = await bot.fetch_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
-        await unpin_message(message)
+        if message.pinned and not discord.utils.get(message.reactions, emoji__name=PIN_EMOJI):
+            await message.unpin()
 
 
 @bot.event

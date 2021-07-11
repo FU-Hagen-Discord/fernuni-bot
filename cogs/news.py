@@ -1,9 +1,9 @@
-import json
 import os
 
 from aiohttp import ClientSession
 from bs4 import BeautifulSoup
 from discord.ext import commands, tasks
+from tinydb import where
 
 
 class News(commands.Cog):
@@ -12,17 +12,11 @@ class News(commands.Cog):
         self.channel_id = int(os.getenv("DISCORD_NEWS_CHANNEL"))
         self.news_role = int(os.getenv("DISCORD_NEWS_ROLE"))
         self.url = "https://www.fernuni-hagen.de/mi/studium/aktuelles/index.shtml"
-        self.news = {}
-        self.load_news()
         self.news_loop.start()
 
-    def load_news(self):
-        news_file = open("data/news.json", mode="r")
-        self.news = json.load(news_file)
-
-    def save_news(self):
-        news_file = open("data/news.json", mode="w")
-        json.dump(self.news, news_file)
+    @property
+    def table(self):
+        return self.bot.db.table('news')
 
     @tasks.loop(hours=1)
     async def news_loop(self):

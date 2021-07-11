@@ -2,6 +2,8 @@ import json
 
 import discord
 from discord.ext import commands
+from tinydb import where
+
 from cogs.help import help, handle_error, help_category
 
 
@@ -9,47 +11,29 @@ from cogs.help import help, handle_error, help_category
 class Links(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.links = {}
-        self.links_file = "data/links.json"
-        self.load_links()
 
-    def load_links(self):
-        links_file = open(self.links_file, 'r')
-        self.links = json.load(links_file)
+    @property
+    def group_table(self):
+        return self.bot.db.table('link_group')
 
-    def save_links(self):
-        links_file = open(self.links_file, 'w')
-        json.dump(self.links, links_file)
+    @property
+    def link_table(self):
+        return self.bot.db.table('link')
 
     @help(
         category="links",
-        brief="Zeigt die Links an, die in diesem Channel (evtl. unter Berücksichtigung einer Gruppe) hinterlegt sind.",
-        parameters={
-            "group": "*(optional)* Schränkt die angezeigten Links auf die übergebene Gruppe ein. "
-        }
+        brief="Zeigt die Links an, die in diesem Channel hinterlegt sind.",
     )
     @commands.command(name="links")
-    async def cmd_links(self, ctx, group=None):
-        if channel_links := self.links.get(str(ctx.channel.id)):
+    async def cmd_links(self, ctx):
+        if groups := self.group_table.search(where("channel_id") == ctx.channel.id):
             embed = discord.Embed(title=f"Folgende Links sind in diesem Channel hinterlegt:\n")
-            if group:
-                group = group.lower()
-                if group_links := channel_links.get(group):
-                    value = f""
-                    for title, link in group_links.items():
-                        value += f"- [{title}]({link})\n"
-                    embed.add_field(name=group.capitalize(), value=value, inline=False)
-                    await ctx.send(embed=embed)
-                else:
-                    await ctx.send(
-                        f" Für die Gruppe `{group}` sind in diesem Channel keine Links hinterlegt. Versuch es noch mal mit einer anderen Gruppe, oder lass dir mit `!links` alle Links in diesem Channel ausgeben")
-            else:
-                for group, links in channel_links.items():
-                    value = f""
-                    for title, link in links.items():
-                        value += f"- [{title}]({link})\n"
-                    embed.add_field(name=group.capitalize(), value=value, inline=False)
-                await ctx.send(embed=embed)
+            for group in groups:
+                value = f""
+                for link in self.link_table.search(where("group_id") == group.doc_id):
+                    value += f"- [{link['title']}]({link['url']})\n"
+                embed.add_field(name=group["group_title"], value=value, inline=False)
+            await ctx.send(embed=embed)
         else:
             await ctx.send("Für diesen Channel sind noch keine Links hinterlegt.")
 
@@ -65,23 +49,14 @@ class Links(commands.Cog):
         description="Die mit !add-link zu einem Kanal hinzugefügten Links können über das Kommando !links in diesem Kanal wieder abgerufen werden."
     )
     @commands.command(name="add-link")
-    async def cmd_add_link(self, ctx, group, link, *title):
-        if not (channel_links := self.links.get(str(ctx.channel.id))):
-            self.links[str(ctx.channel.id)] = {}
-            channel_links = self.links.get(str(ctx.channel.id))
-
-        if not (group_links := channel_links.get(group)):
-            channel_links[group] = {}
-            group_links = channel_links.get(group)
-
-        self.add_link(group_links, link, " ".join(title))
-        self.save_links()
-
-    def add_link(self, group_links, link, title):
-        if group_links.get(title):
-            self.add_link(group_links, link, title + str(1))
+    async def cmd_add_link(self, ctx, group_title, url, *, title):
+        if group := self.group_table.get(where("channel_id") == ctx.channel.id and where("group_title") == group_title):
+            pass
         else:
-            group_links[title] = link
+            group_id = self.group_table.insert({"channel_id": ctx.channel.id, "group_title": group_title})
+            group = self.group_table.get(doc_id=group_id)
+
+        self.link_table.insert({"group_id": group.doc_id, "url": url, "title": title})
 
     async def cog_command_error(self, ctx, error):
         await handle_error(ctx, error)
