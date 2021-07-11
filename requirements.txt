@@ -9,7 +9,6 @@ emoji==1.2.0
 idna==2.10
 multidict==5.1.0
 python-dotenv==0.17.0
-requests==2.25.1
 soupsieve==2.2.1
 typing-extensions==3.7.4.3
 urllib3==1.26.5
