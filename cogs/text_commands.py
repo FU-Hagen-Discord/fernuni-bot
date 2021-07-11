@@ -266,7 +266,9 @@ class TextCommands(commands.Cog):
                                 f"Herzlichen Glückwunsch, dein Vorschlag für {cmd} wurde angenommen:\n{text}")
         else:
             await utils.send_dm(member,
-                                f"Dein Vorschlag für {cmd} wurde leider abgelehnt:\n{text}")
+                                f"Vielen Dank, dass du dir Gedanken darüber machst, wie man Boty mit neuen Textkommandos noch nützlicher für alle machen kann.\n" \
+                                f"Es können allerdings nicht alle Einreichungen angenommen werden, weswegen dein Vorschlag für {cmd} leider abgelehnt wurde:\n{text}\n" \
+                                f"Eine Vertreterin des Mod-Teams wird sich in kürze mit dir in Verbindung setzen und dir erklären, was die Beweggründe der Ablehnung sind.")
         await message.delete()
 
     @commands.Cog.listener()
