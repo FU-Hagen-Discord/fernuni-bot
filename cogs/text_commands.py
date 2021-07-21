@@ -16,7 +16,7 @@ class TextCommands(commands.Cog):
         self.bot = bot
         self.text_commands = {}
         self.cmd_file = os.getenv("DISCORD_TEXT_COMMANDS_FILE")
-        self.mod_channel_id = int(os.getenv("DISCORD_MOD_CHANNEL"))
+        self.mod_channel_id = int(os.getenv("DISCORD_SUPPORT_CHANNEL"))
         self.load_text_commands()
 
     def load_text_commands(self):
