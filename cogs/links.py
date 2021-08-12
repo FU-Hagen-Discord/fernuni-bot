@@ -64,7 +64,8 @@ class Links(commands.Cog):
             "title...": "Titel, der für diesen Link angezeigt werden soll (darf Leerzeichen enthalten). "
         },
         description="Die mit !links add zu einem Kanal hinzugefügten Links können über das Kommando !links in diesem "
-                    "Kanal wieder abgerufen werden."
+                    "Kanal wieder abgerufen werden.",
+        command_group="links"
     )
     @cmd_links.command(name="add")
     async def cmd_add_link(self, ctx, topic, link, *title):
@@ -95,7 +96,8 @@ class Links(commands.Cog):
             "title...": "Titel des Links, der entfernt werden soll. "
         },
         description="Mit !links remove-link kann ein fehlerhafter oder veralteter Link aus der Linkliste des Channels "
-                    "entfernt werden."
+                    "entfernt werden.",
+        command_group="links"
     )
     @cmd_links.command(name="remove-link", aliases=['rl'])
     async def cmd_remove_link(self, ctx, topic, *title):
@@ -124,7 +126,8 @@ class Links(commands.Cog):
         parameters={
             "topic": "Name des Themas, das entfernt werden soll. ",
         },
-        description="Mit !links remove-topic kann ein Thema aus der Linkliste des Channels entfernt werden."
+        description="Mit !links remove-topic kann ein Thema aus der Linkliste des Channels entfernt werden.",
+        command_group="links"
     )
     @cmd_links.command(name="remove-topic", aliases=['rt'])
     async def cmd_remove_topic(self, ctx, topic):
@@ -152,7 +155,8 @@ class Links(commands.Cog):
             "new_topic": "*(optional)* Neues Thema für den geänderten Link. ",
             "new_link": "*(optional)* Der neue Link. "
         },
-        description="Mit !links edit-link kann ein fehlerhafter oder veralteter Link bearbeitet werden."
+        description="Mit !links edit-link kann ein fehlerhafter oder veralteter Link bearbeitet werden.",
+        command_group="links"
     )
     @cmd_links.command(name="edit-link", aliases=["el"])
     async def cmd_edit_link(self, ctx, topic, title, new_title, new_topic=None, new_link=None):
@@ -183,7 +187,8 @@ class Links(commands.Cog):
             "topic": "Name des Themas, das bearbeitet werden soll. ",
             "new_topic": "Neuer Name des Themas. "
         },
-        description="Mit !links edit-topic kann der Name eines Themas geändert werden."
+        description="Mit !links edit-topic kann der Name eines Themas geändert werden.",
+        command_group="links"
     )
     @cmd_links.command(name="edit-topic", aliases=["et"])
     async def cmd_edit_topic(self, ctx, topic, new_topic):
@@ -199,7 +204,6 @@ class Links(commands.Cog):
             await ctx.channel.send('Für diesen Channel sind keine Links hinterlegt.')
 
         self.save_links()
-
 
     async def cog_command_error(self, ctx, error):
         await handle_error(ctx, error)
