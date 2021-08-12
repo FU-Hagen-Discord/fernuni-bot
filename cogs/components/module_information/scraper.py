@@ -30,6 +30,7 @@ class Scraper:
         return json.load(group_file)
 
     async def fetch(self, url):
+        #print (f"Fetching {url}")
         sess = aiohttp.ClientSession()
         req = await sess.get(url)
         text = await req.read()
@@ -83,15 +84,25 @@ class Scraper:
             info_source = soup.find(summary='Modulinformationen')
         except:
             return None
+
         infos = {
-            "ects": info_source.find('th', text='ECTS').findNext('td').get_text(),
-            "time": info_source.find('th', text='Arbeitsaufwand').findNext('td').get_text(),
-            "duration": info_source.find('th', text='Dauer des Moduls').findNext('td').get_text(),
-            "interval": info_source.find('th', text='Häufigkeit des Moduls').findNext('td').get_text(),
-            "notes": info_source.find('th', text='Anmerkung').findNext('td').get_text(),
-            "requirements": info_source.find('th', text='Inhaltliche Voraussetzung').findNext('td').get_text()
+            "ects": self.get_info(info_source, 'ECTS'),
+            "time": self.get_info(info_source, 'Arbeitsaufwand'),
+            "duration": self.get_info(info_source, 'Dauer des Moduls'),
+            "interval": self.get_info(info_source, 'Häufigkeit des Moduls'),
+            "notes": self.get_info(info_source, 'Anmerkung'),
+            "requirements": self.get_info(info_source, 'Inhaltliche Voraussetzung')
         }
+
         return infos
+
+    def get_info(self, info_source, title):
+        th = info_source.find('th', text=title)
+        if th is not None:
+            td = th.findNext('td')
+            if td is not None:
+                return td.get_text()
+        return None
 
     def parse_courses(self, soup):
         try:

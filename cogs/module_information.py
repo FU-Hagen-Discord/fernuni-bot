@@ -120,16 +120,20 @@ class ModuleInformation(commands.Cog):
         valid_modules = []
         try:
             for course_of_studies in self.data:
-                for module in course_of_studies['modules']:
-                    for course in module['page']['courses']:
-                        cn = re.sub(r'^0+', '', course['number'])
-                        n = re.sub(r'^0+', '', number)
-                        if n == cn:
-                            valid_modules.append({
-                                "stg": course_of_studies['name'],
-                                "short": course_of_studies['short'],
-                                "data": module
-                            })
+                if course_of_studies['modules'] is not None:
+                    for module in course_of_studies['modules']:
+                        if module['page']['courses'] is not None:
+                            for course in module['page']['courses']:
+                                cn = re.sub(r'^0+', '', course['number'])
+                                n = re.sub(r'^0+', '', number)
+                                if n == cn:
+                                    valid_modules.append({
+                                        "stg": course_of_studies['name'],
+                                        "short": course_of_studies['short'],
+                                        "data": module
+                                    })
+                        else:
+                            print(f"[ModuleInformation] {module['number']} is an invalid Module")
             return valid_modules
         except:
             return []
