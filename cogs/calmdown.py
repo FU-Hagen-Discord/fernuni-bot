@@ -91,7 +91,7 @@ class Calmdown(commands.Cog):
                 return
             duration = utils.to_minutes(duration)
             if duration == 0:
-                await ctx.channel.send(f"{ctx.author.mention} hat {user.mention} von der **Auszeit** geholt.")
+                await ctx.channel.send(f"{ctx.author.mention} hat {user.mention} aus der **Auszeit** geholt.")
                 await self.unsilence(user.id, guild.id, inform_user=False)
                 return
 
