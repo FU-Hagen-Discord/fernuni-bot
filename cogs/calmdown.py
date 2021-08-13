@@ -99,7 +99,7 @@ class Calmdown(commands.Cog):
             till = now + datetime.timedelta(minutes=duration)
             self.silenced_users[str(user.id)] = {"duration": till.strftime(self.fmt), "guild_id": guild.id}
             self.save()
-            await ctx.channel.send(f"{ctx.author.mention} hat {user.mention} die **Calmdown-Rolle** vergeben.")
+            await ctx.channel.send(f"{ctx.author.mention} hat an {user.mention} die **Calmdown-Rolle** vergeben.")
             await user.add_roles(role)
             if duration < 300:
                 await utils.send_dm(user, f"Dir wurde für {duration} Minuten die **Calmdown-Rolle** vergeben. Du kannst weiterhin alle Kanäle lesen, aber erst nach Ablauf der Zeit wieder an Gesprächen teilnehmen.")
