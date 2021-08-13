@@ -102,6 +102,6 @@ class Calmdown(commands.Cog):
             await ctx.channel.send(f"{ctx.author.mention} hat an {user.mention} die **Calmdown-Rolle** vergeben.")
             await user.add_roles(role)
             if duration < 300:
-                await utils.send_dm(user, f"Dir wurde für {duration} Minuten die **Calmdown-Rolle** vergeben. Du kannst weiterhin alle Kanäle lesen, aber erst nach Ablauf der Zeit wieder an Gesprächen teilnehmen.")
+                await utils.send_dm(user, f"Dir wurde für {duration} Minuten die **Calmdown-Rolle** zugewiesen. Du kannst weiterhin alle Kanäle lesen, aber erst nach Ablauf der Zeit wieder an Gesprächen teilnehmen.")
             else:
                 await utils.send_dm(user, f"Bis {till.strftime(self.fmt)} Uhr trägst du die Calmdown-Rolle. Du kannst weiterhin alle Kanäle lesen, aber erst nach Ablauf der Zeit wieder an Gesprächen teilnehmen.")
