@@ -44,7 +44,7 @@ class Calmdown(commands.Cog):
         try:
             user = await guild.fetch_member(int(user_id))
             if inform_user:
-                await utils.send_dm(user, f"Die Calmdown-Rolle wurde dir nun wieder entnommen.")
+                await utils.send_dm(user, f"Die Calmdown-Rolle wurde nun wieder entfernt.")
             await user.remove_roles(role)
         except discord.errors.NotFound:
             pass
