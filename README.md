@@ -33,17 +33,14 @@ Zu dem Zeitpunkt kann Boty:
 
 * [Umfragefunktion](https://github.com/FU-Hagen-Discord/fernuni-bot/tree/master/cogs/polls.py)
 
-* Text-commands
-  * Motivations- / Prokrastinationssprüche
-  * Statistiken des Servers anzeigen
-
 * Moderationswerkzeuge
   * [Stille Treppe](https://github.com/FU-Hagen-Discord/fernuni-bot/tree/master/cogs/calmdown.py) -> entzieht einem Nutzer die Schreibrechte für eine vorgegebene Zeit
   * [Voice-Kommando](https://github.com/FU-Hagen-Discord/fernuni-bot/tree/master//cogs/voice.py) -> schließt/ öffnet alle Voice-Channels (wurde während der Online-Klausurkampgne verwendet) 
 
-* Fun and Games
+* Misc
+  * [Text-Commands](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/cogs/text_commands.py) -> Motivations- / Prokrastinationssprüche, uvm.
+  * Statistiken des Servers anzeigen (im [Roles-Cog](https://github.com/FU-Hagen-Discord/fernuni-bot/blob/master/cogs/roles.py) angesiedelt)
   * [XKCD-Comics](https://github.com/FU-Hagen-Discord/fernuni-bot/tree/master/cogs/xkcd.py)
-  * [Arminsagt-Sprüche](https://github.com/FU-Hagen-Discord/fernuni-bot/tree/master/cogs/armin.py)
   * *Event-Funktionen* (siehe [Weihnachten](https://github.com/FU-Hagen-Discord/fernuni-bot/tree/master/cogs/christmas.py) und [Ostern](https://github.com/FU-Hagen-Discord/fernuni-bot/tree/master/cogs/easter.py))
 
 ## Mitwirkung
