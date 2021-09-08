@@ -34,7 +34,7 @@ Zu dem Zeitpunkt kann Boty:
 * [Umfragefunktion](https://github.com/FU-Hagen-Discord/fernuni-bot/tree/master/cogs/polls.py)
 
 * Moderationswerkzeuge
-  * [Stille Treppe](https://github.com/FU-Hagen-Discord/fernuni-bot/tree/master/cogs/calmdown.py) -> entzieht einem Nutzer die Schreibrechte für eine vorgegebene Zeit
+  * [Calmdown-Rolle](https://github.com/FU-Hagen-Discord/fernuni-bot/tree/master/cogs/calmdown.py) -> entzieht einem Nutzer die Schreibrechte für eine vorgegebene Zeit
   * [Voice-Kommando](https://github.com/FU-Hagen-Discord/fernuni-bot/tree/master//cogs/voice.py) -> schließt/ öffnet alle Voice-Channels (wurde während der Online-Klausurkampgne verwendet) 
 
 * Misc
