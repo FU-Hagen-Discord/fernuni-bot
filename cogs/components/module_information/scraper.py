@@ -124,7 +124,7 @@ class Scraper:
     def parse_support(self, soup):
         try:
             support_source = soup.find('h2', text=re.compile(
-                r'Mentorielle Betreuung in Regional- und Studienzentren')).findNext('div').findAll('li')
+                r'Mentorielle Betreuung in Regionalzentren')).findNext('div').findAll('li')
         except:
             return None
 
