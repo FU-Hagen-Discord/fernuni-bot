@@ -1,10 +1,12 @@
 import json
 import os
-import time
 import re
+import time
+
 import discord
-import utils
 from discord.ext import commands
+
+import utils
 from cogs.help import help, handle_error, help_category
 
 """
@@ -19,12 +21,16 @@ from cogs.help import help, handle_error, help_category
   DISCORD_MOD_ROLE - ID der Moderator Rolle von der erweiterte Lerngruppen-Actionen ausgeführt werden dürfen
 """
 
-@help_category("learninggroups", "Lerngruppen", "Mit dem Lerngruppen-Feature kannst du Lerngruppen-Kanäle beantragen und/oder diese rudimentär verwalten.", "Hier kannst du Lerngruppen-Kanäle anlegen, beantragen und verwalten.")
+
+@help_category("learninggroups", "Lerngruppen",
+               "Mit dem Lerngruppen-Feature kannst du Lerngruppen-Kanäle beantragen und/oder diese rudimentär verwalten.",
+               "Hier kannst du Lerngruppen-Kanäle anlegen, beantragen und verwalten.")
 class LearningGroups(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         # ratelimit 2 in 10 minutes (305 * 2 = 610 = 10 minutes and 10 seconds)
         self.rename_ratelimit = 305
+        self.msg_max_len = 2000
         self.category_open = os.getenv('DISCORD_LEARNINGGROUPS_OPEN')
         self.category_close = os.getenv('DISCORD_LEARNINGGROUPS_CLOSE')
         self.category_archive = os.getenv('DISCORD_LEARNINGGROUPS_ARCHIVE')
@@ -119,33 +125,46 @@ class LearningGroups(commands.Cog):
                 f"{channel_config['course']}-{channel_config['name']}-{channel_config['semester']}")
 
     async def update_groupinfo(self):
-        info_message_id = self.groups.get("messageid")
+        info_message_ids = self.groups.get("messageids")
+        channel = await self.bot.fetch_channel(int(self.channel_info))
+
+        for info_message_id in info_message_ids:
+            message = await channel.fetch_message(info_message_id)
+            await message.delete()
+
+        info_message_ids = []
 
         msg = f"**Lerngruppen**\n\n"
+        course_msg = ""
         sorted_groups = sorted(self.groups["groups"].values(
         ), key=lambda group: f"{group['course']}-{group['name']}")
         open_groups = [group for group in sorted_groups if group['is_open']]
         courseheader = None
         for group in open_groups:
+
             if group['course'] != courseheader:
+                if len(msg) + len(course_msg) > self.msg_max_len:
+                    message = await channel.send(msg)
+                    info_message_ids.append(message.id)
+                    msg = course_msg
+                    course_msg = ""
+                else:
+                    msg += course_msg
+                    course_msg = ""
                 header = self.header.get(group['course'])
                 if header:
-                    msg += f"**{header}**\n"
+                    course_msg += f"**{header}**\n"
                 else:
-                    msg += f"**{group['course']} - -------------------------------------**\n"
+                    course_msg += f"**{group['course']} - -------------------------------------**\n"
                 courseheader = group['course']
 
             groupchannel = await self.bot.fetch_channel(int(group['channel_id']))
-            msg += f"    {groupchannel.mention}\n"
+            course_msg += f"    {groupchannel.mention}\n"
 
-        channel = await self.bot.fetch_channel(int(self.channel_info))
-
-        if (info_message_id == None):
-            message = await channel.send(msg)
-        else:
-            message = await channel.fetch_message(int(info_message_id))
-            await message.edit(content=msg)
-        self.groups["messageid"] = message.id
+        msg += course_msg
+        message = await channel.send(msg)
+        info_message_ids.append(message.id)
+        self.groups["messageids"] = info_message_ids
         self.save_groups()
 
     async def archive(self, channel):
@@ -225,10 +244,10 @@ class LearningGroups(commands.Cog):
         category="learninggroups",
         brief="Erstellt aus den Lerngruppen-Kanälen eine Datendatei. ",
         description=(
-            "Initialisiert alle Gruppen in den Kategorien für offene und geschlossene Lerngruppen und baut die Verwaltungsdaten dazu auf. " 
-            "Die Lerngruppen-Kanal-Namen müssen hierfür zuvor ins Format #{symbol}{kursnummer}-{name}-{semester} gebracht werden. "
-            "Als Owner wird der ausführende Account für alle Lerngruppen gesetzt. "
-            "Wenn die Verwaltungsdatenbank nicht leer ist, wird das Kommando nicht ausgeführt. "
+                "Initialisiert alle Gruppen in den Kategorien für offene und geschlossene Lerngruppen und baut die Verwaltungsdaten dazu auf. "
+                "Die Lerngruppen-Kanal-Namen müssen hierfür zuvor ins Format #{symbol}{kursnummer}-{name}-{semester} gebracht werden. "
+                "Als Owner wird der ausführende Account für alle Lerngruppen gesetzt. "
+                "Wenn die Verwaltungsdatenbank nicht leer ist, wird das Kommando nicht ausgeführt. "
         ),
         mod=True
     )
@@ -236,7 +255,7 @@ class LearningGroups(commands.Cog):
     @commands.check(utils.is_mod)
     async def cmd_init_groups(self, ctx):
         if len(self.groups["groups"]) > 0:
-            await ctx.channel.send("Nope. Das sollte ich lieber nicht tun.") 
+            await ctx.channel.send("Nope. Das sollte ich lieber nicht tun.")
             return
 
         msg = "Initialisierung abgeschlossen:\n"
@@ -271,7 +290,7 @@ class LearningGroups(commands.Cog):
     @help(
         category="learninggroups",
         syntax="!add-course <coursenumber> <name...>",
-        brief="Fügt einen Kurs als neue Überschrift in Botys Lerngruppen-Liste (Kanal #lerngruppen) hinzu. Darf Leerzeichen enthalten, Anführungszeichen sind nicht erforderlich.",  
+        brief="Fügt einen Kurs als neue Überschrift in Botys Lerngruppen-Liste (Kanal #lerngruppen) hinzu. Darf Leerzeichen enthalten, Anführungszeichen sind nicht erforderlich.",
         example="!add-course 1141 Mathematische Grundlagen",
         parameters={
             "coursenumber": "Nummer des Kurses wie von der Fernuni angegeben (ohne führende Nullen z. B. 1142).",
@@ -284,7 +303,8 @@ class LearningGroups(commands.Cog):
     @commands.check(utils.is_mod)
     async def cmd_add_course(self, ctx, arg_course, *arg_name):
         if not re.match(r"[0-9]+", arg_course):
-            await ctx.channel.send(f"Fehler! Die Kursnummer muss numerisch sein. Gib `!help add-course` für Details ein.")
+            await ctx.channel.send(
+                f"Fehler! Die Kursnummer muss numerisch sein. Gib `!help add-course` für Details ein.")
             return
 
         self.header[arg_course] = f"{arg_course} - {' '.join(arg_name)}"
