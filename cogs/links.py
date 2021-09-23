@@ -106,7 +106,7 @@ class Links(commands.Cog):
 
         if channel_links := self.links.get(str(ctx.channel.id)):
             if topic_links := channel_links.get(topic):
-                if topic_links.get(title):
+                if title in topic_links:
                     topic_links.pop(title)
                     if not topic_links:
                         channel_links.pop(topic)
@@ -160,6 +160,7 @@ class Links(commands.Cog):
     )
     @cmd_links.command(name="edit-link", aliases=["el"])
     async def cmd_edit_link(self, ctx, topic, title, new_title, new_topic=None, new_link=None):
+        topic = topic.lower()
 
         if not new_topic:
             new_topic = topic
