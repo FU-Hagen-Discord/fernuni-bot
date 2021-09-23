@@ -70,9 +70,11 @@ async def handle_error(ctx, error):
         # syntax = data[ctx.command.name]['syntax']
         # example = data[ctx.command.name]['example']
 
+        cmd_name = f"{ctx.command.parent} {ctx.command.name}" if ctx.command.parent else f"{ctx.command.name}"
+
         msg = (
-            f"Fehler! Du hast ein Argument vergessen. Für weitere Hilfe gib `!help {ctx.command.name}` ein. \n"
-         f"`Syntax: {data['command'][ctx.command.name]['syntax']}`\n"
+            f"Fehler! Du hast ein Argument vergessen. Für weitere Hilfe gib `!help {cmd_name}` ein. \n"
+            f"`Syntax: {data['command'][cmd_name]['syntax']}`\n"
         )
         await ctx.channel.send(msg)
     else:
@@ -191,6 +193,10 @@ class Help(commands.Cog):
                               description=text,
                               color=19607)
         await utils.send_dm(ctx.author, text)  # , embed=embed)
+
+        for subname in data['command']:
+            if subname.startswith(f"{name} "):
+                await self.help_card(ctx, subname)
 
     @commands.command(name="debug-help")
     @commands.check(utils.is_mod)
