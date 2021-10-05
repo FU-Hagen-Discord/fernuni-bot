@@ -1,7 +1,7 @@
 import json
 
-import discord
-from discord.ext import commands
+import disnake
+from disnake.ext import commands
 from cogs.help import help, handle_error, help_category
 
 
@@ -31,7 +31,7 @@ class Links(commands.Cog):
     @commands.group(name="links", pass_context=True, invoke_without_command=True)
     async def cmd_links(self, ctx, topic=None):
         if channel_links := self.links.get(str(ctx.channel.id)):
-            embed = discord.Embed(title=f"Folgende Links sind in diesem Channel hinterlegt:\n")
+            embed = disnake.Embed(title=f"Folgende Links sind in diesem Channel hinterlegt:\n")
             if topic:
                 topic = topic.lower()
                 if topic_links := channel_links.get(topic):

@@ -3,8 +3,8 @@ import os
 import re
 import time
 
-import discord
-from discord.ext import commands
+import disnake
+from disnake.ext import commands
 
 import utils
 from cogs.help import help, handle_error, help_category
@@ -327,7 +327,7 @@ class LearningGroups(commands.Cog):
     )
     @commands.command(name="add-group")
     @commands.check(utils.is_mod)
-    async def cmd_add_group(self, ctx, arg_course, arg_name, arg_semester, arg_open, arg_owner: discord.Member):
+    async def cmd_add_group(self, ctx, arg_course, arg_name, arg_semester, arg_open, arg_owner: disnake.Member):
         is_open = self.arg_open_to_bool(arg_open)
         channel_config = {"owner_id": arg_owner.id, "course": arg_course, "name": arg_name, "semester": arg_semester,
                           "is_open": is_open}
@@ -363,7 +363,7 @@ class LearningGroups(commands.Cog):
             return
 
         channel_name = self.full_channel_name(channel_config)
-        embed = discord.Embed(title="Lerngruppenanfrage!",
+        embed = disnake.Embed(title="Lerngruppenanfrage!",
                               description=f"<@!{ctx.author.id}> möchte gerne die Lerngruppe **#{channel_name}** eröffnen",
                               color=19607)
 
@@ -439,7 +439,7 @@ class LearningGroups(commands.Cog):
     )
     @commands.command(name="owner")
     @commands.check(utils.is_mod)
-    async def cmd_owner(self, ctx, arg_owner: discord.Member):
+    async def cmd_owner(self, ctx, arg_owner: disnake.Member):
         channel_config = self.groups["groups"].get(str(ctx.channel.id))
         if channel_config:
             channel_config["owner_id"] = arg_owner.id

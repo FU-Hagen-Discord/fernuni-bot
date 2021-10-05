@@ -3,7 +3,7 @@ import json
 import os
 
 from aiohttp import ClientSession
-from discord.ext import commands
+from disnake.ext import commands
 
 import utils
 from cogs.help import help, handle_error, help_category

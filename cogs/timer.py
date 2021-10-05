@@ -3,13 +3,13 @@ import os
 import random
 from asyncio import sleep
 from copy import deepcopy
-from datetime import datetime, timedelta
 
-import discord
-from discord.ext import commands, tasks
-from dislash import *
+import disnake
+from disnake import errors, FFmpegPCMAudio
+from disnake.ext import commands, tasks
 
 from cogs.help import help
+from views import timer_view
 
 
 class Timer(commands.Cog):
@@ -23,6 +23,8 @@ class Timer(commands.Cog):
         self.timer_file_path = os.getenv("DISCORD_TIMER_FILE")
         self.load_timers()
         self.run_timer.start()
+        self.timer_view = timer_view.TimerView()
+        bot.add_view(self.timer_view)
 
     def load_timers(self):
         timer_file = open(self.timer_file_path, mode='r')
@@ -31,64 +33,6 @@ class Timer(commands.Cog):
     def save_timers(self):
         timer_file = open(self.timer_file_path, mode='w')
         json.dump(self.running_timers, timer_file)
-
-    def get_button_row(self, enabled=True):
-        button_row = ActionRow(
-            Button(
-                style=ButtonStyle.grey,
-                emoji="👍",
-                custom_id="anmelden"
-            ),
-            Button(
-                style=ButtonStyle.grey,
-                emoji="👎",
-                custom_id="abmelden"
-            ),
-            Button(
-                style=ButtonStyle.grey,
-                emoji="⏩",
-                custom_id="skip"
-            ),
-            Button(
-                style=ButtonStyle.grey,
-                emoji="🔄",
-                custom_id="neustart"
-            ),
-            Button(
-                style=ButtonStyle.grey,
-                emoji="🛑",
-                custom_id="beenden"
-            )
-        )
-        if enabled:
-            return button_row
-        else:
-            button_row.disable_buttons()
-            return button_row
-
-    def create_embed(self, name, status, working_time, break_time, remaining, registered):
-        color = discord.Colour.green() if status == "Arbeiten" else 0xFFC63A if status == "Pause" else discord.Colour.red()
-        descr = f"👍 beim Timer anmelden\n\n" \
-                f"👎 beim Timer abmelden\n\n" \
-                f"⏩ Phase überspringen\n\n" \
-                f"🔄 Timer neu starten\n\n" \
-                f"🛑 Timer beenden\n"
-        zeiten = f"{working_time} Minuten Arbeiten\n{break_time} Minuten Pause"
-        remaining_value = f"{remaining} Minuten"
-        endzeit = (datetime.now() + timedelta(minutes=remaining)).strftime("%H:%M")
-        end_value = f" [bis {endzeit} Uhr]" if status != "Beendet" else ""
-        user_list = [self.bot.get_user(int(user_id)) for user_id in registered]
-        angemeldet_value = ", ".join([user.mention for user in user_list])
-
-        embed = discord.Embed(title=name,
-                              description=f'Jetzt: {status}',
-                              color=color)
-        embed.add_field(name="Bedienung:", value=descr, inline=False)
-        embed.add_field(name="Zeiten:", value=zeiten, inline=False)
-        embed.add_field(name="verbleibende Zeit:", value=remaining_value + end_value, inline=False)
-        embed.add_field(name="angemeldete User:", value=angemeldet_value if registered else "-", inline=False)
-
-        return embed
 
     @help(
         syntax="!timer <working-time?> <break-time?> <name?>",
@@ -100,14 +44,14 @@ class Timer(commands.Cog):
         }
     )
     @commands.command(name="timer")
-    async def cmd_timer(self, ctx, working_time=25, break_time=5, name=None):
+    async def cmd_timer(self, ctx: disnake.ext.commands.Context, working_time: int = 25, break_time: int = 5,
+                        name: str = None):
         name = name if name else random.choice(self.default_names)
         remaining = working_time
         status = "Arbeiten"
         registered = [str(ctx.author.id)]
 
-        embed = self.create_embed(name, status, working_time, break_time, remaining, registered)
-        msg = await ctx.send(embed=embed, components=[self.get_button_row()])
+        msg = self.timer_view.send_message(channel=ctx.channel)
 
         self.running_timers[str(msg.id)] = {'name': name,
                                             'status': status,
@@ -121,7 +65,7 @@ class Timer(commands.Cog):
 
     @commands.Cog.listener()
     async def on_button_click(self, inter):
-        clicked_button = inter.clicked_button.custom_id
+        clicked_button = ""
 
         if clicked_button == "beenden":
             await self.on_beenden_button(inter)
@@ -276,7 +220,7 @@ class Timer(commands.Cog):
                 else:
                     await msg.edit(embed=embed, components=[self.get_button_row()])
                 return str(msg.id)
-            except discord.errors.NotFound:
+            except errors.NotFound:
                 self.running_timers.pop(msg_id)
                 self.save_timers()
                 return None
@@ -297,9 +241,9 @@ class Timer(commands.Cog):
                 if channel:  # If user is in a channel
                     try:
                         voice_client = await channel.connect()
-                        voice_client.play(discord.FFmpegPCMAudio(f'cogs/sounds/{filename}'))
+                        voice_client.play(FFmpegPCMAudio(f'cogs/sounds/{filename}'))
                         await sleep(3)
-                    except discord.errors.ClientException as e:
+                    except errors.ClientException as e:
                         print(e)
                     for vc in self.bot.voice_clients:
                         await vc.disconnect()

@@ -1,12 +1,12 @@
 import os
 
-import discord
+import disnake
 import re
 
 async def send_dm(user, message, embed=None):
     """ Send DM to a user/member """
 
-    if type(user) is discord.User or type(user) is discord.Member:
+    if type(user) is disnake.User or type(user) is disnake.Member:
         if user.dm_channel is None:
             await user.create_dm()
 

@@ -1,12 +1,13 @@
 import os
 
-import discord
-from discord.ext import commands
-from dislash import *
+import disnake
+from disnake.ext import commands
 from dotenv import load_dotenv
 
-from cogs import appointments, armin, calmdown, christmas, easter, github, help, learninggroups, links, \
+from cogs import appointments, calmdown, christmas, easter, github, help, learninggroups, links, \
     module_information, news, polls, roles, support, text_commands, voice, welcome, xkcd, timer
+
+from views import timer_view
 
 # .env file is necessary in the same directory, that contains several strings.
 load_dotenv()
@@ -19,33 +20,37 @@ HELP_FILE = os.getenv('DISCORD_HELP_FILE')
 CATEGORY_LERNGRUPPEN = os.getenv("DISCORD_CATEGORY_LERNGRUPPEN")
 PIN_EMOJI = "📌"
 
-intents = discord.Intents.default()
+intents = disnake.Intents.default()
 intents.members = True
-bot = commands.Bot(command_prefix='!', help_command=None, activity=discord.Game(ACTIVITY), owner_id=OWNER,
-                   intents=intents)
-bot.add_cog(appointments.Appointments(bot))
-bot.add_cog(text_commands.TextCommands(bot))
-bot.add_cog(polls.Polls(bot))
-bot.add_cog(roles.Roles(bot))
-bot.add_cog(welcome.Welcome(bot))
-bot.add_cog(christmas.Christmas(bot))
-bot.add_cog(support.Support(bot))
-bot.add_cog(news.News(bot))
-bot.add_cog(links.Links(bot))
-bot.add_cog(voice.Voice(bot))
-bot.add_cog(easter.Easter(bot))
-bot.add_cog(armin.Armin(bot))
-bot.add_cog(learninggroups.LearningGroups(bot))
-bot.add_cog(module_information.ModuleInformation(bot))
-bot.add_cog(xkcd.Xkcd(bot))
-bot.add_cog(help.Help(bot))
-bot.add_cog(calmdown.Calmdown(bot))
-bot.add_cog(github.Github(bot))
-bot.add_cog(timer.Timer(bot))
+
+class Boty(commands.Bot):
+    def __init__(self):
+        super().__init__(command_prefix='!', help_command=None, activity=disnake.Game(ACTIVITY), owner_id=OWNER,
+                         intents=intents)
+        self.add_cog(appointments.Appointments(self))
+        self.add_cog(text_commands.TextCommands(self))
+        self.add_cog(polls.Polls(self))
+        self.add_cog(roles.Roles(self))
+        self.add_cog(welcome.Welcome(self))
+        self.add_cog(christmas.Christmas(self))
+        self.add_cog(support.Support(self))
+        self.add_cog(news.News(self))
+        self.add_cog(links.Links(self))
+        self.add_cog(voice.Voice(self))
+        self.add_cog(easter.Easter(self))
+        self.add_cog(learninggroups.LearningGroups(self))
+        self.add_cog(module_information.ModuleInformation(self))
+        self.add_cog(xkcd.Xkcd(self))
+        self.add_cog(help.Help(self))
+        self.add_cog(calmdown.Calmdown(self))
+        self.add_cog(github.Github(self))
+        self.add_cog(timer.Timer(self))
+
+bot = Boty()
 
 # bot.add_cog(ChangeLogCog(bot))
 
-SlashClient(bot, show_warnings=True)  # Stellt den Zugriff auf die Buttons bereit
+# SlashClient(bot, show_warnings=True)  # Stellt den Zugriff auf die Buttons bereit
 
 
 def get_reaction(reactions):
@@ -110,5 +115,9 @@ async def on_voice_state_update(member, before, after):
 
         await category.create_voice_channel(f"Lerngruppen-Voicy-{len(voice_channels) + 1}", bitrate=256000)
 
+
+@bot.command(name="timerview")
+async def cmd_timverview(ctx: commands.Context, disabled: bool = False):
+    await ctx.send("Halloooo", view=timer_view.TimerView(disabled=disabled))
 
 bot.run(TOKEN)

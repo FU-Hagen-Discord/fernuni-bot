@@ -3,8 +3,8 @@ import os
 import random
 import re
 
-import discord
-from discord.ext import commands
+import disnake
+from disnake.ext import commands
 
 import utils
 from cogs.help import text_command_help, help, handle_error, remove_help_for, help_category
@@ -229,7 +229,7 @@ class TextCommands(commands.Cog):
         command = self.text_commands.get(cmd)
         title = "Vorschlag für neuen Command Text" if command else "Vorschlag für neues Command"
 
-        embed = discord.Embed(title=title,
+        embed = disnake.Embed(title=title,
                               description=f"<@!{ctx.author.id}> hat folgenden Vorschlag eingereicht.\n"
                                           f"👍 um den Vorschlag anzunehmen\n"
                                           f"👎 um den Vorschlag abzulehnen")

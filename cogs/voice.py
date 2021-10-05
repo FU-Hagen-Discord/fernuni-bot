@@ -1,4 +1,4 @@
-from discord.ext import commands
+from disnake.ext import commands
 
 import utils
 from cogs.help import help, handle_error
