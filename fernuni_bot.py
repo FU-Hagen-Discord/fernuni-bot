@@ -5,8 +5,7 @@ from disnake.ext import commands
 from dotenv import load_dotenv
 
 from cogs import appointments, calmdown, christmas, easter, github, help, learninggroups, links, \
-    module_information, news, polls, roles, support, text_commands, voice, welcome, xkcd, timer
-
+    news, polls, roles, support, text_commands, voice, welcome, xkcd, timer
 from views import timer_view
 
 # .env file is necessary in the same directory, that contains several strings.
@@ -22,6 +21,7 @@ PIN_EMOJI = "📌"
 
 intents = disnake.Intents.default()
 intents.members = True
+
 
 class Boty(commands.Bot):
     def __init__(self):
@@ -39,14 +39,16 @@ class Boty(commands.Bot):
         self.add_cog(voice.Voice(self))
         self.add_cog(easter.Easter(self))
         self.add_cog(learninggroups.LearningGroups(self))
-        self.add_cog(module_information.ModuleInformation(self))
+        # self.add_cog(module_information.ModuleInformation(self))
         self.add_cog(xkcd.Xkcd(self))
         self.add_cog(help.Help(self))
         self.add_cog(calmdown.Calmdown(self))
         self.add_cog(github.Github(self))
         self.add_cog(timer.Timer(self))
 
+
 bot = Boty()
+
 
 # bot.add_cog(ChangeLogCog(bot))
 
@@ -82,6 +84,7 @@ async def unpin_message(message):
 @bot.event
 async def on_ready():
     print("Client started!")
+    bot.add_view(timer_view.TimerView(bot))
 
 
 @bot.event
@@ -115,9 +118,5 @@ async def on_voice_state_update(member, before, after):
 
         await category.create_voice_channel(f"Lerngruppen-Voicy-{len(voice_channels) + 1}", bitrate=256000)
 
-
-@bot.command(name="timerview")
-async def cmd_timverview(ctx: commands.Context, disabled: bool = False):
-    await ctx.send("Halloooo", view=timer_view.TimerView(disabled=disabled))
 
 bot.run(TOKEN)

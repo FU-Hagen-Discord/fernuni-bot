@@ -3,10 +3,12 @@ import os
 import random
 from asyncio import sleep
 from copy import deepcopy
+from datetime import datetime, timedelta
 
 import disnake
-from disnake import errors, FFmpegPCMAudio
+from disnake import errors, FFmpegPCMAudio, Embed, Colour, MessageInteraction
 from disnake.ext import commands, tasks
+from disnake.ui import Button
 
 from cogs.help import help
 from views import timer_view
@@ -23,8 +25,7 @@ class Timer(commands.Cog):
         self.timer_file_path = os.getenv("DISCORD_TIMER_FILE")
         self.load_timers()
         self.run_timer.start()
-        self.timer_view = timer_view.TimerView()
-        bot.add_view(self.timer_view)
+        self.timer_view = None
 
     def load_timers(self):
         timer_file = open(self.timer_file_path, mode='r')
@@ -33,6 +34,12 @@ class Timer(commands.Cog):
     def save_timers(self):
         timer_file = open(self.timer_file_path, mode='w')
         json.dump(self.running_timers, timer_file)
+
+    def get_view(self):
+        if not self.timer_view:
+            self.timer_view = timer_view.TimerView(self.bot)
+
+        return self.timer_view
 
     @help(
         syntax="!timer <working-time?> <break-time?> <name?>",
@@ -51,7 +58,8 @@ class Timer(commands.Cog):
         status = "Arbeiten"
         registered = [str(ctx.author.id)]
 
-        msg = self.timer_view.send_message(channel=ctx.channel)
+        embed = self.create_embed(name, status, working_time, break_time, remaining, registered)
+        msg = await ctx.send(embed=embed, view=self.get_view())
 
         self.running_timers[str(msg.id)] = {'name': name,
                                             'status': status,
@@ -63,21 +71,52 @@ class Timer(commands.Cog):
         self.save_timers()
         await self.make_sound(registered, 'roll_with_it-outro.mp3')
 
+    def create_embed(self, name, status, working_time, break_time, remaining, registered):
+        color = Colour.green() if status == "Arbeiten" else 0xFFC63A if status == "Pause" else Colour.red()
+        descr = f"👍 beim Timer anmelden\n\n" \
+                f"👎 beim Timer abmelden\n\n" \
+                f"⏩ Phase überspringen\n\n" \
+                f"🔄 Timer neu starten\n\n" \
+                f"🛑 Timer beenden\n"
+        zeiten = f"{working_time} Minuten Arbeiten\n{break_time} Minuten Pause"
+        remaining_value = f"{remaining} Minuten"
+        endzeit = (datetime.now() + timedelta(minutes=remaining)).strftime("%H:%M")
+        end_value = f" [bis {endzeit} Uhr]" if status != "Beendet" else ""
+        user_list = [self.bot.get_user(int(user_id)) for user_id in registered]
+        angemeldet_value = ", ".join([user.mention for user in user_list])
+
+        embed = Embed(title=name,
+                      description=f'Jetzt: {status}',
+                      color=color)
+        embed.add_field(name="Bedienung:", value=descr, inline=False)
+        embed.add_field(name="Zeiten:", value=zeiten, inline=False)
+        embed.add_field(name="verbleibende Zeit:", value=remaining_value + end_value, inline=False)
+        embed.add_field(name="angemeldete User:", value=angemeldet_value if registered else "-", inline=False)
+
+        return embed
+
     @commands.Cog.listener()
-    async def on_button_click(self, inter):
-        clicked_button = ""
+    async def on_interaction(self, inter):
+        print(inter.id, inter.token)
+        await self.on_subscribe(inter.component, inter)
 
-        if clicked_button == "beenden":
-            await self.on_beenden_button(inter)
-        elif clicked_button == "neustart":
-            await self.on_neustart_button(inter)
-        elif clicked_button == "skip":
-            await self.on_skip_button(inter)
-        elif clicked_button == 'anmelden':
-            await self.on_anmelden_button(inter)
-        elif clicked_button == "abmelden":
-            await self.on_abmelden_button(inter)
+    async def on_subscribe(self, button: Button, interaction: MessageInteraction):
+        print(interaction.id, interaction.token)
+        message = interaction.message
+        message_id = str(message.id)
+        author = interaction.author
 
+        # if timer := self.running_timers.get(message_id):
+        #     if str(author.id) not in timer['registered']:
+        #         timer['registered'].append(str(author.id))
+        #         self.save_timers()
+        #         name, status, wt, bt, remaining, registered, _ = self.get_details(message_id)
+        #         embed = self.create_embed(name, status, wt, bt, remaining, registered)
+        #         await message.edit(embed=embed, view=self.get_view())
+        # else:
+        await interaction.response.send_message("Etwas ist schiefgelaufen...", ephemeral=True)
+
+    @commands.Cog.listener()
     async def on_beenden_button(self, inter):
         msg_id = str(inter.message.id)
         if timer := self.running_timers.get(msg_id):
@@ -133,20 +172,6 @@ class Timer(commands.Cog):
         else:
             await inter.reply("Etwas ist schiefgelaufen...", ephemeral=True)
 
-    async def on_anmelden_button(self, inter):
-        msg_id = str(inter.message.id)
-        if timer := self.running_timers.get(msg_id):
-            if str(inter.author.id) not in timer['registered']:
-                timer['registered'].append(str(inter.author.id))
-                self.save_timers()
-                name, status, wt, bt, remaining, registered, _ = self.get_details(msg_id)
-                embed = self.create_embed(name, status, wt, bt, remaining, registered)
-                await inter.reply(embed=embed, components=[self.get_button_row()], type=7)
-            else:
-                await inter.reply(type=7)
-        else:
-            await inter.reply("Etwas ist schiefgelaufen...", ephemeral=True)
-
     async def on_abmelden_button(self, inter):
         msg_id = str(inter.message.id)
         if timer := self.running_timers.get(msg_id):
@@ -160,7 +185,7 @@ class Timer(commands.Cog):
                     self.save_timers()
                     name, status, wt, bt, remaining, registered, _ = self.get_details(msg_id)
                     embed = self.create_embed(name, status, wt, bt, remaining, registered)
-                    await inter.reply(embed=embed, components=[self.get_button_row()], type=7)
+                    await inter.reply(embed=embed, view=self.get_view(), type=7)
             else:
                 await inter.reply(type=7)
         else:
@@ -209,16 +234,15 @@ class Timer(commands.Cog):
                     if not mentions:
                         mentions = self.get_mentions(msg_id)
                     if status == "Beendet":
-                        new_msg = await channel.send(mentions, embed=embed,
-                                                     components=[self.get_button_row(enabled=False)])
+                        new_msg = await channel.send(mentions, embed=embed, view=self.get_view())
                     else:
-                        new_msg = await channel.send(mentions, embed=embed, components=[self.get_button_row()])
+                        new_msg = await channel.send(mentions, embed=embed, view=self.get_view())
                     self.running_timers[str(new_msg.id)] = self.running_timers[msg_id]
                     self.running_timers.pop(msg_id)
                     self.save_timers()
                     msg = new_msg
                 else:
-                    await msg.edit(embed=embed, components=[self.get_button_row()])
+                    await msg.edit(embed=embed, view=self.get_view())
                 return str(msg.id)
             except errors.NotFound:
                 self.running_timers.pop(msg_id)
