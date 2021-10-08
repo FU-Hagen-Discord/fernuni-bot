@@ -10,7 +10,7 @@ async def send_dm(user, message, embed=None):
         if user.dm_channel is None:
             await user.create_dm()
 
-        await user.dm_channel.send(message, embed=embed)
+        return await user.dm_channel.send(message, embed=embed)
 
 
 def is_mod(ctx):

@@ -525,6 +525,7 @@ class LearningGroups(commands.Cog):
         self.group_file = os.getenv('DISCORD_LEARNINGGROUPS_FILE')
         self.header_file = os.getenv('DISCORD_LEARNINGGROUPS_COURSE_FILE')
         self.mod_role = os.getenv("DISCORD_MOD_ROLE")
+        self.guild_id = os.getenv("DISCORD_GUILD")
         self.groups = {}  #owner and learninggroup-member ids
         self.channels = {} #complete channel configs
         self.header = {} #headlines for statusmessage
@@ -535,8 +536,6 @@ class LearningGroups(commands.Cog):
     async def on_ready(self):
         print("Dooing")
         await self.update_channels()
-
-
 
     def load_header(self):
         file = open(self.header_file, mode='r')
@@ -666,7 +665,7 @@ class LearningGroups(commands.Cog):
         category = await self.bot.fetch_channel(self.category_archive)
         await self.move_channel(channel, category)
         await channel.edit(name=f"archiv-${channel.name[1:]}")
-        self.remove_group(channel)
+        await self.remove_group(channel)
 
     async def set_channel_state(self, channel, is_open):
         channel_config = self.channels[str(channel.id)]
@@ -720,7 +719,7 @@ class LearningGroups(commands.Cog):
 
         self.groups["groups"][str(channel.id)] = {"owner_id": requested_channel_config["owner_id"]}
 
-        self.remove_group_request(message)
+        await self.remove_group_request(message)
         if not direct:
             await message.delete()
 
@@ -760,7 +759,6 @@ class LearningGroups(commands.Cog):
                 self.channels[str(channel.id)] = channel_config
         print([self.channels])
 
-
     @commands.group(name="learninggroup", aliases=["lg", "lerngruppe"], pass_context=True)
     async def cmd_learninggroup(self, ctx):
         pass
@@ -781,6 +779,7 @@ class LearningGroups(commands.Cog):
         ),
         mod=True
     )
+
     @cmd_learninggroup.command(name="update")
     @commands.check(utils.is_mod)
     async def cmd_update(self, ctx):
@@ -965,6 +964,113 @@ class LearningGroups(commands.Cog):
             await self.save_groups()
             await ctx.channel.send(f"Glückwunsch {arg_owner.mention}! Du bist jetzt die Besitzerin dieser Lerngruppe.")
 
+
+
+    @help(
+        command_group="learninggroup",
+        category="learninggroups",
+        syntax="!lg addmember <@usermention>",
+        example="!lg addmember @someuser",
+        brief="Fügt einen Benutzer zu einer Lerngruppe hinzu.",
+        parameters={
+            "@usermention": "Der so erwähnte Benutzer wird zur Lerngruppe hinzugefügt."
+        },
+        mod=True
+    )
+    @cmd_learninggroup.command(name="addmember", aliases=["addm", "am"])
+    async def cmd_add_member(self, ctx, arg_member: discord.Member):
+        if self.is_group_owner(ctx.channel, ctx.author) or utils.is_mod(ctx):
+            await self.add_member(ctx.channel, arg_member)
+
+    async def add_member(self, channel:discord.TextChannel, arg_member: discord.Member):
+        group_config = self.groups["groups"].get(str(channel.id))
+        if not group_config:
+            await channel.send("Das ist kein Lerngruppenkanal.")
+            return
+
+        users = group_config.get("users")
+        if not users:
+            users = {}
+        mid = str(arg_member.id)
+        if not users.get(mid):
+            users[mid] = True
+        group_config["users"] = users
+
+        await self.save_groups()
+
+
+    @help(
+        command_group="learninggroup",
+        category="learninggroups",
+        syntax="!lg removemember <@usermention>",
+        example="!lg removemember @someuser",
+        brief="Entfernt einen Benutzer aus einer Lerngruppe.",
+        parameters={
+            "@usermention": "Der so erwähnte Benutzer wird aus der Lerngruppe entfernt."
+        },
+        mod=True
+    )
+    @cmd_learninggroup.command(name="removemember", aliases=["remm", "rm"])
+    async def cmd_remove_member(self, ctx, arg_member: discord.Member):
+        if self.is_group_owner(ctx.channel, ctx.author) or utils.is_mod(ctx):
+            group_config = self.groups["groups"].get(str(ctx.channel.id))
+            if not group_config:
+                await ctx.channel.send("Das ist kein Lerngruppenkanal.")
+                return
+
+            users = group_config.get("users")
+            if not users:
+                return
+            mid = str(arg_member.id)
+            users.pop(mid, None)
+
+            await self.save_groups()
+
+    @help(
+        command_group="learninggroup",
+        category="learninggroups",
+        syntax="!lg id",
+        brief="Zeigt die ID für deine Lerngruppe an.",
+    )
+    @cmd_learninggroup.command(name="id")
+    async def cmd_id(self, ctx):
+        if self.is_group_owner(ctx.channel, ctx.author) or utils.is_mod(ctx):
+            group_config = self.groups["groups"].get(str(ctx.channel.id))
+            if not group_config:
+                await ctx.channel.send("Das ist kein Lerngruppenkanal.")
+                return
+
+        await utils.send_dm(ctx.author, "Die ID deiner Lerngruppe lautet: " + str(ctx.channel.id))
+
+    @help(
+        command_group="learninggroup",
+        category="learninggroups",
+        syntax="!lg join <lg-id>",
+        brief="Fragt bei einer Lerngruppe um Aufnahme.",
+        parameters={
+            "id": "Die ID zur Lerngruppe."
+        }
+    )
+    @cmd_learninggroup.command(name="join")
+    async def cmd_join(self, ctx, arg_id):
+        group_config = self.groups["groups"].get(str(arg_id))
+        if not group_config:
+            await ctx.channel.send("Das ist keine gültiger Lerngruppenkanal.")
+            return
+
+        owner = self.bot.get_user(group_config["owner_id"])
+        channel = await self.bot.fetch_channel(int(arg_id))
+
+        #channel_name = self.full_channel_name(channel_config)
+        embed = discord.Embed(title="Jemand möchte deiner Lerngruppe beitreten!",
+                              description=f"<@!{ctx.author.id}> möchte gerne der Lerngruppe **#{channel.name}** beitreten.",
+                              color=19607)
+
+        message = await channel.send(f"Anfrage von <@!{ctx.author.id}>", embed=embed)
+        await message.add_reaction("👍")
+        await message.add_reaction("🗑️")
+
+
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         if payload.user_id == self.bot.user.id:
@@ -972,15 +1078,50 @@ class LearningGroups(commands.Cog):
 
         channel = await self.bot.fetch_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
-        request = self.groups["requested"].get(str(message.id))
 
-        if payload.emoji.name in ["👍"] and self.is_group_request_message(message) and self.is_mod(payload.member):
-            await self.add_requested_group_channel(message, direct=False)
+        if str(channel.id) == str(self.channel_request):
+            request = self.groups["requested"].get(str(message.id))
+            if payload.emoji.name in ["👍"] and self.is_group_request_message(message) and self.is_mod(payload.member):
+                await self.add_requested_group_channel(message, direct=False)
 
-        if payload.emoji.name in ["🗑️"] and self.is_group_request_message(message) and (
-                self.is_request_owner(request, payload.member) or self.is_mod(payload.member)):
-            self.remove_group_request(message)
-            await message.delete()
+            if payload.emoji.name in ["🗑️"] and self.is_group_request_message(message) and (
+                    self.is_request_owner(request, payload.member) or self.is_mod(payload.member)):
+                await self.remove_group_request(message)
+                await message.delete()
+        else:
+            group_config = self.groups["groups"].get(str(channel.id))
+            if not group_config:
+                return
+
+            if payload.emoji.name in ["👍"] and self.is_group_owner(channel, payload.member):
+                if message.mentions and len(message.mentions) == 1:
+                    await self.add_member(channel, message.mentions[0])
+                    overwrites = await self.overwrites(channel)
+                    await channel.edit(overwrites=overwrites)
+                else:
+                    await channel.send(f"Leider ist ein Fehler aufgetreten.")
+
+                await message.delete()
+
+            if payload.emoji.name in ["🗑️"] and self.is_group_owner(channel, payload.member):
+                await message.delete()
+
+    async def overwrites(self, channel):
+        channel = await self.bot.fetch_channel(str(channel.id))
+        group_config = self.groups["groups"].get(str(channel.id))
+        guild = await self.bot.fetch_guild(int(self.guild_id))
+
+        overwrites = {guild.default_role: discord.PermissionOverwrite(read_messages=False)}
+
+        users = group_config.get("users")
+        if not users:
+            return
+
+        for userid in users.keys():
+            user = await self.bot.fetch_user(userid)
+            overwrites[user] = discord.PermissionOverwrite(read_messages=True)
+
+        return overwrites
 
     async def cog_command_error(self, ctx, error):
         await handle_error(ctx, error)
