@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 
 from cogs import appointments, calmdown, christmas, easter, github, help, learninggroups, links, \
     news, polls, roles, support, text_commands, voice, welcome, xkcd, timer
-from views import timer_view
 
 # .env file is necessary in the same directory, that contains several strings.
 load_dotenv()
@@ -84,7 +83,6 @@ async def unpin_message(message):
 @bot.event
 async def on_ready():
     print("Client started!")
-    bot.add_view(timer_view.TimerView(bot))
 
 
 @bot.event
