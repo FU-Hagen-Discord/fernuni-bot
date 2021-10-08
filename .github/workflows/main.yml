@@ -23,6 +23,9 @@ jobs:
       - name: Change directory
         run: cd /home/boty-qa/fernuni-bot
       
+      - name: Check dir
+        run: pwd
+      
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Check Git
         run: git status
