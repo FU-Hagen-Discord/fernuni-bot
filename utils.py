@@ -48,4 +48,4 @@ async def confirm(channel, title, description, message="", callback=None):
     embed = disnake.Embed(title=title,
                           description=description,
                           color=19607)
-    await channel.send(message, embed=embed, view=ConfirmView(callback))
+    return await channel.send(message, embed=embed, view=ConfirmView(callback))
