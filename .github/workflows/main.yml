@@ -25,6 +25,9 @@ jobs:
     
       - name: Copy to deploy directory
         run: cp ./ ../../../../fernuni-bot/ -Rf
+        
+      - name: Update Pip requirements
+        run: ../../../../fernuni-bot/venv/bin/python -m pip install -r ../../../../fernuni-bot/requirements.txt
       
       - name: Restart Boty-QA
         run: sudo systemctl restart boty-qa
