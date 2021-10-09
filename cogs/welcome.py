@@ -10,8 +10,8 @@ from cogs.help import help, handle_error
 class Welcome(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.channel_id = int(os.getenv("DISCORD_WELCOME_CHANNEL"))
-        self.message_id = int(os.getenv("DISCORD_WELCOME_MSG"))
+        self.channel_id = int(os.getenv("DISCORD_WELCOME_CHANNEL", "0"))
+        self.message_id = int(os.getenv("DISCORD_WELCOME_MSG", "0"))
 
     @help(
       category="updater",

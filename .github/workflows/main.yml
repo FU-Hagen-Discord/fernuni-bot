@@ -14,21 +14,23 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
-  build:
+  deploy:
     # The type of runner that the job will run on
     runs-on: boty-qa
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
     
-      - name: Change directory
-        run: cd /home/boty-qa/fernuni-bot
-      
-      - name: Check dir
-        run: pwd
-      
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - name: Check Git
-        run: git status
+      - uses: actions/checkout@v2
+    
+      - name: Copy to deploy directory
+        run: cp ./ ../../../../fernuni-bot/ -Rf
+      
+      - name: Restart Boty-QA
+        run: sudo systemctl restart boty-qa
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      #- name: Check Git
+      #  run: git status
 
       # Runs a single command using the runners shell
       # - name: Run a one-line script

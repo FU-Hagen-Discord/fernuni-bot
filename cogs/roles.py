@@ -14,10 +14,10 @@ class Roles(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.roles_file = os.getenv("DISCORD_ROLES_FILE")
-        self.channel_id = int(os.getenv("DISCORD_ROLLEN_CHANNEL"))
-        self.degree_program_message_id = int(os.getenv("DISCORD_DEGREE_PROGRAM_MSG"))
-        self.color_message_id = int(os.getenv("DISCORD_COLOR_MSG"))
-        self.special_message_id = int(os.getenv("DISCORD_SPECIAL_MSG"))
+        self.channel_id = int(os.getenv("DISCORD_ROLLEN_CHANNEL", "0"))
+        self.degree_program_message_id = int(os.getenv("DISCORD_DEGREE_PROGRAM_MSG", "0"))
+        self.color_message_id = int(os.getenv("DISCORD_COLOR_MSG", "0"))
+        self.special_message_id = int(os.getenv("DISCORD_SPECIAL_MSG", "0"))
         self.assignable_roles = {}
         self.load_roles()
 
