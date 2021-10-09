@@ -5,8 +5,8 @@ import json
 import os
 import uuid
 
-import discord
-from discord.ext import tasks, commands
+import disnake
+from disnake.ext import tasks, commands
 
 import utils
 from cogs.help import help, handle_error, help_category
@@ -109,7 +109,7 @@ class Appointments(commands.Cog):
 
                         if str(message.id) in delete:
                             await message.delete()
-                    except discord.errors.NotFound:
+                    except disnake.errors.NotFound:
                         delete.append(message_id)
 
             if len(delete) > 0:
@@ -169,7 +169,7 @@ class Appointments(commands.Cog):
         else:
             reminder = utils.to_minutes(reminder)
 
-        embed = discord.Embed(title="Neuer Termin hinzugefügt!",
+        embed = disnake.Embed(title="Neuer Termin hinzugefügt!",
                               description=f"Wenn du eine Benachrichtigung zum Beginn des Termins"
                                           f"{f', sowie {reminder} Minuten vorher, ' if reminder > 0 else f''} "
                                           f"erhalten möchtest, reagiere mit :thumbsup: auf diese Nachricht.",
@@ -182,7 +182,7 @@ class Appointments(commands.Cog):
         if recurring:
             embed.add_field(name="Wiederholung", value=f"Alle {recurring} Tage", inline=False)
 
-        message = await channel.send(embed=embed, file=discord.File(get_ics_file(title, date_time, reminder, recurring),
+        message = await channel.send(embed=embed, file=disnake.File(get_ics_file(title, date_time, reminder, recurring),
                                                                     filename=f"{title}.ics"))
         await message.add_reaction("👍")
         await message.add_reaction("🗑️")
@@ -214,7 +214,7 @@ class Appointments(commands.Cog):
                     message = await ctx.channel.fetch_message(int(message_id))
                     answer += f'{appointment["date_time"]}: {appointment["title"]} => ' \
                               f'{message.jump_url}\n'
-                except discord.errors.NotFound:
+                except disnake.errors.NotFound:
                     delete.append(message_id)
 
             if len(delete) > 0:

@@ -1,8 +1,8 @@
 import io
 import os
 
-import discord
-from discord.ext import commands
+import disnake
+from disnake.ext import commands
 
 
 class Support(commands.Cog):
@@ -15,14 +15,14 @@ class Support(commands.Cog):
         if message.author == self.bot.user:
             return
 
-        if type(message.channel) is discord.DMChannel:
+        if type(message.channel) is disnake.DMChannel:
             channel = await self.bot.fetch_channel(self.channel_id)
             files = []
 
             for attachment in message.attachments:
                 fp = io.BytesIO()
                 await attachment.save(fp)
-                files.append(discord.File(fp, filename=attachment.filename))
+                files.append(disnake.File(fp, filename=attachment.filename))
 
             await channel.send(f"Support Nachricht von <@!{message.author.id}>:")
             await channel.send(message.content, files=files)

@@ -5,11 +5,16 @@ from asyncio import sleep
 from copy import deepcopy
 from datetime import datetime, timedelta
 
-import discord
-from discord.ext import commands, tasks
-from dislash import *
+import disnake
+from disnake import errors, FFmpegPCMAudio, Embed, Colour, MessageInteraction, ApplicationCommandInteraction
+from disnake.ext import commands, tasks
+from disnake.ui import Button
+from dotenv import load_dotenv
 
 from cogs.help import help
+from views import timer_view
+
+load_dotenv()
 
 
 class Timer(commands.Cog):
@@ -32,42 +37,62 @@ class Timer(commands.Cog):
         timer_file = open(self.timer_file_path, mode='w')
         json.dump(self.running_timers, timer_file)
 
-    def get_button_row(self, enabled=True):
-        button_row = ActionRow(
-            Button(
-                style=ButtonStyle.grey,
-                emoji="👍",
-                custom_id="anmelden"
-            ),
-            Button(
-                style=ButtonStyle.grey,
-                emoji="👎",
-                custom_id="abmelden"
-            ),
-            Button(
-                style=ButtonStyle.grey,
-                emoji="⏩",
-                custom_id="skip"
-            ),
-            Button(
-                style=ButtonStyle.grey,
-                emoji="🔄",
-                custom_id="neustart"
-            ),
-            Button(
-                style=ButtonStyle.grey,
-                emoji="🛑",
-                custom_id="beenden"
-            )
-        )
-        if enabled:
-            return button_row
-        else:
-            button_row.disable_buttons()
-            return button_row
+    @help(
+        syntax="!timer <working-time?> <break-time?> <name?>",
+        brief="Deine persönliche Eieruhr",
+        parameters={
+            "learning-time": "Länge der Arbeitsphase in Minuten. Default: 25",
+            "break-time": "Länge der Pausenphase in Minuten. Default: 5",
+            "name": "So soll der Timer heißen. Wird ihm kein Name gegeben, nimmt er sich selbst einen."
+        }
+    )
+    @commands.command(name="timer")
+    async def cmd_timer(self, ctx: disnake.ext.commands.Context, working_time: int = 25, break_time: int = 5,
+                        name: str = None):
+        name = name if name else random.choice(self.default_names)
+        remaining = working_time
+        status = "Arbeiten"
+        registered = [str(ctx.author.id)]
+
+        embed = self.create_embed(name, status, working_time, break_time, remaining, registered)
+        msg = await ctx.send(embed=embed, view=timer_view.TimerView())
+
+        self.running_timers[str(msg.id)] = {'name': name,
+                                            'status': status,
+                                            'working_time': working_time,
+                                            'break_time': break_time,
+                                            'remaining': remaining,
+                                            'registered': registered,
+                                            'channel': ctx.channel.id}
+        self.save_timers()
+        await self.make_sound(registered, 'roll_with_it-outro.mp3')
+
+    @commands.slash_command(name="timer", description="Erstelle deine persönliche Eieruhr",
+                            guild_ids=[int(os.getenv('DISCORD_GUILD'))])
+    async def cmd_slash_timer(self, interaction: ApplicationCommandInteraction, working_time: int = 25,
+                              break_time: int = 5,
+                              name: str = None):
+        name = name if name else random.choice(self.default_names)
+        remaining = working_time
+        status = "Arbeiten"
+        registered = [str(interaction.author.id)]
+
+        embed = self.create_embed(name, status, working_time, break_time, remaining, registered)
+        await interaction.response.send_message(embed=embed, view=timer_view.TimerView())
+        message = await interaction.original_message()
+
+        self.running_timers[str(message.id)] = {'name': name,
+                                           'status': status,
+                                           'working_time': working_time,
+                                           'break_time': break_time,
+                                           'remaining': remaining,
+                                           'registered': registered,
+                                           'channel': interaction.channel_id}
+        self.save_timers()
+        await self.make_sound(registered, 'roll_with_it-outro.mp3')
 
     def create_embed(self, name, status, working_time, break_time, remaining, registered):
-        color = discord.Colour.green() if status == "Arbeiten" else 0xFFC63A if status == "Pause" else discord.Colour.red()
+        color = Colour.green() if status == "Arbeiten" else 0xFFC63A if status == "Pause" else Colour.red()
         descr = f"👍 beim Timer anmelden\n\n" \
                 f"👎 beim Timer abmelden\n\n" \
                 f"⏩ Phase überspringen\n\n" \
@@ -80,9 +105,9 @@ class Timer(commands.Cog):
         user_list = [self.bot.get_user(int(user_id)) for user_id in registered]
         angemeldet_value = ", ".join([user.mention for user in user_list])
 
-        embed = discord.Embed(title=name,
-                              description=f'Jetzt: {status}',
-                              color=color)
+        embed = Embed(title=name,
+                      description=f'Jetzt: {status}',
+                      color=color)
         embed.add_field(name="Bedienung:", value=descr, inline=False)
         embed.add_field(name="Zeiten:", value=zeiten, inline=False)
         embed.add_field(name="verbleibende Zeit:", value=remaining_value + end_value, inline=False)
@@ -90,137 +115,120 @@ class Timer(commands.Cog):
 
         return embed
 
-    @help(
-        syntax="!timer <working-time?> <break-time?> <name?>",
-        brief="Deine persönliche Eieruhr",
-        parameters={
-            "learning-time": "Länge der Arbeitsphase in Minuten. Default: 25",
-            "break-time": "Länge der Pausenphase in Minuten. Default: 5",
-            "name": "So soll der Timer heißen. Wird ihm kein Name gegeben, nimmt er sich selbst einen."
-        }
-    )
-    @commands.command(name="timer")
-    async def cmd_timer(self, ctx, working_time=25, break_time=5, name=None):
-        name = name if name else random.choice(self.default_names)
-        remaining = working_time
-        status = "Arbeiten"
-        registered = [str(ctx.author.id)]
-
-        embed = self.create_embed(name, status, working_time, break_time, remaining, registered)
-        msg = await ctx.send(embed=embed, components=[self.get_button_row()])
-
-        self.running_timers[str(msg.id)] = {'name': name,
-                                            'status': status,
-                                            'working_time': working_time,
-                                            'break_time': break_time,
-                                            'remaining': remaining,
-                                            'registered': registered,
-                                            'channel': ctx.channel.id}
-        self.save_timers()
-        await self.make_sound(registered, 'roll_with_it-outro.mp3')
-
     @commands.Cog.listener()
-    async def on_button_click(self, inter):
-        clicked_button = inter.clicked_button.custom_id
+    async def on_button_click(self, interaction: MessageInteraction):
+        button: Button = interaction.component
 
-        if clicked_button == "beenden":
-            await self.on_beenden_button(inter)
-        elif clicked_button == "neustart":
-            await self.on_neustart_button(inter)
-        elif clicked_button == "skip":
-            await self.on_skip_button(inter)
-        elif clicked_button == 'anmelden':
-            await self.on_anmelden_button(inter)
-        elif clicked_button == "abmelden":
-            await self.on_abmelden_button(inter)
+        if button.custom_id == "timerview:subscribe":
+            await self.on_subscribe(interaction)
+        elif button.custom_id == "timerview:unsubscribe":
+            await self.on_unsubscribe(interaction)
+        elif button.custom_id == "timverview:skip":
+            await self.on_skip(interaction)
+        elif button.custom_id == "timerview:restart":
+            await self.on_restart(interaction)
+        elif button.custom_id == "timerview:stop":
+            await self.on_stop(interaction)
 
-    async def on_beenden_button(self, inter):
-        msg_id = str(inter.message.id)
-        if timer := self.running_timers.get(msg_id):
-            registered = timer['registered']
-            if str(inter.author.id) in timer['registered']:
-                mentions = self.get_mentions(msg_id)
-                timer['status'] = "Beendet"
-                timer['remaining'] = 0
-                timer['registered'] = []
+    async def on_subscribe(self, interaction: MessageInteraction):
+        message = interaction.message
+        message_id = str(message.id)
+        author = interaction.author
 
-                await inter.reply(type=7)
-                if new_msg_id := await self.edit_message(msg_id, mentions=mentions):
-                    await self.make_sound(registered, 'applause.mp3')
-                    self.running_timers.pop(new_msg_id)
-                    self.save_timers()
-            else:
-                # Reply with a hidden message
-                await inter.reply("Nur angemeldete Personen können den Timer beenden.", ephemeral=True)
-        else:
-            await inter.reply("Etwas ist schiefgelaufen...", ephemeral=True)
-
-    async def on_neustart_button(self, inter):
-        msg_id = str(inter.message.id)
-        if timer := self.running_timers.get(msg_id):
-            registered = timer['registered']
-            if str(inter.author.id) in timer['registered']:
-                timer['status'] = 'Arbeiten'
-                timer['remaining'] = timer['working_time']
+        if timer := self.running_timers.get(message_id):
+            if str(author.id) not in timer['registered']:
+                timer['registered'].append(str(author.id))
                 self.save_timers()
-
-                await inter.reply(type=7)
-                await self.edit_message(msg_id)
-                await self.make_sound(registered, 'roll_with_it-outro.mp3')
-            else:
-                # Reply with a hidden message
-                await inter.reply("Nur angemeldete Personen können den Timer neu starten.", ephemeral=True)
+                name, status, wt, bt, remaining, registered, _ = self.get_details(message_id)
+                embed = self.create_embed(name, status, wt, bt, remaining, registered)
+                await message.edit(embed=embed, view=timer_view.TimerView())
         else:
-            await inter.reply("Etwas ist schiefgelaufen...", ephemeral=True)
+            await interaction.response.send_message("Etwas ist schiefgelaufen...", ephemeral=True)
 
-    async def on_skip_button(self, inter):
-        msg_id = str(inter.message.id)
-        if timer := self.running_timers.get(msg_id):
+    async def on_unsubscribe(self, interaction: MessageInteraction):
+        message = interaction.message
+        message_id = str(message.id)
+        author = interaction.author
+
+        if timer := self.running_timers.get(message_id):
             registered = timer['registered']
-            if str(inter.author.id) in timer['registered']:
-                new_phase = await self.switch_phase(msg_id)
+            if str(author.id) in registered:
+                if len(registered) == 1:
+                    await self.on_stop(interaction)
+                    return
+                else:
+                    timer['registered'].remove(str(author.id))
+                    self.save_timers()
+                    name, status, wt, bt, remaining, registered, _ = self.get_details(message_id)
+                    embed = self.create_embed(name, status, wt, bt, remaining, registered)
+                    await message.edit(embed=embed, view=timer_view.TimerView())
+        else:
+            await interaction.response.send_message("Etwas ist schiefgelaufen...", ephemeral=True)
+
+    async def on_skip(self, interaction: MessageInteraction):
+        message = interaction.message
+        message_id = str(message.id)
+        author = interaction.author
+
+        if timer := self.running_timers.get(message_id):
+            registered = timer['registered']
+            if str(author.id) in timer['registered']:
+                new_phase = await self.switch_phase(message_id)
                 if new_phase == "Pause":
                     await self.make_sound(registered, 'groove-intro.mp3')
                 else:
                     await self.make_sound(registered, 'roll_with_it-outro.mp3')
             else:
                 # Reply with a hidden message
-                await inter.reply("Nur angemeldete Personen können den Timer bedienen.", ephemeral=True)
+                await interaction.response.send_message("Nur angemeldete Personen können den Timer bedienen.",
+                                                        ephemeral=True)
         else:
-            await inter.reply("Etwas ist schiefgelaufen...", ephemeral=True)
+            await interaction.response.send_message("Etwas ist schiefgelaufen...", ephemeral=True)
 
-    async def on_anmelden_button(self, inter):
-        msg_id = str(inter.message.id)
-        if timer := self.running_timers.get(msg_id):
-            if str(inter.author.id) not in timer['registered']:
-                timer['registered'].append(str(inter.author.id))
-                self.save_timers()
-                name, status, wt, bt, remaining, registered, _ = self.get_details(msg_id)
-                embed = self.create_embed(name, status, wt, bt, remaining, registered)
-                await inter.reply(embed=embed, components=[self.get_button_row()], type=7)
-            else:
-                await inter.reply(type=7)
-        else:
-            await inter.reply("Etwas ist schiefgelaufen...", ephemeral=True)
+    async def on_restart(self, interaction: MessageInteraction):
+        message = interaction.message
+        message_id = str(message.id)
+        author = interaction.author
 
-    async def on_abmelden_button(self, inter):
-        msg_id = str(inter.message.id)
-        if timer := self.running_timers.get(msg_id):
+        if timer := self.running_timers.get(message_id):
             registered = timer['registered']
-            if str(inter.author.id) in registered:
-                if len(registered) == 1:
-                    await self.on_beenden_button(inter)
-                    return
-                else:
-                    timer['registered'].remove(str(inter.author.id))
-                    self.save_timers()
-                    name, status, wt, bt, remaining, registered, _ = self.get_details(msg_id)
-                    embed = self.create_embed(name, status, wt, bt, remaining, registered)
-                    await inter.reply(embed=embed, components=[self.get_button_row()], type=7)
+            if str(author.id) in timer['registered']:
+                timer['status'] = 'Arbeiten'
+                timer['remaining'] = timer['working_time']
+                self.save_timers()
+
+                await self.edit_message(message_id)
+                await self.make_sound(registered, 'roll_with_it-outro.mp3')
             else:
-                await inter.reply(type=7)
+                # Reply with a hidden message
+                await interaction.response.send_message("Nur angemeldete Personen können den Timer neu starten.",
+                                                        ephemeral=True)
         else:
-            await inter.reply("Etwas ist schiefgelaufen...", ephemeral=True)
+            await interaction.response.send_message("Etwas ist schiefgelaufen...", ephemeral=True)
+
+    async def on_stop(self, interaction: MessageInteraction):
+        message = interaction.message
+        message_id = str(message.id)
+        author = interaction.author
+
+        if timer := self.running_timers.get(message_id):
+            registered = timer['registered']
+            if str(author.id) in timer['registered']:
+                mentions = self.get_mentions(message_id)
+                timer['status'] = "Beendet"
+                timer['remaining'] = 0
+                timer['registered'] = []
+
+                if new_msg_id := await self.edit_message(message_id, mentions=mentions):
+                    await self.make_sound(registered, 'applause.mp3')
+                    self.running_timers.pop(new_msg_id)
+                    self.save_timers()
+            else:
+                # Reply with a hidden message
+                await interaction.response.send_message("Nur angemeldete Personen können den Timer beenden.",
+                                                        ephemeral=True)
+        else:
+            await interaction.response.send_message("Etwas ist schiefgelaufen...", ephemeral=True)
 
     async def switch_phase(self, msg_id):
         if timer := self.running_timers.get(msg_id):
@@ -265,18 +273,17 @@ class Timer(commands.Cog):
                     if not mentions:
                         mentions = self.get_mentions(msg_id)
                     if status == "Beendet":
-                        new_msg = await channel.send(mentions, embed=embed,
-                                                     components=[self.get_button_row(enabled=False)])
+                        new_msg = await channel.send(mentions, embed=embed)
                     else:
-                        new_msg = await channel.send(mentions, embed=embed, components=[self.get_button_row()])
+                        new_msg = await channel.send(mentions, embed=embed, view=timer_view.TimerView())
                     self.running_timers[str(new_msg.id)] = self.running_timers[msg_id]
                     self.running_timers.pop(msg_id)
                     self.save_timers()
                     msg = new_msg
                 else:
-                    await msg.edit(embed=embed, components=[self.get_button_row()])
+                    await msg.edit(embed=embed, view=timer_view.TimerView())
                 return str(msg.id)
-            except discord.errors.NotFound:
+            except errors.NotFound:
                 self.running_timers.pop(msg_id)
                 self.save_timers()
                 return None
@@ -297,9 +304,9 @@ class Timer(commands.Cog):
                 if channel:  # If user is in a channel
                     try:
                         voice_client = await channel.connect()
-                        voice_client.play(discord.FFmpegPCMAudio(f'cogs/sounds/{filename}'))
+                        voice_client.play(FFmpegPCMAudio(f'cogs/sounds/{filename}'))
                         await sleep(3)
-                    except discord.errors.ClientException as e:
+                    except errors.ClientException as e:
                         print(e)
                     for vc in self.bot.voice_clients:
                         await vc.disconnect()

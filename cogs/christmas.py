@@ -2,7 +2,7 @@ import json
 import os
 from datetime import datetime
 
-from discord.ext import commands
+from disnake.ext import commands
 
 import utils
 

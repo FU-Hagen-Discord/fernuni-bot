@@ -1,6 +1,6 @@
 import json
-import discord
-from discord.ext import commands
+import disnake
+from disnake.ext import commands
 from cogs.help import handle_error
 
 
@@ -56,7 +56,7 @@ class Easter(commands.Cog):
     @commands.command(name="leaderboard")
     async def cmd_leaderboard(self, ctx, all=None):
         leaderboard = self.data["leaderboard"]
-        embed = discord.Embed(title="Egg-Hunt Leaderboard", description="Wer hat bisher die meisten Eier gefunden???")
+        embed = disnake.Embed(title="Egg-Hunt Leaderboard", description="Wer hat bisher die meisten Eier gefunden???")
         embed.set_thumbnail(url="https://www.planet-wissen.de/kultur/religion/ostern/tempxostereiergjpg100~_v-gseagaleriexl.jpg")
 
         places = scores = "\u200b"
