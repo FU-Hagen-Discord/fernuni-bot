@@ -258,19 +258,24 @@ class LearningGroups(commands.Cog):
         await channel.send(f":wave: <@!{user.id}>, hier ist deine neue Lerngruppe.\n"
                            "Es gibt offene und private Lerngruppen. Eine offene Lerngruppe ist für jeden sichtbar "
                            "und jeder kann darin schreiben. Eine private Lerngruppe ist unsichtbar und auf eine "
-                           "Gruppe an Kommilitonen beschränkt."
+                           "Gruppe an Kommilitoninnen beschränkt."
                            "```"
-                           "!lg id: Zeigt die ID der Lerngruppe an mit der andere Kommilitonen beitreten können.\n"
-                           "!lg members: Zeigt die Mitglieder der Lerngruppe an.\n"
-                           "!lg owner: Zeigt/Ändert den Besitzer der Lerngruppe.\n"
+                           "Besitzerfunktionen:\n"
+                           "!lg addmember @: Fügt ein Mitglied zur Lerngruppe hinzu.\n"                           
+                           "!lg owner <@newowner>: Ändert die Besitzerin der Lerngruppe auf @newowner.\n"
                            "!lg open: Öffnet eine private Lerngruppe.\n"
                            "!lg close: Stellt die Lerngruppe auf privat.\n"
                            "!lg show: Zeigt eine private Lerngruppe in der Lerngruppenliste an.\n"
                            "!lg hide: Entfernt eine private Lerngruppe aus der Lerngruppenliste.\n"
+                           "!lg kick @user: Schließt einen Benutzer von der Lerngruppe aus.\n"   
+                           "\nKommandos für alle:\n"
+                           "!lg id: Zeigt die ID der Lerngruppe an mit der andere Kommilitoninnen beitreten können.\n"
+                           "!lg members: Zeigt die Mitglieder der Lerngruppe an.\n"
+                           "!lg owner: Zeigt die Besitzerin der Lerngruppe.\n"
                            "!lg leave: Du verlässt die Lerngruppe.\n"
-                           "!lg kick @user: Schließt einen Benutzer von der Lerngruppe aus.\n"    
+                           "!lg join: Anfrage stellen in die Lerngruppe aufgenommen zu werden.\n"
                            "\nMit dem nachfolgenden Kommando kann eine Kommilitonin darum"
-                           "bitten in die Lerngruppe aufgenommen zu werden.\n"
+                           "bitten in die Lerngruppe aufgenommen zu werden wenn diese bereits privat ist.\n"
                            f"!lg join {channel.id}"
                             "\n(manche Kommandos sind von Discord limitiert und können nur einmal alle 5 Minuten ausgeführt werden)"
                            "```"
@@ -509,9 +514,9 @@ class LearningGroups(commands.Cog):
         syntax="!lg show",
         brief="Zeigt einen privaten Lerngruppenkanal trotzdem in der Liste an.",
         description=("Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. "
-                     "Die Lerngruppe wird in der Übersicht der Lerngruppen gelistet, so können Kommilitonen noch "
+                     "Die Lerngruppe wird in der Übersicht der Lerngruppen gelistet, so können Kommilitoninnen noch "
                      "Anfragen stellen, um in die Lerngruppe aufgenommen zu werden."
-                     "Diese Aktion kann nur vom Besitzer der Lerngruppe ausgeführt werden. ")
+                     "Diese Aktion kann nur von der Besitzerin der Lerngruppe ausgeführt werden. ")
     )
     @cmd_lg.command(name="show")
     async def cmd_show(self, ctx):
@@ -525,7 +530,7 @@ class LearningGroups(commands.Cog):
         brief="Versteckt einen privaten Lerngruppenkanal. ",
         description=("Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. "
                      "Die Lerngruppe wird nicht mehr in der Liste der Lerngruppen aufgeführt."
-                     "Diese Aktion kann nur vom Besitzer der Lerngruppe ausgeführt werden. ")
+                     "Diese Aktion kann nur von der Besitzerin der Lerngruppe ausgeführt werden. ")
     )
     @cmd_lg.command(name="hide")
     async def cmd_hide(self, ctx):
@@ -539,7 +544,7 @@ class LearningGroups(commands.Cog):
         brief="Öffnet den Lerngruppen-Kanal wenn du die Besitzerin bist. ",
         description=("Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. "
                      "Verschiebt den Lerngruppen-Kanal in die Kategorie für offene Kanäle und ändert das Icon. "
-                     "Diese Aktion kann nur vom Besitzer der Lerngruppe ausgeführt werden. ")
+                     "Diese Aktion kann nur von der Besitzerin der Lerngruppe ausgeführt werden. ")
     )
     @cmd_lg.command(name="open")
     async def cmd_open(self, ctx):
@@ -554,9 +559,9 @@ class LearningGroups(commands.Cog):
         description=("Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. "
                      "Stellt die Lerngruppe auf privat. Es haben nur noch Mitglieder "
                      "der Lerngruppe zugriff auf den Kanal. (siehe `!lg members`)"
-                     "Diese Aktion kann nur vom Besitzer der Lerngruppe ausgeführt werden. ")
+                     "Diese Aktion kann nur von der Besitzerin der Lerngruppe ausgeführt werden. ")
     )
-    @cmd_lg.command(name="close")
+    @cmd_lg.command(name="close", aliases=["privat", "private"])
     async def cmd_close(self, ctx):
         if self.is_group_owner(ctx.channel, ctx.author) or utils.is_mod(ctx):
             if await self.set_channel_state(ctx.channel, is_open=False):
@@ -601,8 +606,7 @@ class LearningGroups(commands.Cog):
         description="Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. ",
         parameters={
             "@usermention": "Der neue Besitzer der Lerngruppe."
-        },
-        mod=True
+        }
     )
     @cmd_lg.command(name="owner")
     async def cmd_owner(self, ctx, arg_owner: disnake.Member = None):
@@ -703,7 +707,7 @@ class LearningGroups(commands.Cog):
         command_group="lg",
         category="learninggroups",
         syntax="!lg join <lg-id>",
-        brief="Fragt bei einer Lerngruppe um Aufnahme.",
+        brief="Fragt bei der Besitzerin einer Lerngruppe um Aufnahme.",
         parameters={
             "id": "Die ID zur Lerngruppe."
         }
@@ -735,7 +739,7 @@ class LearningGroups(commands.Cog):
         command_group="lg",
         category="learninggroups",
         syntax="!lg kick <@usermention>",
-        brief="Wirft @usermention aus der Gruppe"
+        brief="Wirft @usermention aus der Gruppe."
     )
     @cmd_lg.command(name="kick")
     async def cmd_kick(self, ctx, arg_member: disnake.Member):
@@ -801,24 +805,6 @@ class LearningGroups(commands.Cog):
                     await channel.send(f"Leider ist ein Fehler aufgetreten.")
 
             await message.delete()
-
-#    @commands.Cog.listener()
-#    async def on_raw_reaction_add(self, payload):
-#        if payload.user_id == self.bot.user.id:
-#           return
-#
-#        channel = await self.bot.fetch_channel(payload.channel_id)
-#        message = await channel.fetch_message(payload.message_id)
-
-#        if str(channel.id) == str(self.channel_request):
-#            request = self.groups["requested"].get(str(message.id))
-#            if payload.emoji.name in ["👍"] and self.is_group_request_message(message) and self.is_mod(payload.member):
-#                await self.add_requested_group_channel(message, direct=False)
-
-#            if payload.emoji.name in ["🗑️"] and self.is_group_request_message(message) and (
-#                    self.is_request_owner(request, payload.member) or self.is_mod(payload.member)):
-#                await self.remove_group_request(message)
-#                await message.delete()
 
     async def cog_command_error(self, ctx, error):
         await handle_error(ctx, error)
