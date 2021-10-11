@@ -477,6 +477,11 @@ class LearningGroups(commands.Cog):
     @cmd_lg.command(name="request", aliases=["r", "req"])
     async def cmd_request_group(self, ctx, arg_course, arg_name, arg_semester, arg_open):
         is_open = self.arg_open_to_bool(arg_open)
+        arg_name = re.sub(
+            r"[^A-Za-zäöüß0-9-]",
+            "",
+            arg_name.lower().replace(" ", "-")
+        )
         arg_semester = arg_semester.lower()
         if len(arg_semester) == 8:
             arg_semester = f"{arg_semester[0:4]}{arg_semester[-2:]}"
