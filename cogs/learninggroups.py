@@ -2,6 +2,7 @@ import json
 import os
 import re
 import time
+from typing import Union
 
 import disnake
 from disnake.ext import commands
@@ -627,14 +628,13 @@ class LearningGroups(commands.Cog):
         parameters={
             "@usermention": "Der so erwähnte Benutzer wird zur Lerngruppe hinzugefügt.",
             "#channel": "Der Kanal dem der Benutzer hinzugefügt werden soll."
-        },
-        mod=True
+        }
     )
     @cmd_lg.command(name="addmember", aliases=["addm", "am"])
-    @commands.check(utils.is_mod)
     async def cmd_add_member(self, ctx, arg_member: disnake.Member, arg_channel: disnake.TextChannel):
-        await self.add_member_to_group(arg_channel, arg_member)
-        await self.update_permissions(arg_channel)
+        if self.is_group_owner(arg_channel, ctx.author) or utils.is_mod(ctx):
+            await self.add_member_to_group(arg_channel, arg_member)
+            await self.update_permissions(arg_channel)
 
     @help(
         command_group="lg",
@@ -704,13 +704,19 @@ class LearningGroups(commands.Cog):
         }
     )
     @cmd_lg.command(name="join")
-    async def cmd_join(self, ctx, arg_id):
-        group_config = self.groups["groups"].get(str(arg_id))
+    async def cmd_join(self, ctx, arg_id_or_channel: Union[int, disnake.TextChannel] = None):
+
+        if arg_id_or_channel is None:
+            arg_id_or_channel = ctx.channel
+
+        cid = arg_id_or_channel.id if type(arg_id_or_channel) is disnake.TextChannel else arg_id_or_channel
+
+        group_config = self.groups["groups"].get(str(cid))
         if not group_config:
             await ctx.channel.send("Das ist keine gültiger Lerngruppenkanal.")
             return
 
-        channel = await self.bot.fetch_channel(int(arg_id))
+        channel = await self.bot.fetch_channel(int(cid))
 
         await utils.confirm(
             channel=channel,
