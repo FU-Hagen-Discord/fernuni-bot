@@ -81,7 +81,7 @@ class Timer(commands.Cog):
         await interaction.response.send_message(embed=embed, view=timer_view.TimerView())
         message = await interaction.original_message()
 
-        self.running_timers[message.id] = {'name': name,
+        self.running_timers[str(message.id)] = {'name': name,
                                            'status': status,
                                            'working_time': working_time,
                                            'break_time': break_time,
