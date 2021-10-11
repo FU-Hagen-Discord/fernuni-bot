@@ -65,6 +65,12 @@ class LearningGroups(commands.Cog):
     def load_groups(self):
         group_file = open(self.group_file, mode='r')
         self.groups = json.load(group_file)
+        if not self.groups.get("groups"):
+            self.groups['groups'] = {}
+        if not self.groups.get("requested"):
+            self.groups['requested'] = {}
+        if not self.groups.get("requested"):
+            self.groups['messageids'] = []
 
     async def save_groups(self):
         await self.update_channels()
@@ -610,13 +616,17 @@ class LearningGroups(commands.Cog):
     async def cmd_owner(self, ctx, arg_owner: disnake.Member = None):
         group_config = self.groups["groups"].get(str(ctx.channel.id))
 
+        if not group_config:
+            self.groups["groups"][str(ctx.channel.id)] = {}
+            group_config = self.groups["groups"][str(ctx.channel.id)]
+
         if not arg_owner:
             owner_id = group_config.get("owner_id")
             if owner_id:
                 user = await self.bot.fetch_user(owner_id)
                 await ctx.channel.send(f"Besitzer: @{user.name}")
 
-        elif group_config:
+        elif isinstance(group_config, dict):
             if self.is_group_owner(ctx.channel, ctx.author) or utils.is_mod(ctx):
                 group_config["owner_id"] = arg_owner.id
                 await self.remove_member_from_group(ctx.channel, arg_owner)
