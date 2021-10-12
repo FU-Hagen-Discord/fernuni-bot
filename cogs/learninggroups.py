@@ -798,7 +798,12 @@ class LearningGroups(commands.Cog):
                 await self.add_requested_group_channel(message, direct=False)
 
             elif not confirmed and (self.is_request_owner(request, member) or self.is_mod(member)):
+                if self.is_mod(member):
+                    user = await self.bot.fetch_user(request["owner_id"] )
+                    if user:
+                        await utils.send_dm(user, f"Deine Lerngruppenanfrage für #{self.full_channel_name(request)} wurde abgelehnt.")
                 await self.remove_group_request(message)
+
                 await message.delete()
 
     async def on_join_request(self, confirmed, button, interaction: disnake.InteractionMessage):
