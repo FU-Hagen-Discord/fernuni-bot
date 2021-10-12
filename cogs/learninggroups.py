@@ -42,6 +42,7 @@ class LearningGroups(commands.Cog):
         self.channel_info = os.getenv('DISCORD_LEARNINGGROUPS_INFO')
         self.group_file = os.getenv('DISCORD_LEARNINGGROUPS_FILE')
         self.header_file = os.getenv('DISCORD_LEARNINGGROUPS_COURSE_FILE')
+        self.support_channel = os.getenv('DISCORD_SUPPORT_CHANNEL')
         self.mod_role = os.getenv("DISCORD_MOD_ROLE")
         self.guild_id = os.getenv("DISCORD_GUILD")
         self.groups = {}  # owner and learninggroup-member ids
@@ -69,7 +70,7 @@ class LearningGroups(commands.Cog):
             self.groups['groups'] = {}
         if not self.groups.get("requested"):
             self.groups['requested'] = {}
-        if not self.groups.get("requested"):
+        if not self.groups.get("messageids"):
             self.groups['messageids'] = []
 
     async def save_groups(self):
@@ -158,6 +159,7 @@ class LearningGroups(commands.Cog):
         ), key=lambda channel: f"{channel['course']}-{channel['name']}")
         open_channels = [channel for channel in sorted_channels if channel['is_open'] or channel['is_listed']]
         courseheader = None
+        no_headers = []
         for lg_channel in open_channels:
 
             if lg_channel['course'] != courseheader:
@@ -174,6 +176,7 @@ class LearningGroups(commands.Cog):
                     course_msg += f"**{header}**\n"
                 else:
                     course_msg += f"**{lg_channel['course']} - -------------------------------------**\n"
+                    no_headers.append(lg_channel['course'])
                 courseheader = lg_channel['course']
 
             groupchannel = await self.bot.fetch_channel(int(lg_channel['channel_id']))
@@ -190,6 +193,10 @@ class LearningGroups(commands.Cog):
 
         msg += course_msg
         message = await channel.send(msg)
+        if len(no_headers) > 0:
+            support_channel = await self.bot.fetch_channel(int(self.support_channel))
+            if support_channel:
+                await support_channel.send(f"Es fehlen noch Überschriften für folgende Kurse in der Lerngruppenübersicht: **{', '.join(no_headers)}**")
         info_message_ids.append(message.id)
         self.groups["messageids"] = info_message_ids
         await self.save_groups()
