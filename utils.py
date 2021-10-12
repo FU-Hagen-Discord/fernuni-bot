@@ -2,6 +2,8 @@ import os
 
 import disnake
 import re
+from views.confirm_view import ConfirmView
+
 
 async def send_dm(user, message, embed=None):
     """ Send DM to a user/member """
@@ -10,7 +12,7 @@ async def send_dm(user, message, embed=None):
         if user.dm_channel is None:
             await user.create_dm()
 
-        await user.dm_channel.send(message, embed=embed)
+        return await user.dm_channel.send(message, embed=embed)
 
 
 def is_mod(ctx):
@@ -41,3 +43,9 @@ def to_minutes(time):
 
     return int(time)
 
+
+async def confirm(channel, title, description, message="", callback=None):
+    embed = disnake.Embed(title=title,
+                          description=description,
+                          color=19607)
+    return await channel.send(message, embed=embed, view=ConfirmView(callback))
