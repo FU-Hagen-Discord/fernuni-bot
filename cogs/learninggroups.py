@@ -346,6 +346,13 @@ class LearningGroups(commands.Cog):
         mid = str(arg_member.id)
         if not users.get(mid):
             users[mid] = True
+            user = await self.bot.fetch_user(mid)
+            if user:
+                await utils.send_dm(user, f"Du wurdest in die Lerngruppe <#{channel.id}> aufgenommen. " 
+                                          "Viel Spass beim gemeinsamen Lernen!\n"
+                                          "Dieser Link führt dich direkt zum Lerngruppen-Channel. " 
+                                          "Diese Nachricht kannst du bei Bedarf in unserer Unterhaltung " 
+                                          "über Rechtsklick anpinnen.")
         group_config["users"] = users
 
         await self.save_groups()
@@ -798,7 +805,12 @@ class LearningGroups(commands.Cog):
                 await self.add_requested_group_channel(message, direct=False)
 
             elif not confirmed and (self.is_request_owner(request, member) or self.is_mod(member)):
+                if self.is_mod(member):
+                    user = await self.bot.fetch_user(request["owner_id"] )
+                    if user:
+                        await utils.send_dm(user, f"Deine Lerngruppenanfrage für #{self.full_channel_name(request)} wurde abgelehnt.")
                 await self.remove_group_request(message)
+
                 await message.delete()
 
     async def on_join_request(self, confirmed, button, interaction: disnake.InteractionMessage):
