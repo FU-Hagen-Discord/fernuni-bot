@@ -5,8 +5,8 @@ from disnake.ext import commands
 from dotenv import load_dotenv
 
 from cogs import appointments, calmdown, christmas, easter, github, help, learninggroups, links, \
-    news, polls, roles, support, text_commands, voice, welcome, xkcd
-# , timer
+    news, polls, roles, support, text_commands, voice, welcome, xkcd, elm_street \
+    # , timer
 
 # .env file is necessary in the same directory, that contains several strings.
 load_dotenv()
@@ -16,17 +16,14 @@ ACTIVITY = os.getenv('DISCORD_ACTIVITY')
 OWNER = int(os.getenv('DISCORD_OWNER'))
 ROLES_FILE = os.getenv('DISCORD_ROLES_FILE')
 HELP_FILE = os.getenv('DISCORD_HELP_FILE')
-CATEGORY_LERNGRUPPEN = os.getenv("DISCORD_CATEGORY_LERNGRUPPEN")
+CATEGORY_LERNGRUPPEN = int(os.getenv("DISCORD_CATEGORY_LERNGRUPPEN"))
 PIN_EMOJI = "📌"
-
-intents = disnake.Intents.default()
-intents.members = True
 
 
 class Boty(commands.Bot):
     def __init__(self):
         super().__init__(command_prefix='!', help_command=None, activity=disnake.Game(ACTIVITY), owner_id=OWNER,
-                         intents=intents)
+                         intents=disnake.Intents.all())
         self.add_cog(appointments.Appointments(self))
         self.add_cog(text_commands.TextCommands(self))
         self.add_cog(polls.Polls(self))
@@ -45,6 +42,10 @@ class Boty(commands.Bot):
         self.add_cog(calmdown.Calmdown(self))
         self.add_cog(github.Github(self))
         # self.add_cog(timer.Timer(self))
+        self.add_cog(elm_street.ElmStreet(self))
+
+    def is_prod(self):
+        return os.getenv("DISCORD_PROD") == "True"
 
 
 bot = Boty()
