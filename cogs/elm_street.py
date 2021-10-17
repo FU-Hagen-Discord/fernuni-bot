@@ -3,14 +3,18 @@ import os
 from typing import Union
 
 import disnake
-from disnake import ApplicationCommandInteraction, \
-    ButtonStyle
+from disnake import ApplicationCommandInteraction, ButtonStyle
 from disnake.ext import commands
 from dotenv import load_dotenv
 
+from utils import confirm
 from views import dialog_view
 
 load_dotenv()
+
+
+def get_player_from_embed(embed: disnake.Embed):
+    return embed.description.split()[0][2:-1]
 
 
 class ElmStreet(commands.Cog):
@@ -44,35 +48,47 @@ class ElmStreet(commands.Cog):
 
         if not self.is_playing(author):
             thread = await channel.create_thread(name=name, auto_archive_duration=1440, type=channel_type)
-            self.groups[str(thread.id)] = {"players": [author.id]}
-            self.save()
 
             await thread.send(f"Hallo {author.mention}. Der Streifzug deiner Gruppe durch die Elm-Street findet "
                               f"in diesem Thread statt. Du kannst über das Command! Sobald deine Gruppe sich zusammen"
                               f"gefunden hat, kannst du über einen Klick auf den Start Button eure Reise starten.",
                               view=self.get_start_view())
 
-            await interaction.response.send_message(f":rotating_light:{author.mention} stellt gerade die Gruppe {name} "
-                                                    f"für einen Streifzug durch die Elm Street. Verwende "
-                                                    f"`/join-group {thread.id}`, um dich der Jagd anzuschließen!",
-                                                    view=self.get_join_view(thread.id))
+            await interaction.response.send_message(
+                f"Du bist mitten in einer Großstadt gelandet.\n"
+                f"Der leise Wind weht Papier die Straße lang.\n"
+                f"Ansonsten hörst du nur in der Ferne das Geräusch vorbeifahrender Autos.\n"
+                f"Da, was war das?\n"
+                f"Hat sich da nicht etwas bewegt?\n"
+                f"Ein Schatten an der Mauer?\n"
+                f"Ein Geräusch wie von Krallen auf Asphalt.\n"
+                f"Du drehst dich im Kreis.\n"
+                f"Ein leises Lachen in deinem Rücken.\n"
+                f"Und da, gerade außerhalb deines Sichtfeldes eine Tür die sich quietschend öffnet.\n"
+                f"Eine laute Stimme ruft fragend: \"Ich zieh los um die Häuser, wäre ja gelacht wenn nur Kinder heute "
+                f"abend Süßkram bekommen. Wer ist mit dabei?\"\n"
+                f"Du drehst dich zur Tür und siehst {author.mention}",
+                view=self.get_join_view(thread.id))
+
+            message = await interaction.original_message()
+            self.groups[str(thread.id)] = {"message": message.id, "players": [author.id], "owner": author.id}
+            self.save()
         else:
             await interaction.response.send_message(
                 "Es tut mir leid, aber du kannst nicht an mehr als einer Jagd gleichzeitig teilnehmen. "
                 "Beende erst das bisherige Abenteuer, bevor du dich einer neuen Gruppe anschließen kannst.",
                 ephemeral=True)
 
-    async def on_join(self, button: disnake.ui.Button, interaction: disnake.InteractionMessage, value=None):
+    async def on_join(self, button: disnake.ui.Button, interaction: disnake.MessageInteraction, value=None):
         player = self.get_player(interaction.author)
 
         try:
             if group := self.groups.get(str(value)):
                 if not self.is_playing(interaction.author):
                     thread = await self.bot.fetch_channel(value)
-                    group["players"].append(interaction.author.id)
-
-                    self.save()
-
+                    await confirm(thread, "Neuer Rekrut",
+                                  f"{interaction.author.mention} würde sich gerne der Gruppe anschließen",
+                                  callback=self.on_joined)
                 else:
                     await interaction.response.send_message(
                         "Es tut mir leid, aber du kannst nicht an mehr als einer Jagd gleichzeitig teilnehmen. "
@@ -85,10 +101,27 @@ class ElmStreet(commands.Cog):
                 ephemeral=True)
 
         if not interaction.response.is_done():
-            await interaction.response.send_message("Du bist der Gruppe beigetreten =) GEIL GEIL GEIL", ephemeral=True)
+            await interaction.response.send_message("Dein Wunsch, der Gruppe beizutreten wurde weitergeleitet.",
+                                                    ephemeral=True)
 
-    async def on_start(self, button: disnake.ui.Button, interaction: disnake.InteractionMessage, value=None):
-        await interaction.response.send_message("Leute, der Spaß beginnt.... j@@@@@@@@@")
+    async def on_joined(self, button: disnake.ui.Button, interaction: disnake.MessageInteraction, value=None):
+        player_id = int(get_player_from_embed(interaction.message.embeds[0]))
+
+        if value:
+            if group := self.groups.get(str(interaction.channel_id)):
+                if not self.is_playing(player_id):
+                    group["players"].append(player_id)
+                    await interaction.message.channel.send(
+                        f"<@!{player_id}> ist jetzt Teil der Crew! Herzlich willkommen.")
+                    self.save()
+        await interaction.message.delete()
+
+    async def on_start(self, button: disnake.ui.Button, interaction: disnake.MessageInteraction, value=None):
+        if group := self.groups.get(str(interaction.channel.id)):
+            await interaction.response.send_message("Leute, der Spaß beginnt.... j@@@@@@@@@")
+            elm_street_channel = await self.bot.fetch_channel(self.elm_street_channel_id)
+            group_message = await elm_street_channel.fetch_message(group["message"])
+            await group_message.delete()
 
     def get_join_view(self, group_id: int):
         buttons = [
@@ -102,10 +135,13 @@ class ElmStreet(commands.Cog):
         ]
         return dialog_view.DialogView(buttons, self.on_start)
 
-    def is_playing(self, user: Union[disnake.User, disnake.Member]):
+    def is_playing(self, user: Union[disnake.User, disnake.Member] = None, user_id: int = None):
+        return False
         for group in self.groups.values():
             if players := group.get("players"):
-                if user.id in players:
+                if user and user.id in players:
+                    return True
+                if user_id and user_ud in players:
                     return True
 
         return False
