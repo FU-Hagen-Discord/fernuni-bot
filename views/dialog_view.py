@@ -7,8 +7,10 @@ class DialogView(disnake.ui.View):
     def __init__(self, buttons=None, callback=None):
         super().__init__(timeout=None)
         self.callback = callback
-        for button_config in buttons:
-            self.add_button(button_config)
+
+        if buttons:
+            for button_config in buttons:
+                self.add_button(button_config)
 
     def add_button(self, config):
         button = disnake.ui.Button(

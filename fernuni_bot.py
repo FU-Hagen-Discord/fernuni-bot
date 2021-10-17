@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from cogs import appointments, calmdown, christmas, easter, github, help, learninggroups, links, \
     news, polls, roles, support, text_commands, voice, welcome, xkcd
 # , timer
+from dialog_manager import DialogManager
 
 # .env file is necessary in the same directory, that contains several strings.
 load_dotenv()
@@ -27,6 +28,7 @@ class Boty(commands.Bot):
     def __init__(self):
         super().__init__(command_prefix='!', help_command=None, activity=disnake.Game(ACTIVITY), owner_id=OWNER,
                          intents=intents)
+        self.dialogs = DialogManager(self)
         self.add_cog(appointments.Appointments(self))
         self.add_cog(text_commands.TextCommands(self))
         self.add_cog(polls.Polls(self))

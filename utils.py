@@ -3,8 +3,6 @@ import os
 import disnake
 import re
 
-from views.dialog_view import DialogView
-
 
 async def send_dm(user, message, embed=None):
     """ Send DM to a user/member """
@@ -44,23 +42,3 @@ def to_minutes(time):
 
     return int(time)
 
-
-async def dialog(channel, title, description, message="", buttons=None, callback=None):
-    embed = disnake.Embed(title=title,
-                          description=description,
-                          color=19607)
-    return await channel.send(message, embed=embed, view=DialogView(buttons, callback))
-
-
-async def confirm(channel, title, description, message="", callback=None):
-    return await dialog(
-        channel=channel,
-        title=title,
-        description=description,
-        message=message,
-        callback=callback,
-        buttons=[
-            {"emoji": "👍", "value": True},
-            {"emoji": "👎", "value": False}
-        ]
-    )
