@@ -50,9 +50,19 @@ class LearningGroups(commands.Cog):
         self.header = {}  # headlines for statusmessage
         self.load_groups()
         self.load_header()
+        self.dialogs = {}
 
     @commands.Cog.listener(name="on_ready")
     async def on_ready(self):
+        self.dialogs["group"] = self.bot.dialogs.add_confirm(
+            custom_prefix="lg_group",
+            callback=self.on_group_request
+        )
+
+        self.dialogs["join"] = self.bot.dialogs.add_confirm(
+            custom_prefix="lg_join",
+            callback=self.on_join_request
+        )
         await self.update_channels()
 
     def load_header(self):
@@ -510,11 +520,11 @@ class LearningGroups(commands.Cog):
         channel = await self.bot.fetch_channel(int(self.channel_request))
         channel_name = self.full_channel_name(channel_config)
 
-        message = await utils.confirm(
+        message = await self.bot.dialogs.send(
             channel=channel,
             title="Lerngruppenanfrage",
             description=f"<@!{ctx.author.id}> möchte gerne die Lerngruppe **#{channel_name}** eröffnen.",
-            callback=self.on_group_request
+            dialog_id=self.dialogs["group"]
         )
         self.groups["requested"][str(message.id)] = channel_config
         await self.save_groups()
@@ -742,12 +752,12 @@ class LearningGroups(commands.Cog):
 
         channel = await self.bot.fetch_channel(int(cid))
 
-        await utils.confirm(
+        await self.bot.dialogs.send(
             channel=channel,
             title="Jemand möchte deiner Lerngruppe beitreten!",
             description=f"<@!{ctx.author.id}> möchte gerne der Lerngruppe **#{channel.name}** beitreten.",
             message=f"Anfrage von <@!{ctx.author.id}>",
-            callback=self.on_join_request
+            dialog_id=self.dialogs["join"]
         )
 
     @help(
@@ -787,11 +797,13 @@ class LearningGroups(commands.Cog):
         await self.remove_member_from_group(ctx.channel, ctx.author)
         await self.update_permissions(ctx.channel)
 
-    async def on_group_request(self, confirmed, button, interaction: disnake.InteractionMessage):
+    async def on_group_request(self, button, interaction: disnake.InteractionMessage, value=None):
+        confirmed = value
         channel = interaction.channel
         member = interaction.author
         message = interaction.message
 
+        await interaction.response.defer()
         if str(channel.id) == str(self.channel_request):
             request = self.groups["requested"].get(str(message.id))
             if confirmed and self.is_mod(member):
@@ -801,7 +813,8 @@ class LearningGroups(commands.Cog):
                 await self.remove_group_request(message)
                 await message.delete()
 
-    async def on_join_request(self, confirmed, button, interaction: disnake.InteractionMessage):
+    async def on_join_request(self, button: disnake.ui.Button, interaction: disnake.InteractionMessage, value=None):
+        confirmed = value
         channel = interaction.channel
         member = interaction.author
         message = interaction.message
