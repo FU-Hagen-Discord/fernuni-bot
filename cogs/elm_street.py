@@ -84,16 +84,20 @@ class ElmStreet(commands.Cog):
 
         try:
             if group := self.groups.get(str(value)):
-                if not self.is_playing(interaction.author):
-                    thread = await self.bot.fetch_channel(value)
-                    await confirm(thread, "Neuer Rekrut",
-                                  f"{interaction.author.mention} würde sich gerne der Gruppe anschließen",
-                                  callback=self.on_joined)
+                if not self.is_already_in_this_group(interaction.author, interaction.message.id):
+                    if not self.is_playing(interaction.author):
+                        thread = await self.bot.fetch_channel(value)
+                        await confirm(thread, "Neuer Rekrut",
+                                      f"{interaction.author.mention} würde sich gerne der Gruppe anschließen",
+                                      callback=self.on_joined)
+                    else:
+                        await interaction.response.send_message(
+                            "Es tut mir leid, aber du kannst nicht an mehr als einer Jagd gleichzeitig teilnehmen. "
+                            "Beende erst das bisherige Abenteuer, bevor du dich einer neuen Gruppe anschließen kannst.",
+                            ephemeral=True)
                 else:
-                    await interaction.response.send_message(
-                        "Es tut mir leid, aber du kannst nicht an mehr als einer Jagd gleichzeitig teilnehmen. "
-                        "Beende erst das bisherige Abenteuer, bevor du dich einer neuen Gruppe anschließen kannst.",
-                        ephemeral=True)
+                    await interaction.response.send_message("Du bist schon Teil dieser Gruppe! Schau doch mal in eurem "
+                                                            "Thread vorbei.", ephemeral=True)
         except:
             await interaction.response.send_message(
                 "Ein Fehler ist aufgetreten. Überprüfe bitte, ob du der richtigen Gruppe beitreten wolltest. "
@@ -130,7 +134,6 @@ class ElmStreet(commands.Cog):
             await interaction.response.send_message("Nur die Gruppenerstellerin kann die Gruppe starten lassen.",
                                                     ephemeral=True)
 
-
     def get_join_view(self, group_id: int):
         buttons = [
             {"label": "Join", "style": ButtonStyle.green, "value": group_id, "custom_id": "elm_street:join"}
@@ -151,7 +154,14 @@ class ElmStreet(commands.Cog):
                     return True
                 if user_id and user_ud in players:
                     return True
+        return False
 
+    def is_already_in_this_group(self, user, message_id):
+        user_id = user.id
+        for group in self.groups.values():
+            if message_id == group.get('message'):
+                if user_id in group.get('players'):
+                    return True
         return False
 
     def can_play(self, user: Union[disnake.User, disnake.Member]):
