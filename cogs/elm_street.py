@@ -7,6 +7,8 @@ from disnake import ApplicationCommandInteraction, ButtonStyle
 from disnake.ext import commands
 from dotenv import load_dotenv
 
+from utils import send_dm
+
 load_dotenv()
 
 
