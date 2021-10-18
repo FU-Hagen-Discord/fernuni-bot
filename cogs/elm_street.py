@@ -50,8 +50,8 @@ class ElmStreet(commands.Cog):
             thread = await channel.create_thread(name=name, auto_archive_duration=1440, type=channel_type)
 
             await thread.send(f"Hallo {author.mention}. Der Streifzug deiner Gruppe durch die Elm-Street findet "
-                              f"in diesem Thread statt. Du kannst über das Command! Sobald deine Gruppe sich zusammen"
-                              f"gefunden hat, kannst du über einen Klick auf den Start Button eure Reise starten.",
+                              f"in diesem Thread statt. Sobald deine Gruppe sich zusammen  gefunden hat, kannst "
+                              f"du über einen Klick auf den Start Button eure Reise starten.",
                               view=self.get_start_view())
 
             await interaction.response.send_message(
@@ -122,6 +122,8 @@ class ElmStreet(commands.Cog):
             elm_street_channel = await self.bot.fetch_channel(self.elm_street_channel_id)
             group_message = await elm_street_channel.fetch_message(group["message"])
             await group_message.delete()
+        await interaction.message.edit(view=self.get_start_view(disabled=True))
+
 
     def get_join_view(self, group_id: int):
         buttons = [
@@ -129,9 +131,9 @@ class ElmStreet(commands.Cog):
         ]
         return dialog_view.DialogView(buttons, self.on_join)
 
-    def get_start_view(self):
+    def get_start_view(self, disabled=False):
         buttons = [
-            {"label": "Start", "style": ButtonStyle.green, "custom_id": "elm_street:start"}
+            {"label": "Start", "style": ButtonStyle.green, "custom_id": "elm_street:start", "disabled": disabled}
         ]
         return dialog_view.DialogView(buttons, self.on_start)
 
