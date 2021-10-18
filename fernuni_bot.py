@@ -4,6 +4,7 @@ import disnake
 from disnake.ext import commands
 from dotenv import load_dotenv
 
+from view_manager import ViewManager
 from cogs import appointments, calmdown, christmas, easter, github, help, learninggroups, links, \
     news, polls, roles, support, text_commands, voice, welcome, xkcd, elm_street \
     # , timer
@@ -24,6 +25,7 @@ class Boty(commands.Bot):
     def __init__(self):
         super().__init__(command_prefix='!', help_command=None, activity=disnake.Game(ACTIVITY), owner_id=OWNER,
                          intents=disnake.Intents.all())
+        self.view_manager = ViewManager(self)
         self.add_cog(appointments.Appointments(self))
         self.add_cog(text_commands.TextCommands(self))
         self.add_cog(polls.Polls(self))
@@ -43,10 +45,12 @@ class Boty(commands.Bot):
         self.add_cog(github.Github(self))
         # self.add_cog(timer.Timer(self))
         self.add_cog(elm_street.ElmStreet(self))
-
     def is_prod(self):
         return os.getenv("DISCORD_PROD") == "True"
 
+    async def on_ready(self):
+        self.view_manager.on_ready()
+        print("Client started!")
 
 bot = Boty()
 
@@ -82,9 +86,9 @@ async def unpin_message(message):
             await message.unpin()
 
 
-@bot.event
-async def on_ready():
-    print("Client started!")
+# @bot.event
+# async def on_ready():
+#     print("Client started!")
 
 
 @bot.event
