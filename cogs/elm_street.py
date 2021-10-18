@@ -46,7 +46,7 @@ class ElmStreet(commands.Cog):
         channel_type = None if self.bot.is_prod() else disnake.ChannelType.public_thread
         player = self.get_player(author)
 
-        if not self.is_playing(author):
+        if not self.is_playing(author.id):
             thread = await channel.create_thread(name=name, auto_archive_duration=1440, type=channel_type)
 
             await thread.send(f"Hallo {author.mention}. Der Streifzug deiner Gruppe durch die Elm-Street findet "
@@ -84,8 +84,8 @@ class ElmStreet(commands.Cog):
 
         try:
             if group := self.groups.get(str(value)):
-                if not self.is_already_in_this_group(interaction.author, interaction.message.id):
-                    if not self.is_playing(interaction.author):
+                if not self.is_already_in_this_group(interaction.author.id, interaction.message.id):
+                    if not self.is_playing(interaction.author.id):
                         thread = await self.bot.fetch_channel(value)
                         await confirm(thread, "Neuer Rekrut",
                                       f"{interaction.author.mention} würde sich gerne der Gruppe anschließen",
@@ -146,18 +146,14 @@ class ElmStreet(commands.Cog):
         ]
         return dialog_view.DialogView(buttons, self.on_start)
 
-    def is_playing(self, user: Union[disnake.User, disnake.Member] = None, user_id: int = None):
-        return False
+    def is_playing(self, user_id: int = None):
         for group in self.groups.values():
             if players := group.get("players"):
-                if user and user.id in players:
-                    return True
-                if user_id and user_ud in players:
+                if user_id in players:
                     return True
         return False
 
-    def is_already_in_this_group(self, user, message_id):
-        user_id = user.id
+    def is_already_in_this_group(self, user_id, message_id):
         for group in self.groups.values():
             if message_id == group.get('message'):
                 if user_id in group.get('players'):
