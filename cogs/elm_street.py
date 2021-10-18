@@ -7,8 +7,7 @@ from disnake import ApplicationCommandInteraction, ButtonStyle
 from disnake.ext import commands
 from dotenv import load_dotenv
 
-from utils import confirm, send_dm
-from views import dialog_view
+from utils import send_dm
 
 load_dotenv()
 
@@ -24,6 +23,9 @@ class ElmStreet(commands.Cog):
         self.players = {}
         self.load()
         self.elm_street_channel_id = int(os.getenv("DISCORD_ELM_STREET_CHANNEL"))
+        self.bot.view_manager.register("on_join", self.on_join)
+        self.bot.view_manager.register("on_joined", self.on_joined)
+        self.bot.view_manager.register("on_start", self.on_start)
 
     def load(self):
         with open("data/elm_street_groups.json", "r") as groups_file:
@@ -87,9 +89,10 @@ class ElmStreet(commands.Cog):
                 if not self.is_already_in_this_group(interaction.author.id, interaction.message.id):
                     if not self.is_playing(interaction.author.id):
                         thread = await self.bot.fetch_channel(value)
-                        await confirm(thread, "Neuer Rekrut",
+                        await self.bot.view_manager.confirm(thread, "Neuer Rekrut",
                                       f"{interaction.author.mention} würde sich gerne der Gruppe anschließen",
-                                      callback=self.on_joined)
+                                      custom_prefix="rekrut",
+                                      callback_key="on_joined")
                     else:
                         await interaction.response.send_message(
                             "Es tut mir leid, aber du kannst nicht an mehr als einer Jagd gleichzeitig teilnehmen. "
@@ -149,13 +152,13 @@ class ElmStreet(commands.Cog):
         buttons = [
             {"label": "Join", "style": ButtonStyle.green, "value": group_id, "custom_id": "elm_street:join"}
         ]
-        return dialog_view.DialogView(buttons, self.on_join)
+        return self.bot.view_manager.view(buttons, "on_join")
 
     def get_start_view(self, disabled=False):
         buttons = [
             {"label": "Start", "style": ButtonStyle.green, "custom_id": "elm_street:start", "disabled": disabled}
         ]
-        return dialog_view.DialogView(buttons, self.on_start)
+        return self.bot.view_manager.view(buttons, "on_start")
 
     def is_playing(self, user_id: int = None):
         for group in self.groups.values():

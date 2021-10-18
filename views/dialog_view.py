@@ -1,9 +1,12 @@
+import json
+import uuid
+
 import disnake
-from disnake import MessageInteraction, ButtonStyle
-from disnake.ui import Button
+from disnake import ButtonStyle
 
 
 class DialogView(disnake.ui.View):
+
     def __init__(self, buttons=None, callback=None):
         super().__init__(timeout=None)
         self.callback = callback

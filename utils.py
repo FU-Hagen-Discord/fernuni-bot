@@ -43,24 +43,3 @@ def to_minutes(time):
         return h * 60
 
     return int(time)
-
-
-async def dialog(channel, title, description, message="", buttons=None, callback=None):
-    embed = disnake.Embed(title=title,
-                          description=description,
-                          color=19607)
-    return await channel.send(message, embed=embed, view=DialogView(buttons, callback))
-
-
-async def confirm(channel, title, description, message="", callback=None):
-    return await dialog(
-        channel=channel,
-        title=title,
-        description=description,
-        message=message,
-        callback=callback,
-        buttons=[
-            {"emoji": "👍", "value": True},
-            {"emoji": "👎", "value": False}
-        ]
-    )
