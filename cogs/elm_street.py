@@ -117,12 +117,18 @@ class ElmStreet(commands.Cog):
         await interaction.message.delete()
 
     async def on_start(self, button: disnake.ui.Button, interaction: disnake.MessageInteraction, value=None):
-        if group := self.groups.get(str(interaction.channel.id)):
-            await interaction.response.send_message("Leute, der Spaß beginnt.... j@@@@@@@@@")
-            elm_street_channel = await self.bot.fetch_channel(self.elm_street_channel_id)
-            group_message = await elm_street_channel.fetch_message(group["message"])
-            await group_message.delete()
-        await interaction.message.edit(view=self.get_start_view(disabled=True))
+        thread_id = interaction.channel_id
+        owner = self.groups.get(str(thread_id)).get('owner')
+        if interaction.author.id == owner:
+            if group := self.groups.get(str(interaction.channel.id)):
+                await interaction.response.send_message("Leute, der Spaß beginnt.... j@@@@@@@@@")
+                elm_street_channel = await self.bot.fetch_channel(self.elm_street_channel_id)
+                group_message = await elm_street_channel.fetch_message(group["message"])
+                await group_message.delete()
+            await interaction.message.edit(view=self.get_start_view(disabled=True))
+        else:
+            await interaction.response.send_message("Nur die Gruppenerstellerin kann die Gruppe starten lassen.",
+                                                    ephemeral=True)
 
 
     def get_join_view(self, group_id: int):
