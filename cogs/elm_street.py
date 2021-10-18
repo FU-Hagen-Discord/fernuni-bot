@@ -7,7 +7,7 @@ from disnake import ApplicationCommandInteraction, ButtonStyle
 from disnake.ext import commands
 from dotenv import load_dotenv
 
-from utils import confirm
+from utils import confirm, send_dm
 from views import dialog_view
 
 load_dotenv()
@@ -118,6 +118,12 @@ class ElmStreet(commands.Cog):
                     await interaction.message.channel.send(
                         f"<@!{player_id}> ist jetzt Teil der Crew! Herzlich willkommen.")
                     self.save()
+        else:
+            user = self.bot.get_user(player_id)
+            groupname = interaction.channel.name
+            await send_dm(user, f"Die Gruppe {groupname} hat entschieden, dich nicht mitlaufen zu lassen, du siehst"
+                                f" nicht gruselig genug aus. Zieh dich um und versuch es noch einmal.")
+
         await interaction.message.delete()
 
     async def on_start(self, button: disnake.ui.Button, interaction: disnake.MessageInteraction, value=None):
