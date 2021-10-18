@@ -110,32 +110,37 @@ class ElmStreet(commands.Cog):
 
     async def on_joined(self, button: disnake.ui.Button, interaction: disnake.MessageInteraction, value=None):
         player_id = int(get_player_from_embed(interaction.message.embeds[0]))
+        thread_id = interaction.channel_id
+        owner_id = self.groups.get(str(thread_id)).get('owner')
 
-        if value:
-            if group := self.groups.get(str(interaction.channel_id)):
-                if not self.is_playing(player_id):
-                    group["players"].append(player_id)
-                    await interaction.message.channel.send(
-                        f"<@!{player_id}> ist jetzt Teil der Crew! Herzlich willkommen.")
-                    self.save()
+        if interaction.author.id == owner_id:
+            if value:
+                if group := self.groups.get(str(interaction.channel_id)):
+                    if not self.is_playing(player_id):
+                        group["players"].append(player_id)
+                        await interaction.message.channel.send(
+                            f"<@!{player_id}> ist jetzt Teil der Crew! Herzlich willkommen.")
+                        self.save()
+            else:
+                user = self.bot.get_user(player_id)
+                groupname = interaction.channel.name
+                await send_dm(user, f"Die Gruppe {groupname} hat entschieden, dich nicht mitlaufen zu lassen, du siehst"
+                                    f" nicht gruselig genug aus. Zieh dich um und versuch es noch einmal.")
+            await interaction.message.delete()
         else:
-            user = self.bot.get_user(player_id)
-            groupname = interaction.channel.name
-            await send_dm(user, f"Die Gruppe {groupname} hat entschieden, dich nicht mitlaufen zu lassen, du siehst"
-                                f" nicht gruselig genug aus. Zieh dich um und versuch es noch einmal.")
-
-        await interaction.message.delete()
+            await interaction.response.send_message("Nur die Gruppenerstellerin kann User annehmen oder ablehnen.",
+                                                    ephemeral=True)
 
     async def on_start(self, button: disnake.ui.Button, interaction: disnake.MessageInteraction, value=None):
         thread_id = interaction.channel_id
-        owner = self.groups.get(str(thread_id)).get('owner')
-        if interaction.author.id == owner:
+        owner_id = self.groups.get(str(thread_id)).get('owner')
+        if interaction.author.id == owner_id:
             if group := self.groups.get(str(interaction.channel.id)):
                 await interaction.response.send_message("Leute, der Spaß beginnt.... j@@@@@@@@@")
                 elm_street_channel = await self.bot.fetch_channel(self.elm_street_channel_id)
                 group_message = await elm_street_channel.fetch_message(group["message"])
                 await group_message.delete()
-            await interaction.message.edit(view=self.get_start_view(disabled=True))
+                await interaction.message.edit(view=self.get_start_view(disabled=True))
         else:
             await interaction.response.send_message("Nur die Gruppenerstellerin kann die Gruppe starten lassen.",
                                                     ephemeral=True)
