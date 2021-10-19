@@ -175,7 +175,7 @@ class Help(commands.Cog):
         try:
             command = data['command'][name]
             if command['mod'] and not utils.is_mod(ctx):
-                raise KeyError
+                return #raise KeyError
         except KeyError:
             await ctx.channel.send(
                 "Fehler! Für dieses Kommando habe ich keinen Hilfe-Eintrag. Gib `!help` ein um eine Übersicht zu erhalten. ")

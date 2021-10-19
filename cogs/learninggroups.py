@@ -307,8 +307,10 @@ class LearningGroups(commands.Cog):
                             "\n(manche Kommandos sind von Discord limitiert und können nur einmal alle 5 Minuten ausgeführt werden)"
                            "```"
                            )
-
-        self.groups["groups"][str(channel.id)] = {"owner_id": requested_channel_config["owner_id"]}
+        self.groups["groups"][str(channel.id)] = {
+            "owner_id": requested_channel_config["owner_id"],
+            "last_rename": int(time.time())
+        }
 
         await self.remove_group_request(message)
         if not direct:
@@ -399,8 +401,12 @@ class LearningGroups(commands.Cog):
         channel = await self.bot.fetch_channel(str(channel.id))
         group_config = self.groups["groups"].get(str(channel.id))
         guild = await self.bot.fetch_guild(int(self.guild_id))
+        mods = guild.get_role(int(self.mod_role))
 
-        overwrites = {guild.default_role: disnake.PermissionOverwrite(read_messages=False)}
+        overwrites = {
+            mods: disnake.PermissionOverwrite(read_messages=True),
+            guild.default_role: disnake.PermissionOverwrite(read_messages=False)
+        }
 
         if not group_config:
             return overwrites
@@ -428,7 +434,7 @@ class LearningGroups(commands.Cog):
     @commands.group(name="lg", aliases=["learninggroup", "lerngruppe"], pass_context=True)
     async def cmd_lg(self, ctx):
         if not ctx.invoked_subcommand:
-            await self.cmd_module_info(ctx)
+            await ctx.channel.send("Gib `!help lg` ein um eine Übersicht über die Lerngruppen-Kommandos zu erhalten.")
 
     @help(
         command_group="lg",
@@ -688,11 +694,17 @@ class LearningGroups(commands.Cog):
         brief="Fügt einen Benutzer zu einer Lerngruppe hinzu.",
         parameters={
             "@usermention": "Der so erwähnte Benutzer wird zur Lerngruppe hinzugefügt.",
-            "#channel": "Der Kanal dem der Benutzer hinzugefügt werden soll."
+            "#channel": "(optional) Der Kanal dem der Benutzer hinzugefügt werden soll."
         }
     )
     @cmd_lg.command(name="addmember", aliases=["addm", "am"])
-    async def cmd_add_member(self, ctx, arg_member: disnake.Member, arg_channel: disnake.TextChannel):
+    async def cmd_add_member(self, ctx, arg_member: disnake.Member, arg_channel: disnake.TextChannel = None):
+        if not arg_channel:
+            if not self.channels.get(str(ctx.channel.id)):
+                await ctx.channel.send("Wenn das Kommando außerhalb eines Lerngruppenkanals aufgerufen wird, muss der" 
+                                       "Lerngruppenkanal angehängt werden. `!lg addmember <@usermention> <#channel>`")
+                return
+            arg_channel = ctx.channel
         if self.is_group_owner(arg_channel, ctx.author) or utils.is_mod(ctx):
             await self.add_member_to_group(arg_channel, arg_member)
             await self.update_permissions(arg_channel)
@@ -730,14 +742,15 @@ class LearningGroups(commands.Cog):
 
         users = group_config.get("users")
         if not users:
-            await ctx.channel.send("Keine Benutzer vorhanden.")
+            await ctx.channel.send("Keine Lerngruppenmitglieder vorhanden.")
+
             return
 
         names = []
         for user_id in users:
             user = await self.bot.fetch_user(user_id)
             names.append("@" + user.name)
-        await ctx.channel.send(f"Members:  {', '.join(names)}")
+        await ctx.channel.send(f"Mitglieder:  {', '.join(names)}")
 
     @help(
         command_group="lg",
