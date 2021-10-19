@@ -1,10 +1,11 @@
+from asyncio import sleep
 import json
 import os
 from typing import Union
 
 import disnake
 from disnake import ApplicationCommandInteraction, ButtonStyle
-from disnake.ext import commands
+from disnake.ext import commands, tasks
 from dotenv import load_dotenv
 
 from utils import send_dm
@@ -30,6 +31,8 @@ class ElmStreet(commands.Cog):
         self.bot.view_manager.register("on_join", self.on_join)
         self.bot.view_manager.register("on_joined", self.on_joined)
         self.bot.view_manager.register("on_start", self.on_start)
+
+        self.increase_courage.start()
 
     def load(self):
         with open("data/elm_street_groups.json", "r") as groups_file:
@@ -104,7 +107,7 @@ class ElmStreet(commands.Cog):
                                         fields =[{'name': 'aktuelle Mutpunkte', 'value': self.get_courage_message(player)}],
                                         custom_prefix="rekrut",
                                         callback_key="on_joined")
-                            player.get('messages').append(msg.id)
+                            player.get('messages').append({'id': msg.id, 'channel': msg.channel.id})
                             self.save()
                         else:
                             await interaction.response.send_message(
@@ -146,6 +149,7 @@ class ElmStreet(commands.Cog):
                 groupname = interaction.channel.name
                 await send_dm(user, f"Die Gruppe {groupname} hat entschieden, dich nicht mitlaufen zu lassen, du siehst"
                                     f" nicht gruselig genug aus. Zieh dich um und versuch es noch einmal.")
+            self.delete_message_from_player(player_id, interaction.message.id)
             await interaction.message.delete()
         else:
             await interaction.response.send_message("Nur die Gruppenerstellerin kann User annehmen oder ablehnen.",
@@ -210,3 +214,35 @@ class ElmStreet(commands.Cog):
         message = f"{courage}"
         return message
 
+    def delete_message_from_player(self, player_id, message_id):
+        if player := self.players.get(str(player_id)):
+            messages = player.get('messages')
+            for msg in messages:
+                if msg['id'] == message_id:
+                    messages.remove(msg)
+                    self.save()
+
+    @tasks.loop(minutes=5)
+    async def increase_courage(self):
+        # pro Spieler: courage erhöhen
+        for player in self.players:
+            player = self.players.get(player)
+            courage = player.get('courage')
+            if courage < self.max_courage:
+                courage += self.inc_courage_step
+                player['courage'] = courage if courage < self.max_courage else self.max_courage
+                self.save()
+
+                # pro Nachricht: Nachricht erneuern
+                if messages := player.get('messages'):
+                    for message in messages:
+                        channel = await self.bot.fetch_channel(message['channel'])
+                        msg = await channel.fetch_message(message['id'])
+                        embed = msg.embeds[0]
+                        embed.clear_fields()
+                        embed.add_field(name='aktuelle Mutpunkte', value=self.get_courage_message(player))
+                        await msg.edit(embed=embed)
+
+    @increase_courage.before_loop
+    async def before_increase(self):
+        await sleep(10)
