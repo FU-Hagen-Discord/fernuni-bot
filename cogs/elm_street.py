@@ -18,6 +18,11 @@ def get_player_from_embed(embed: disnake.Embed):
 
 class ElmStreet(commands.Cog):
     def __init__(self, bot):
+
+        self.max_courage = 100
+        self.min_courage = 20
+        self.inc_courage_step = 10
+
         self.bot = bot
         self.groups = {}
         self.players = {}
@@ -89,10 +94,13 @@ class ElmStreet(commands.Cog):
                 if not self.is_already_in_this_group(interaction.author.id, interaction.message.id):
                     if not self.is_playing(interaction.author.id):
                         thread = await self.bot.fetch_channel(value)
-                        await self.bot.view_manager.confirm(thread, "Neuer Rekrut",
-                                      f"{interaction.author.mention} würde sich gerne der Gruppe anschließen",
-                                      custom_prefix="rekrut",
-                                      callback_key="on_joined")
+                        msg = await self.bot.view_manager.confirm(thread, "Neuer Rekrut",
+                                    f"{interaction.author.mention} würde sich gerne der Gruppe anschließen.",
+                                    fields =[{'name': 'aktuelle Mutpunkte', 'value': self.get_courage_message(player)}],
+                                    custom_prefix="rekrut",
+                                    callback_key="on_joined")
+                        player.get('messages').append(msg.id)
+                        self.save()
                     else:
                         await interaction.response.send_message(
                             "Es tut mir leid, aber du kannst nicht an mehr als einer Jagd gleichzeitig teilnehmen. "
@@ -182,7 +190,13 @@ class ElmStreet(commands.Cog):
         if player := self.players.get(str(user.id)):
             return player
         else:
-            player = {"courage": 100, "sweets": 0}
+            player = {"courage": self.max_courage, "sweets": 0, "messages": []}
             self.players[str(user.id)] = player
             self.save()
             return player
+
+    def get_courage_message(self, player):
+        courage = player.get('courage')
+        message = f"{courage}"
+        return message
+
