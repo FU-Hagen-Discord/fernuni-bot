@@ -5,7 +5,9 @@ import time
 from typing import Union
 
 import disnake
+from disnake import MessageInteraction, InteractionMessage
 from disnake.ext import commands
+from disnake.ui import Button
 
 import utils
 from cogs.help import help, handle_error, help_category
@@ -50,6 +52,20 @@ class LearningGroups(commands.Cog):
         self.header = {}  # headlines for statusmessage
         self.load_groups()
         self.load_header()
+
+    @commands.Cog.listener()
+    async def on_button_click(self, interaction: InteractionMessage):
+        button: Button = interaction.component
+
+        if button.custom_id == "learninggroups:group_yes":
+            await self.on_group_request(True, button, interaction)
+        elif button.custom_id == "learninggroups:group_no":
+            await self.on_group_request(False, button, interaction)
+        elif button.custom_id == "learninggroups:join_yes":
+            await self.on_join_request(True, button, interaction)
+        elif button.custom_id == "learninggroups:join_no":
+            await self.on_join_request(False, button, interaction)
+
 
     @commands.Cog.listener(name="on_ready")
     async def on_ready(self):
@@ -130,7 +146,7 @@ class LearningGroups(commands.Cog):
         seconds = channel_config["last_rename"] + self.rename_ratelimit - now
         if seconds > 0:
             channel = await self.bot.fetch_channel(int(channel_config["channel_id"]))
-            await channel.send(f"Fehler! Du kannst diese Aktion erst wieder in {seconds} Sekunden ausführen.")
+            await channel.send(f"Discord limitiert die Aufrufe für manche Funktionen, daher kannst du diese Aktion erst wieder in {seconds} Sekunden ausführen.")
         return seconds > 0
 
     async def category_of_channel(self, is_open):
@@ -353,6 +369,7 @@ class LearningGroups(commands.Cog):
                                           "Dieser Link führt dich direkt zum Lerngruppen-Channel. " 
                                           "Diese Nachricht kannst du bei Bedarf in unserer Unterhaltung " 
                                           "über Rechtsklick anpinnen.")
+
         group_config["users"] = users
 
         await self.save_groups()
@@ -521,7 +538,7 @@ class LearningGroups(commands.Cog):
             channel=channel,
             title="Lerngruppenanfrage",
             description=f"<@!{ctx.author.id}> möchte gerne die Lerngruppe **#{channel_name}** eröffnen.",
-            callback=self.on_group_request
+            custom_prefix="learninggroups:group"
         )
         self.groups["requested"][str(message.id)] = channel_config
         await self.save_groups()
@@ -754,7 +771,7 @@ class LearningGroups(commands.Cog):
             title="Jemand möchte deiner Lerngruppe beitreten!",
             description=f"<@!{ctx.author.id}> möchte gerne der Lerngruppe **#{channel.name}** beitreten.",
             message=f"Anfrage von <@!{ctx.author.id}>",
-            callback=self.on_join_request
+            custom_prefix="learninggroups:join"
         )
 
     @help(
@@ -794,7 +811,7 @@ class LearningGroups(commands.Cog):
         await self.remove_member_from_group(ctx.channel, ctx.author)
         await self.update_permissions(ctx.channel)
 
-    async def on_group_request(self, confirmed, button, interaction: disnake.InteractionMessage):
+    async def on_group_request(self, confirmed, button, interaction: InteractionMessage):
         channel = interaction.channel
         member = interaction.author
         message = interaction.message
@@ -813,7 +830,7 @@ class LearningGroups(commands.Cog):
 
                 await message.delete()
 
-    async def on_join_request(self, confirmed, button, interaction: disnake.InteractionMessage):
+    async def on_join_request(self, confirmed, button, interaction: InteractionMessage):
         channel = interaction.channel
         member = interaction.author
         message = interaction.message
