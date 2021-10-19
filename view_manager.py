@@ -30,12 +30,13 @@ class ViewManager:
     def register(self, key, func):
         self.functions[key] = func
 
-    async def confirm(self, channel, title, description, custom_prefix, message="", callback_key: str = None):
+    async def confirm(self, channel, title, description, custom_prefix, message="", fields=[], callback_key: str = None):
         return await self.dialog(
             channel=channel,
             title=title,
             description=description,
             message=message,
+            fields=fields,
             callback_key=callback_key,
             buttons=[
                 {"emoji": "👍", "custom_id": f"{custom_prefix}_confirm_yes", "value": True},
@@ -43,10 +44,12 @@ class ViewManager:
             ]
         )
 
-    async def dialog(self, channel, title, description, message="", buttons=None, callback_key: str = None):
+    async def dialog(self, channel, title, description, message="", fields=[], buttons=None, callback_key: str = None):
         embed = disnake.Embed(title=title,
                               description=description,
                               color=19607)
+        for field in fields:
+            embed.add_field(**field)
         return await channel.send(message, embed=embed, view=self.view(buttons, callback_key))
 
     def view(self, buttons=None, callback_key: str = None):
