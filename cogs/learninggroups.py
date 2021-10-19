@@ -5,7 +5,9 @@ import time
 from typing import Union
 
 import disnake
+from disnake import MessageInteraction, InteractionMessage
 from disnake.ext import commands
+from disnake.ui import Button
 
 import utils
 from cogs.help import help, handle_error, help_category
@@ -50,6 +52,20 @@ class LearningGroups(commands.Cog):
         self.header = {}  # headlines for statusmessage
         self.load_groups()
         self.load_header()
+
+    @commands.Cog.listener()
+    async def on_button_click(self, interaction: InteractionMessage):
+        button: Button = interaction.component
+
+        if button.custom_id == "learninggroups:group_yes":
+            await self.on_group_request(True, button, interaction)
+        elif button.custom_id == "learninggroups:group_no":
+            await self.on_group_request(False, button, interaction)
+        elif button.custom_id == "learninggroups:join_yes":
+            await self.on_join_request(True, button, interaction)
+        elif button.custom_id == "learninggroups:join_no":
+            await self.on_join_request(False, button, interaction)
+
 
     @commands.Cog.listener(name="on_ready")
     async def on_ready(self):
@@ -130,7 +146,7 @@ class LearningGroups(commands.Cog):
         seconds = channel_config["last_rename"] + self.rename_ratelimit - now
         if seconds > 0:
             channel = await self.bot.fetch_channel(int(channel_config["channel_id"]))
-            await channel.send(f"Fehler! Du kannst diese Aktion erst wieder in {seconds} Sekunden ausführen.")
+            await channel.send(f"Discord limitiert die Aufrufe für manche Funktionen, daher kannst du diese Aktion erst wieder in {seconds} Sekunden ausführen.")
         return seconds > 0
 
     async def category_of_channel(self, is_open):
@@ -353,6 +369,7 @@ class LearningGroups(commands.Cog):
                                           "Dieser Link führt dich direkt zum Lerngruppen-Channel. " 
                                           "Diese Nachricht kannst du bei Bedarf in unserer Unterhaltung " 
                                           "über Rechtsklick anpinnen.")
+
         group_config["users"] = users
 
         await self.save_groups()
@@ -367,7 +384,10 @@ class LearningGroups(commands.Cog):
         if not users:
             return
         mid = str(arg_member.id)
-        users.pop(mid, None)
+        if users.pop(mid, None):
+            user = await self.bot.fetch_user(mid)
+            if user:
+                await utils.send_dm(user, f"Du wurdest aus der Lerngruppe {channel.name} entfernt")
 
         await self.save_groups()
 
@@ -407,10 +427,8 @@ class LearningGroups(commands.Cog):
     )
     @commands.group(name="lg", aliases=["learninggroup", "lerngruppe"], pass_context=True)
     async def cmd_lg(self, ctx):
-        return
-        #pass
-        # if not ctx.invoked_subcommand:
-        #    await self.cmd_module_info(ctx)
+        if not ctx.invoked_subcommand:
+            await self.cmd_module_info(ctx)
 
     @help(
         command_group="lg",
@@ -521,7 +539,7 @@ class LearningGroups(commands.Cog):
             channel=channel,
             title="Lerngruppenanfrage",
             description=f"<@!{ctx.author.id}> möchte gerne die Lerngruppe **#{channel_name}** eröffnen.",
-            callback=self.on_group_request
+            custom_prefix="learninggroups:group"
         )
         self.groups["requested"][str(message.id)] = channel_config
         await self.save_groups()
@@ -539,7 +557,13 @@ class LearningGroups(commands.Cog):
     @cmd_lg.command(name="show")
     async def cmd_show(self, ctx):
         if self.is_group_owner(ctx.channel, ctx.author) or utils.is_mod(ctx):
-            await self.set_channel_state(ctx.channel, is_listed=True)
+            channel_config = self.channels[str(ctx.channel.id)]
+            if channel_config:
+                if channel_config.get("is_open"):
+                    ctx.channel.send("Nichts zu tun. Offene Lerngruppen werden sowieso in der Liste angezeigt.")
+                    return
+                if await self.set_channel_state(ctx.channel, is_listed=True):
+                    ctx.channel.send("Die Lerngruppe wird nun in der Lerngruppenliste angezeigt.")
 
     @help(
         command_group="lg",
@@ -547,13 +571,19 @@ class LearningGroups(commands.Cog):
         syntax="!lg hide",
         brief="Versteckt einen privaten Lerngruppenkanal. ",
         description=("Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. "
-                     "Die Lerngruppe wird nicht mehr in der Liste der Lerngruppen aufgeführt."
+                     "Die Lerngruppe wird nicht mehr in der Liste der Lerngruppen aufgeführt. "
                      "Diese Aktion kann nur von der Besitzerin der Lerngruppe ausgeführt werden. ")
     )
     @cmd_lg.command(name="hide")
     async def cmd_hide(self, ctx):
         if self.is_group_owner(ctx.channel, ctx.author) or utils.is_mod(ctx):
-            await self.set_channel_state(ctx.channel, is_listed=False)
+            channel_config = self.channels[str(ctx.channel.id)]
+            if channel_config.get("is_open"):
+                ctx.channel.send("Offene Lerngruppen können nicht versteckt werden. Führe `!lg close` aus um " 
+                                 "die Lerngruppe zu schließen und zu verstecken.")
+                return
+            if await self.set_channel_state(ctx.channel, is_listed=False):
+                ctx.channel.send("Die Lerngruppe wird nun nicht mehr in der Lerngruppenliste angezeigt.")
 
     @help(
         command_group="lg",
@@ -754,8 +784,11 @@ class LearningGroups(commands.Cog):
             title="Jemand möchte deiner Lerngruppe beitreten!",
             description=f"<@!{ctx.author.id}> möchte gerne der Lerngruppe **#{channel.name}** beitreten.",
             message=f"Anfrage von <@!{ctx.author.id}>",
-            callback=self.on_join_request
+            custom_prefix="learninggroups:join"
         )
+        await utils.send_dm(ctx.author, f"Deine Anfrage wurde an **#{channel.name}** gesendet. "
+                                        "Sobald der Besitzer der Lerngruppe darüber "
+                                        "entschieden hat bekommst du bescheid.")
 
     @help(
         command_group="lg",
@@ -794,7 +827,7 @@ class LearningGroups(commands.Cog):
         await self.remove_member_from_group(ctx.channel, ctx.author)
         await self.update_permissions(ctx.channel)
 
-    async def on_group_request(self, confirmed, button, interaction: disnake.InteractionMessage):
+    async def on_group_request(self, confirmed, button, interaction: InteractionMessage):
         channel = interaction.channel
         member = interaction.author
         message = interaction.message
@@ -813,7 +846,7 @@ class LearningGroups(commands.Cog):
 
                 await message.delete()
 
-    async def on_join_request(self, confirmed, button, interaction: disnake.InteractionMessage):
+    async def on_join_request(self, confirmed, button, interaction: InteractionMessage):
         channel = interaction.channel
         member = interaction.author
         message = interaction.message
@@ -830,7 +863,10 @@ class LearningGroups(commands.Cog):
 
                 else:
                     await channel.send(f"Leider ist ein Fehler aufgetreten.")
-
+            else:
+                if message.mentions and len(message.mentions) == 1:
+                    await utils.send_dm(message.mentions[0], f"Deine Anfrage für die Lerngruppe **#{channel.name}**" 
+                                                             "wurde abgelehnt.")
             await message.delete()
 
     async def cog_command_error(self, ctx, error):

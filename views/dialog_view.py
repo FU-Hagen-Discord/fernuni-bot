@@ -1,7 +1,5 @@
 import disnake
-from disnake import MessageInteraction, ButtonStyle
-from disnake.ui import Button
-
+from disnake import  ButtonStyle
 
 class DialogView(disnake.ui.View):
     def __init__(self, buttons=None, callback=None):
@@ -21,7 +19,8 @@ class DialogView(disnake.ui.View):
             row=config.get("row", None)
         )
         button.value = config.get("value")
-        button.callback = self.internal_callback(button)
+        if self.callback:
+            button.callback = self.internal_callback(button)
         self.add_item(button)
 
     def internal_callback(self, button):
