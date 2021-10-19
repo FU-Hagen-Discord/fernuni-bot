@@ -384,7 +384,10 @@ class LearningGroups(commands.Cog):
         if not users:
             return
         mid = str(arg_member.id)
-        users.pop(mid, None)
+        if users.pop(mid, None):
+            user = await self.bot.fetch_user(mid)
+            if user:
+                await utils.send_dm(user, f"Du wurdest aus der Lerngruppe {channel.name} entfernt")
 
         await self.save_groups()
 
@@ -424,10 +427,8 @@ class LearningGroups(commands.Cog):
     )
     @commands.group(name="lg", aliases=["learninggroup", "lerngruppe"], pass_context=True)
     async def cmd_lg(self, ctx):
-        return
-        #pass
-        # if not ctx.invoked_subcommand:
-        #    await self.cmd_module_info(ctx)
+        if not ctx.invoked_subcommand:
+            await self.cmd_module_info(ctx)
 
     @help(
         command_group="lg",
@@ -556,7 +557,13 @@ class LearningGroups(commands.Cog):
     @cmd_lg.command(name="show")
     async def cmd_show(self, ctx):
         if self.is_group_owner(ctx.channel, ctx.author) or utils.is_mod(ctx):
-            await self.set_channel_state(ctx.channel, is_listed=True)
+            channel_config = self.channels[str(ctx.channel.id)]
+            if channel_config:
+                if channel_config.get("is_open"):
+                    ctx.channel.send("Nichts zu tun. Offene Lerngruppen werden sowieso in der Liste angezeigt.")
+                    return
+                if await self.set_channel_state(ctx.channel, is_listed=True):
+                    ctx.channel.send("Die Lerngruppe wird nun in der Lerngruppenliste angezeigt.")
 
     @help(
         command_group="lg",
@@ -564,13 +571,19 @@ class LearningGroups(commands.Cog):
         syntax="!lg hide",
         brief="Versteckt einen privaten Lerngruppenkanal. ",
         description=("Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. "
-                     "Die Lerngruppe wird nicht mehr in der Liste der Lerngruppen aufgeführt."
+                     "Die Lerngruppe wird nicht mehr in der Liste der Lerngruppen aufgeführt. "
                      "Diese Aktion kann nur von der Besitzerin der Lerngruppe ausgeführt werden. ")
     )
     @cmd_lg.command(name="hide")
     async def cmd_hide(self, ctx):
         if self.is_group_owner(ctx.channel, ctx.author) or utils.is_mod(ctx):
-            await self.set_channel_state(ctx.channel, is_listed=False)
+            channel_config = self.channels[str(ctx.channel.id)]
+            if channel_config.get("is_open"):
+                ctx.channel.send("Offene Lerngruppen können nicht versteckt werden. Führe `!lg close` aus um " 
+                                 "die Lerngruppe zu schließen und zu verstecken.")
+                return
+            if await self.set_channel_state(ctx.channel, is_listed=False):
+                ctx.channel.send("Die Lerngruppe wird nun nicht mehr in der Lerngruppenliste angezeigt.")
 
     @help(
         command_group="lg",
@@ -773,6 +786,9 @@ class LearningGroups(commands.Cog):
             message=f"Anfrage von <@!{ctx.author.id}>",
             custom_prefix="learninggroups:join"
         )
+        await utils.send_dm(ctx.author, f"Deine Anfrage wurde an **#{channel.name}** gesendet. "
+                                        "Sobald der Besitzer der Lerngruppe darüber "
+                                        "entschieden hat bekommst du bescheid.")
 
     @help(
         command_group="lg",
@@ -847,7 +863,10 @@ class LearningGroups(commands.Cog):
 
                 else:
                     await channel.send(f"Leider ist ein Fehler aufgetreten.")
-
+            else:
+                if message.mentions and len(message.mentions) == 1:
+                    await utils.send_dm(message.mentions[0], f"Deine Anfrage für die Lerngruppe **#{channel.name}**" 
+                                                             "wurde abgelehnt.")
             await message.delete()
 
     async def cog_command_error(self, ctx, error):
