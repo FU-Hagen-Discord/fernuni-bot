@@ -566,10 +566,10 @@ class LearningGroups(commands.Cog):
             channel_config = self.channels[str(ctx.channel.id)]
             if channel_config:
                 if channel_config.get("is_open"):
-                    ctx.channel.send("Nichts zu tun. Offene Lerngruppen werden sowieso in der Liste angezeigt.")
+                    await ctx.channel.send("Nichts zu tun. Offene Lerngruppen werden sowieso in der Liste angezeigt.")
                     return
                 if await self.set_channel_state(ctx.channel, is_listed=True):
-                    ctx.channel.send("Die Lerngruppe wird nun in der Lerngruppenliste angezeigt.")
+                    await ctx.channel.send("Die Lerngruppe wird nun in der Lerngruppenliste angezeigt.")
 
     @help(
         command_group="lg",
@@ -585,11 +585,11 @@ class LearningGroups(commands.Cog):
         if self.is_group_owner(ctx.channel, ctx.author) or utils.is_mod(ctx):
             channel_config = self.channels[str(ctx.channel.id)]
             if channel_config.get("is_open"):
-                ctx.channel.send("Offene Lerngruppen können nicht versteckt werden. Führe `!lg close` aus um " 
+                await ctx.channel.send("Offene Lerngruppen können nicht versteckt werden. Führe `!lg close` aus um " 
                                  "die Lerngruppe zu schließen und zu verstecken.")
                 return
             if await self.set_channel_state(ctx.channel, is_listed=False):
-                ctx.channel.send("Die Lerngruppe wird nun nicht mehr in der Lerngruppenliste angezeigt.")
+                await ctx.channel.send("Die Lerngruppe wird nun nicht mehr in der Lerngruppenliste angezeigt.")
 
     @help(
         command_group="lg",
