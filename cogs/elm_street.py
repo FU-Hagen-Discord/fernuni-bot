@@ -1,10 +1,11 @@
 from asyncio import sleep
 import json
 import os
+from enum import Enum
 from typing import Union
 
 import disnake
-from disnake import ApplicationCommandInteraction, ButtonStyle
+from disnake import ApplicationCommandInteraction, ButtonStyle, InteractionResponse
 from disnake.ext import commands, tasks
 from dotenv import load_dotenv
 
@@ -15,6 +16,10 @@ load_dotenv()
 
 def get_player_from_embed(embed: disnake.Embed):
     return embed.description.split()[0][2:-1]
+
+
+ShowOption = commands.option_enum(["10", "all"])
+
 
 class ElmStreet(commands.Cog):
     def __init__(self, bot):
@@ -45,6 +50,13 @@ class ElmStreet(commands.Cog):
             json.dump(self.groups, groups_file)
         with open("data/elm_street_players.json", "w") as players_file:
             json.dump(self.players, players_file)
+
+    @commands.slash_command(name="leaderboard",
+                            description="Zeigt das Leaderboard der Elm Street Sammlerinnen-Gemeinschaft an.",
+                            guild_ids=[int(os.getenv('DISCORD_GUILD'))])
+    async def cmd_leaderboard(self, interaction: ApplicationCommandInteraction, show: ShowOption = "10"):
+        embed = await self.leaderboard(all=show)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @commands.slash_command(name="start-group",
                             description="Erstelle eine Gruppe für einen Streifzug durch die Elm Street",
@@ -103,10 +115,12 @@ class ElmStreet(commands.Cog):
                         if not self.is_playing(interaction.author.id):
                             thread = await self.bot.fetch_channel(value)
                             msg = await self.bot.view_manager.confirm(thread, "Neuer Rekrut",
-                                        f"{interaction.author.mention} würde sich gerne der Gruppe anschließen.",
-                                        fields =[{'name': 'aktuelle Mutpunkte', 'value': self.get_courage_message(player)}],
-                                        custom_prefix="rekrut",
-                                        callback_key="on_joined")
+                                                                      f"{interaction.author.mention} würde sich gerne der Gruppe anschließen.",
+                                                                      fields=[{'name': 'aktuelle Mutpunkte',
+                                                                               'value': self.get_courage_message(
+                                                                                   player)}],
+                                                                      custom_prefix="rekrut",
+                                                                      callback_key="on_joined")
                             player.get('messages').append({'id': msg.id, 'channel': msg.channel.id})
                             self.save()
                         else:
@@ -115,8 +129,9 @@ class ElmStreet(commands.Cog):
                                 "Beende erst das bisherige Abenteuer, bevor du dich einer neuen Gruppe anschließen kannst.",
                                 ephemeral=True)
                     else:
-                        await interaction.response.send_message("Du bist schon Teil dieser Gruppe! Schau doch mal in eurem "
-                                                                "Thread vorbei.", ephemeral=True)
+                        await interaction.response.send_message(
+                            "Du bist schon Teil dieser Gruppe! Schau doch mal in eurem "
+                            "Thread vorbei.", ephemeral=True)
                 else:
                     await interaction.response.send_message(
                         "Du zitterst noch zu sehr von deiner letzten Runde. Ruh dich noch ein wenig aus bevor du weiter spielst.",
@@ -221,6 +236,42 @@ class ElmStreet(commands.Cog):
                 if msg['id'] == message_id:
                     messages.remove(msg)
                     self.save()
+
+    async def leaderboard(self, all: ShowOption = 10, interaction:ApplicationCommandInteraction=None):
+        places = scores = "\u200b"
+        place = 0
+        max = 0 if all == "all" else 10
+        ready = False
+        embed = disnake.Embed(title="Elm-Street Leaderboard",
+                              description="Wie süß bist du wirklich??\n" +
+                                          (":jack_o_lantern: " * 8))
+        last_score = -1
+        for player_id, player_data in sorted(self.players.items(), key=lambda item: item[1]["sweets"], reverse=True):
+            value = player_data["sweets"]
+            # embed.set_thumbnail(
+            #     url="https://www.planet-wissen.de/kultur/religion/ostern/tempxostereiergjpg100~_v-gseagaleriexl.jpg")
+            elm_street_channel = await self.bot.fetch_channel(self.elm_street_channel_id)
+            try:
+                if last_score != value:
+                    place += 1
+                last_score = value
+                if 0 < max < place:
+                    if ready:
+                        break
+                    # elif str(ctx.author.id) != player_id:
+                    #    continue
+                places += f"{place}: <@!{player_id}>\n"
+                scores += f"{value:,}\n".replace(",", ".")
+
+                # if str(ctx.author.id) == player_id:
+                #    ready = True
+            except:
+                pass
+
+        embed.add_field(name=f"Sammlerin", value=places)
+        embed.add_field(name=f"Süßigkeiten", value=scores)
+        return embed
+        #await elm_street_channel.send("", embed=embed)
 
     @tasks.loop(minutes=5)
     async def increase_courage(self):
