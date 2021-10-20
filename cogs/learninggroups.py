@@ -614,12 +614,14 @@ class LearningGroups(commands.Cog):
         if self.is_group_owner(ctx.channel, ctx.author) or utils.is_mod(ctx):
             channel_config = self.channels[str(ctx.channel.id)]
             if channel_config:
-                if channel_config.get("state") == GroupState.OPEN:
+                if channel_config.get("state") == GroupState.PRIVATE:
+                    if await self.set_channel_listing(ctx.channel, True):
+                        await ctx.channel.send("Die Lerngruppe wird nun in der Lerngruppenliste angezeigt.")
+                elif channel_config.get("state") == GroupState.OPEN:
                     await ctx.channel.send("Nichts zu tun. Offene Lerngruppen werden sowieso in der Liste angezeigt.")
-                    return
+                elif channel_config.get("state") == GroupState.CLOSE:
+                    await ctx.channel.send("Warum dann nicht `!lg open`?")
 
-                if await self.set_channel_listing(ctx.channel, True):
-                    await ctx.channel.send("Die Lerngruppe wird nun in der Lerngruppenliste angezeigt.")
 
     @help(
         command_group="lg",
@@ -634,14 +636,22 @@ class LearningGroups(commands.Cog):
     async def cmd_hide(self, ctx):
         if self.is_group_owner(ctx.channel, ctx.author) or utils.is_mod(ctx):
             channel_config = self.channels[str(ctx.channel.id)]
-            if channel_config.get("state") == GroupState.OPEN:
-                await ctx.channel.send("Offene Lerngruppen können nicht versteckt werden. Führe `!lg close` aus um " 
-                                       "die Lerngruppe zu schließen, oder `!lg private` um diese auf " 
-                                       "privat zu schalten.")
-                return
+            if channel_config:
+                if channel_config.get("state") == GroupState.PRIVATE:
+                    if await self.set_channel_listing(ctx.channel, False):
+                        await ctx.channel.send("Die Lerngruppe wird nun nicht mehr in der Lerngruppenliste angezeigt.")
+                    return
 
-            if await self.set_channel_listing(ctx.channel, False):
-                await ctx.channel.send("Die Lerngruppe wird nun nicht mehr in der Lerngruppenliste angezeigt.")
+                elif channel_config.get("state") == GroupState.OPEN:
+                    await ctx.channel.send("Offene Lerngruppen können nicht aus der Lerngruppenliste entfernt werden. " 
+                                           "Führe `!lg close` aus um die Lerngruppe zu schließen, "
+                                           "oder `!lg private` um diese auf "
+                                           "privat zu schalten.")
+                elif channel_config.get("state") == GroupState.CLOSE:
+                    await ctx.channel.send("Warum dann nicht `!lg open`?")
+
+
+
 
 
 
