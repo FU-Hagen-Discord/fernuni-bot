@@ -81,7 +81,7 @@ class ElmStreet(commands.Cog):
                     view=self.get_join_view(thread.id))
 
                 message = await interaction.original_message()
-                self.groups[str(thread.id)] = {"message": message.id, "players": [author.id], "owner": author.id}
+                self.groups[str(thread.id)] = {"message": message.id, "players": [author.id], "owner": author.id, "requests": []}
                 self.save()
             else:
                 await interaction.response.send_message(
@@ -98,28 +98,34 @@ class ElmStreet(commands.Cog):
 
         try:
             if group := self.groups.get(str(value)):
-                if self.can_play(player):
-                    if not self.is_already_in_this_group(interaction.author.id, interaction.message.id):
-                        if not self.is_playing(interaction.author.id):
-                            thread = await self.bot.fetch_channel(value)
-                            msg = await self.bot.view_manager.confirm(thread, "Neuer Rekrut",
-                                        f"{interaction.author.mention} würde sich gerne der Gruppe anschließen.",
-                                        fields =[{'name': 'aktuelle Mutpunkte', 'value': self.get_courage_message(player)}],
-                                        custom_prefix="rekrut",
-                                        callback_key="on_joined")
-                            player.get('messages').append({'id': msg.id, 'channel': msg.channel.id})
-                            self.save()
+                if interaction.author.id not in group.get('requests'):
+                    if self.can_play(player):
+                        if not self.is_already_in_this_group(interaction.author.id, interaction.message.id):
+                            if not self.is_playing(interaction.author.id):
+                                thread = await self.bot.fetch_channel(value)
+                                msg = await self.bot.view_manager.confirm(thread, "Neuer Rekrut",
+                                            f"{interaction.author.mention} würde sich gerne der Gruppe anschließen.",
+                                            fields =[{'name': 'aktuelle Mutpunkte', 'value': self.get_courage_message(player)}],
+                                            custom_prefix="rekrut",
+                                            callback_key="on_joined")
+                                player.get('messages').append({'id': msg.id, 'channel': thread.id})
+                                group.get('requests').append({'player': interaction.author.id, 'id': msg.id})
+                                self.save()
+                            else:
+                                await interaction.response.send_message(
+                                    "Es tut mir leid, aber du kannst nicht an mehr als einer Jagd gleichzeitig teilnehmen. "
+                                    "Beende erst das bisherige Abenteuer, bevor du dich einer neuen Gruppe anschließen kannst.",
+                                    ephemeral=True)
                         else:
-                            await interaction.response.send_message(
-                                "Es tut mir leid, aber du kannst nicht an mehr als einer Jagd gleichzeitig teilnehmen. "
-                                "Beende erst das bisherige Abenteuer, bevor du dich einer neuen Gruppe anschließen kannst.",
-                                ephemeral=True)
+                            await interaction.response.send_message("Du bist schon Teil dieser Gruppe! Schau doch mal in eurem "
+                                                                    "Thread vorbei.", ephemeral=True)
                     else:
-                        await interaction.response.send_message("Du bist schon Teil dieser Gruppe! Schau doch mal in eurem "
-                                                                "Thread vorbei.", ephemeral=True)
+                        await interaction.response.send_message(
+                            "Du zitterst noch zu sehr von deiner letzten Runde. Ruh dich noch ein wenig aus bevor du weiter spielst.",
+                            ephemeral=True)
                 else:
                     await interaction.response.send_message(
-                        "Du zitterst noch zu sehr von deiner letzten Runde. Ruh dich noch ein wenig aus bevor du weiter spielst.",
+                        "Für diese Gruppe hast du dich schon beworben. Warte auf eine Entscheidung des Gruppenleiters.",
                         ephemeral=True)
         except:
             await interaction.response.send_message(
@@ -141,18 +147,34 @@ class ElmStreet(commands.Cog):
                 if group := self.groups.get(str(interaction.channel_id)):
                     if not self.is_playing(player_id):
                         group["players"].append(player_id)
+
+                        # Request-Nachrichten aus allen Threads und aus players löschen
+                        for thread_id in self.groups:
+                            requests = self.groups.get(str(thread_id)).get('requests')
+                            for request in requests:
+                                if request['player'] == player_id:
+                                    thread = await self.bot.fetch_channel(int(thread_id))
+                                    message = await thread.fetch_message(request['id'])
+                                    await message.delete()
+                                    self.delete_message_from_player(player_id, request['id'])
+                                    requests.remove(request)
+
                         await interaction.message.channel.send(
                             f"<@!{player_id}> ist jetzt Teil der Crew! Herzlich willkommen.")
                         self.save()
             else:
-                user = self.bot.get_user(player_id)
-                groupname = interaction.channel.name
-                await send_dm(user, f"Die Gruppe {groupname} hat entschieden, dich nicht mitlaufen zu lassen, du siehst"
-                                    f" nicht gruselig genug aus. Zieh dich um und versuch es noch einmal.")
-            self.delete_message_from_player(player_id, interaction.message.id)
-            await interaction.message.delete()
+                if group := self.groups.get(str(interaction.channel_id)):
+                    user = self.bot.get_user(player_id)
+                    groupname = interaction.channel.name
+                    await send_dm(user, f"Die Gruppe {groupname} hat entschieden, dich nicht mitlaufen zu lassen, du siehst"
+                                        f" nicht gruselig genug aus. Zieh dich um und versuch es noch einmal.")
+                    group["requests"].remove({'player': player_id, 'id': interaction.message.id})
+                    self.save()
+                # Request Nachricht aus diesem Thread und aus players löschen
+                self.delete_message_from_player(player_id, interaction.message.id)
+                await interaction.message.delete()
         else:
-            await interaction.response.send_message("Nur die Gruppenerstellerin kann User annehmen oder ablehnen.",
+            await interaction.response.send_message("Nur der Gruppenersteller kann User annehmen oder ablehnen.",
                                                     ephemeral=True)
 
     async def on_start(self, button: disnake.ui.Button, interaction: disnake.MessageInteraction, value=None):
