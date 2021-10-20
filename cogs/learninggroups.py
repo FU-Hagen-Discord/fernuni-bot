@@ -352,7 +352,7 @@ class LearningGroups(commands.Cog):
 
                 self.channels[str(channel.id)] = channel_config
 
-    async def add_member_to_group(self, channel: disnake.TextChannel, arg_member: disnake.Member):
+    async def add_member_to_group(self, channel: disnake.TextChannel, arg_member: disnake.Member, send_message=True):
         group_config = self.groups["groups"].get(str(channel.id))
         if not group_config:
             await channel.send("Das ist kein Lerngruppenkanal.")
@@ -365,7 +365,7 @@ class LearningGroups(commands.Cog):
         if not users.get(mid):
             users[mid] = True
             user = await self.bot.fetch_user(mid)
-            if user:
+            if user and send_message:
                 await utils.send_dm(user, f"Du wurdest in die Lerngruppe <#{channel.id}> aufgenommen. " 
                                           "Viel Spass beim gemeinsamen Lernen!\n"
                                           "Dieser Link führt dich direkt zum Lerngruppen-Channel. " 
@@ -376,7 +376,7 @@ class LearningGroups(commands.Cog):
 
         await self.save_groups()
 
-    async def remove_member_from_group(self, channel: disnake.TextChannel, arg_member: disnake.Member):
+    async def remove_member_from_group(self, channel: disnake.TextChannel, arg_member: disnake.Member, send_message=True):
         group_config = self.groups["groups"].get(str(channel.id))
         if not group_config:
             await channel.send("Das ist kein Lerngruppenkanal.")
@@ -388,7 +388,7 @@ class LearningGroups(commands.Cog):
         mid = str(arg_member.id)
         if users.pop(mid, None):
             user = await self.bot.fetch_user(mid)
-            if user:
+            if user and send_message:
                 await utils.send_dm(user, f"Du wurdest aus der Lerngruppe {channel.name} entfernt")
 
         await self.save_groups()
@@ -663,28 +663,33 @@ class LearningGroups(commands.Cog):
         }
     )
     @cmd_lg.command(name="owner")
-    async def cmd_owner(self, ctx, arg_owner: disnake.Member = None):
+    async def cmd_owner(self, ctx, new_owner: disnake.Member = None):
         group_config = self.groups["groups"].get(str(ctx.channel.id))
 
         if not group_config:
             self.groups["groups"][str(ctx.channel.id)] = {}
             group_config = self.groups["groups"][str(ctx.channel.id)]
 
-        if not arg_owner:
-            owner_id = group_config.get("owner_id")
-            if owner_id:
+        owner_id = group_config.get("owner_id")
+
+        if not owner_id:
+            return
+
+        if not new_owner:
                 user = await self.bot.fetch_user(owner_id)
                 await ctx.channel.send(f"Besitzer: @{user.name}")
 
         elif isinstance(group_config, dict):
+            owner = await self.bot.fetch_user(owner_id)
             if self.is_group_owner(ctx.channel, ctx.author) or utils.is_mod(ctx):
-                group_config["owner_id"] = arg_owner.id
-                await self.remove_member_from_group(ctx.channel, arg_owner)
-                await self.add_member_to_group(ctx.channel, ctx.author)
+                group_config["owner_id"] = new_owner.id
+                await self.remove_member_from_group(ctx.channel, new_owner, False)
+                if new_owner != owner:
+                    await self.add_member_to_group(ctx.channel, owner, False)
                 await self.save_groups()
                 await self.update_permissions(ctx.channel)
                 await ctx.channel.send(
-                    f"Glückwunsch {arg_owner.mention}! Du bist jetzt die Besitzerin dieser Lerngruppe.")
+                    f"Glückwunsch {new_owner.mention}! Du bist jetzt die Besitzerin dieser Lerngruppe.")
 
     @help(
         command_group="lg",
