@@ -758,7 +758,7 @@ class LearningGroups(commands.Cog):
 
         if not new_owner:
                 user = await self.bot.fetch_user(owner_id)
-                await ctx.channel.send(f"Besitzer: @{user.name}")
+                await ctx.channel.send(f"Besitzer: @{user.name}#{user.discriminator}")
 
         elif isinstance(group_config, dict):
             owner = await self.bot.fetch_user(owner_id)
@@ -840,9 +840,9 @@ class LearningGroups(commands.Cog):
 
         for user_id in users:
             user = await self.bot.fetch_user(user_id)
-            names.append("@" + user.name)
+            names.append("@" + user.name + "#" + user.discriminator)
 
-        await ctx.channel.send(f"Besitzer: **@{owner.name}**\nMitglieder: " +
+        await ctx.channel.send(f"Besitzer: **@{owner.name}#{owner.discriminator}**\nMitglieder: " +
                                (f"{', '.join(names)}" if len(names) > 0 else "Keine"))
 
     @help(
