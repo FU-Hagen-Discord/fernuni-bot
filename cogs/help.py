@@ -192,6 +192,7 @@ class Help(commands.Cog):
         embed = disnake.Embed(title=title,
                               description=text,
                               color=19607)
+        text += "==========================\n"
         await utils.send_dm(ctx.author, text)  # , embed=embed)
 
         for subname in data['command']:
