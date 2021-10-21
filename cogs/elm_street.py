@@ -67,43 +67,47 @@ class ElmStreet(commands.Cog):
         channel_type = None if self.bot.is_prod() else disnake.ChannelType.public_thread
         player = self.get_player(author)
 
-        if self.can_play(player):
-            if not self.is_playing(author.id):
-                thread = await channel.create_thread(name=name, auto_archive_duration=1440, type=channel_type)
+        if interaction.channel == channel:
+            if self.can_play(player):
+                if not self.is_playing(author.id):
+                    thread = await channel.create_thread(name=name, auto_archive_duration=1440, type=channel_type)
 
-                await thread.send(f"Hallo {author.mention}. Der Streifzug deiner Gruppe durch die Elm-Street findet "
-                                  f"in diesem Thread statt. Sobald deine Gruppe sich zusammen  gefunden hat, kannst "
-                                  f"du über einen Klick auf den Start Button eure Reise starten.",
-                                  view=self.get_start_view())
+                    await thread.send(f"Hallo {author.mention}. Der Streifzug deiner Gruppe durch die Elm-Street findet "
+                                      f"in diesem Thread statt. Sobald deine Gruppe sich zusammen  gefunden hat, kannst "
+                                      f"du über einen Klick auf den Start Button eure Reise starten.",
+                                      view=self.get_start_view())
 
-                await interaction.response.send_message(
-                    f"Du bist mitten in einer Großstadt gelandet.\n"
-                    f"Der leise Wind weht Papier die Straße lang.\n"
-                    f"Ansonsten hörst du nur in der Ferne das Geräusch vorbeifahrender Autos.\n"
-                    f"Da, was war das?\n"
-                    f"Hat sich da nicht etwas bewegt?\n"
-                    f"Ein Schatten an der Mauer?\n"
-                    f"Ein Geräusch wie von Krallen auf Asphalt.\n"
-                    f"Du drehst dich im Kreis.\n"
-                    f"Ein leises Lachen in deinem Rücken.\n"
-                    f"Und da, gerade außerhalb deines Sichtfeldes eine Tür die sich quietschend öffnet.\n"
-                    f"Eine laute Stimme ruft fragend: \"Ich zieh los um die Häuser, wäre ja gelacht wenn nur Kinder heute "
-                    f"abend Süßkram bekommen. Wer ist mit dabei?\"\n"
-                    f"Du drehst dich zur Tür und siehst {author.mention}",
-                    view=self.get_join_view(thread.id))
+                    await interaction.response.send_message(
+                        f"Du bist mitten in einer Großstadt gelandet.\n"
+                        f"Der leise Wind weht Papier die Straße lang.\n"
+                        f"Ansonsten hörst du nur in der Ferne das Geräusch vorbeifahrender Autos.\n"
+                        f"Da, was war das?\n"
+                        f"Hat sich da nicht etwas bewegt?\n"
+                        f"Ein Schatten an der Mauer?\n"
+                        f"Ein Geräusch wie von Krallen auf Asphalt.\n"
+                        f"Du drehst dich im Kreis.\n"
+                        f"Ein leises Lachen in deinem Rücken.\n"
+                        f"Und da, gerade außerhalb deines Sichtfeldes eine Tür die sich quietschend öffnet.\n"
+                        f"Eine laute Stimme ruft fragend: \"Ich zieh los um die Häuser, wäre ja gelacht wenn nur Kinder heute "
+                        f"abend Süßkram bekommen. Wer ist mit dabei?\"\n"
+                        f"Du drehst dich zur Tür und siehst {author.mention}",
+                        view=self.get_join_view(thread.id))
 
-                message = await interaction.original_message()
-                self.groups[str(thread.id)] = {"message": message.id, "players": [author.id], "owner": author.id, "requests": []}
-                self.save()
+                    message = await interaction.original_message()
+                    self.groups[str(thread.id)] = {"message": message.id, "players": [author.id], "owner": author.id, "requests": []}
+                    self.save()
+                else:
+                    await interaction.response.send_message(
+                        "Es tut mir leid, aber du kannst nicht an mehr als einer Jagd gleichzeitig teilnehmen. "
+                        "Beende erst das bisherige Abenteuer, bevor du dich einer neuen Gruppe anschließen kannst.",
+                        ephemeral=True)
             else:
                 await interaction.response.send_message(
-                    "Es tut mir leid, aber du kannst nicht an mehr als einer Jagd gleichzeitig teilnehmen. "
-                    "Beende erst das bisherige Abenteuer, bevor du dich einer neuen Gruppe anschließen kannst.",
+                    "Du zitterst noch zu sehr von deiner letzten Runde. Ruh dich noch ein wenig aus bevor du weiter spielst.",
                     ephemeral=True)
         else:
-            await interaction.response.send_message(
-                "Du zitterst noch zu sehr von deiner letzten Runde. Ruh dich noch ein wenig aus bevor du weiter spielst.",
-                ephemeral=True)
+            await interaction.response.send_message(f"Gruppen können nur in <#{self.elm_street_channel_id}> gestartet werden.",
+                                                    ephemeral=True)
 
     async def on_join(self, button: disnake.ui.Button, interaction: disnake.MessageInteraction, value=None):
         player = self.get_player(interaction.author)
