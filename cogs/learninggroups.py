@@ -230,12 +230,12 @@ class LearningGroups(commands.Cog):
             groupchannel = await self.bot.fetch_channel(int(lg_channel['channel_id']))
             course_msg += f"    {groupchannel.mention}"
 
-            if lg_channel['state'] == GroupState.PRIVATE:
+            if lg_channel['is_listed'] and lg_channel['state'] == GroupState.PRIVATE:
                 group_config = self.groups["groups"].get(lg_channel['channel_id'])
                 if group_config:
                     user = await self.bot.fetch_user(group_config['owner_id'])
                     if user:
-                        course_msg += f" **@{user.name}**"
+                        course_msg += f" **@{user.name}#{user.discriminator}**"
                 course_msg +=  f"\n       **↳** `!lg join {groupchannel.id}`"
             course_msg += "\n"
 
@@ -443,8 +443,12 @@ class LearningGroups(commands.Cog):
         await self.save_groups()
 
     async def update_permissions(self, channel):
-        overwrites = await self.overwrites(channel)
-        await channel.edit(overwrites=overwrites)
+        channel_config = self.channels[str(channel.id)]
+        if channel_config.get("state") == GroupState.PRIVATE:
+            overwrites = await self.overwrites(channel)
+            await channel.edit(overwrites=overwrites)
+        else:
+            await channel.edit(sync_permissions=True)
 
     async def overwrites(self, channel):
         channel = await self.bot.fetch_channel(str(channel.id))
