@@ -225,6 +225,9 @@ class ElmStreet(commands.Cog):
                     await interaction.response.send_message(f"Du hast die Runde abgebrochen. Dieser Thread wurde "
                                                             f"archiviert und du kannst in <#{self.elm_street_channel_id}>"
                                                             f" eine neue Runde starten.", ephemeral=True)
+                    await interaction.channel.send(f"Dieses Abenteuer ist beendet und zum Nachlesen archiviert."
+                                                           f"\nFür mehr Halloween-Spaß, schau in <#{self.elm_street_channel_id}>"
+                                                           f"vorbei")
                     await interaction.channel.edit(archived=True)
         else:
             await interaction.response.send_message("Nur die Gruppenerstellerin kann die Gruppe starten lassen.",
@@ -247,6 +250,9 @@ class ElmStreet(commands.Cog):
             self.save()
 
             # Thread archivieren
+            await interaction.channel.send(f"Dieses Abenteuer ist beendet und zum Nachlesen archiviert."
+                                                   f"\nFür mehr Halloween-Spaß, schau in <#{self.elm_street_channel_id}>"
+                                                   f"vorbei")
             await interaction.channel.edit(archived=True)
         else:
             await interaction.response.send_message("Nur die Gruppenerstellerin kann die Gruppe beenden.",
