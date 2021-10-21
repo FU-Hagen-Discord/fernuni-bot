@@ -35,6 +35,7 @@ class ElmStreet(commands.Cog):
         self.bot.view_manager.register("on_join", self.on_join)
         self.bot.view_manager.register("on_joined", self.on_joined)
         self.bot.view_manager.register("on_start", self.on_start)
+        self.bot.view_manager.register("on_stop", self.on_stop)
 
         self.increase_courage.start()
 
@@ -193,13 +194,33 @@ class ElmStreet(commands.Cog):
         owner_id = self.groups.get(str(thread_id)).get('owner')
         if interaction.author.id == owner_id:
             if group := self.groups.get(str(interaction.channel.id)):
-                await interaction.response.send_message("Leute, der Spaß beginnt.... j@@@@@@@@@")
+                await interaction.response.send_message("Leute, der Spaß beginnt.... j@@@@@@@@@", view=self.get_stop_view())
                 elm_street_channel = await self.bot.fetch_channel(self.elm_street_channel_id)
                 group_message = await elm_street_channel.fetch_message(group["message"])
                 await group_message.delete()
                 await interaction.message.edit(view=self.get_start_view(disabled=True))
         else:
             await interaction.response.send_message("Nur die Gruppenerstellerin kann die Gruppe starten lassen.",
+                                                    ephemeral=True)
+
+    async def on_stop(self, button: disnake.ui.Button, interaction: disnake.MessageInteraction, value=None):
+        thread_id = interaction.channel_id
+        owner_id = self.groups.get(str(thread_id)).get('owner')
+        if interaction.author.id == owner_id:
+            # Button disablen
+            await interaction.message.edit(view=self.get_stop_view(disabled=True))
+
+            # Gruppe aus json löschen
+            group = self.groups.pop(str(thread_id))
+            self.save()
+
+            # Thread archivieren
+            await interaction.channel.edit(archived=True)
+
+            # TODO: Gruppenstatistik in elm-street posten
+
+        else:
+            await interaction.response.send_message("Nur die Gruppenerstellerin kann die Gruppe beenden.",
                                                     ephemeral=True)
 
     def get_join_view(self, group_id: int):
@@ -213,6 +234,12 @@ class ElmStreet(commands.Cog):
             {"label": "Start", "style": ButtonStyle.green, "custom_id": "elm_street:start", "disabled": disabled}
         ]
         return self.bot.view_manager.view(buttons, "on_start")
+
+    def get_stop_view(self, disabled=False):
+        buttons = [
+            {"label": "Beenden", "style": ButtonStyle.red, "custom_id": "elm_street:stop", "disabled": disabled}
+        ]
+        return self.bot.view_manager.view(buttons, "on_stop")
 
     def is_playing(self, user_id: int = None):
         for group in self.groups.values():
