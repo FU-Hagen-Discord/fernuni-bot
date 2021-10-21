@@ -329,7 +329,7 @@ class LearningGroups(commands.Cog):
                            "und jeder kann darin schreiben. Eine private Lerngruppe ist unsichtbar und auf eine "
                            "Gruppe an Kommilitoninnen beschränkt."
                            "```"
-                           "Besitzerfunktionen:\n"
+                           "Besitzerinfunktionen:\n"
                            "!lg addmember <@newmember>: Fügt ein Mitglied zur Lerngruppe hinzu.\n"                           
                            "!lg owner <@newowner>: Ändert die Besitzerin der Lerngruppe auf @newowner.\n"
                            "!lg open: Öffnet eine Lerngruppe.\n"
@@ -337,7 +337,7 @@ class LearningGroups(commands.Cog):
                            "!lg private: Stellt die Lerngruppe auf privat.\n"
                            "!lg show: Zeigt eine private oder geschlossene Lerngruppe in der Lerngruppenliste an.\n"
                            "!lg hide: Entfernt eine private oder geschlossene Lerngruppe aus der Lerngruppenliste.\n"
-                           "!lg kick <@user>: Schließt einen Benutzer von der Lerngruppe aus.\n"   
+                           "!lg kick <@user>: Schließt eine Benutzerin von der Lerngruppe aus.\n"   
                            "\nKommandos für alle:\n"
                            "!lg id: Zeigt die ID der Lerngruppe an mit der andere Kommilitoninnen beitreten können.\n"
                            "!lg members: Zeigt die Mitglieder der Lerngruppe an.\n"
@@ -542,7 +542,7 @@ class LearningGroups(commands.Cog):
             "semester": ("Das Semester, für welches diese Lerngruppe erstellt werden soll."
                          "sose oder wise gefolgt von der zweistelligen Jahreszahl (z. B. sose22)."),
             "status": "Gibt an ob die Lerngruppe für weitere Lernwillige geöffnet ist (open) oder nicht (closed).",
-            "@usermention": "Der so erwähnte Benutzer wird als Besitzer für die Lerngruppe gesetzt."
+            "@usermention": "Die so erwähnte Benutzerin wird als Besitzerin für die Lerngruppe gesetzt."
         },
         mod=True
     )
@@ -567,7 +567,7 @@ class LearningGroups(commands.Cog):
         brief="Stellt eine Anfrage für einen neuen Lerngruppen-Kanal.",
         example="!lg request 1142 mathegenies sose22 closed",
         description=("Moderatorinnen können diese Anfrage bestätigen, dann wird die Gruppe eingerichtet. "
-                     "Der Besitzer der Gruppe ist der Benutzer der die Anfrage eingestellt hat."),
+                     "Die Besitzerin der Gruppe ist die Benutzerin die die Anfrage eingestellt hat."),
         parameters={
             "coursenumber": "Nummer des Kurses, wie von der FernUni angegeben (ohne führende Nullen z. B. 1142).",
             "name": "Ein frei wählbarer Text ohne Leerzeichen.",
@@ -751,7 +751,7 @@ class LearningGroups(commands.Cog):
         brief="Setzt die Besitzerin eines Lerngruppen-Kanals",
         description="Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. ",
         parameters={
-            "@usermention": "Der neue Besitzer der Lerngruppe."
+            "@usermention": "Die neue Besitzerin der Lerngruppe."
         }
     )
     @cmd_lg.command(name="owner")
@@ -769,7 +769,7 @@ class LearningGroups(commands.Cog):
 
         if not new_owner:
                 user = await self.bot.fetch_user(owner_id)
-                await ctx.channel.send(f"Besitzer: @{user.name}#{user.discriminator}")
+                await ctx.channel.send(f"Besitzerin: @{user.name}#{user.discriminator}")
 
         elif isinstance(group_config, dict):
             owner = await self.bot.fetch_user(owner_id)
@@ -788,10 +788,10 @@ class LearningGroups(commands.Cog):
         category="learninggroups",
         syntax="!lg addmember <@usermention> <#channel>",
         example="!lg addmember @someuser #1141-mathegl-lerngruppe-sose21",
-        brief="Fügt einen Benutzer zu einer Lerngruppe hinzu.",
+        brief="Fügt eine Benutzerin zu einer Lerngruppe hinzu.",
         parameters={
-            "@usermention": "Der so erwähnte Benutzer wird zur Lerngruppe hinzugefügt.",
-            "#channel": "(optional) Der Kanal dem der Benutzer hinzugefügt werden soll."
+            "@usermention": "Die so erwähnte Benutzerin wird zur Lerngruppe hinzugefügt.",
+            "#channel": "(optional) Der Kanal dem die Benutzerin hinzugefügt werden soll."
         }
     )
     @cmd_lg.command(name="addmember", aliases=["addm", "am"])
@@ -811,10 +811,10 @@ class LearningGroups(commands.Cog):
         category="learninggroups",
         syntax="!lg removemember <@usermention> <#channel>",
         example="!lg removemember @someuser #1141-mathegl-lerngruppe-sose21",
-        brief="Entfernt einen Benutzer aus einer Lerngruppe.",
+        brief="Entfernt eine Benutzerin aus einer Lerngruppe.",
         parameters={
-            "#channel": "Der Kanal aus dem der Benutzer gelöscht werden soll.",
-            "@usermention": "Der so erwähnte Benutzer wird aus der Lerngruppe entfernt."
+            "#channel": "Der Kanal aus dem die Benutzerin gelöscht werden soll.",
+            "@usermention": "Die so erwähnte Benutzerin wird aus der Lerngruppe entfernt."
         },
         mod=True
     )
@@ -853,7 +853,7 @@ class LearningGroups(commands.Cog):
             user = await self.bot.fetch_user(user_id)
             names.append("@" + user.name + "#" + user.discriminator)
 
-        await ctx.channel.send(f"Besitzer: **@{owner.name}#{owner.discriminator}**\nMitglieder: " +
+        await ctx.channel.send(f"Besitzerin: **@{owner.name}#{owner.discriminator}**\nMitglieder: " +
                                (f"{', '.join(names)}" if len(names) > 0 else "Keine"))
 
     @help(
@@ -904,8 +904,8 @@ class LearningGroups(commands.Cog):
             custom_prefix="learninggroups:join"
         )
         await utils.send_dm(ctx.author, f"Deine Anfrage wurde an **#{channel.name}** gesendet. "
-                                        "Sobald der Besitzer der Lerngruppe darüber "
-                                        "entschieden hat bekommst du bescheid.")
+                                        "Sobald die Besitzerin der Lerngruppe darüber "
+                                        "entschieden hat bekommst du Bescheid.")
 
     @help(
         command_group="lg",
