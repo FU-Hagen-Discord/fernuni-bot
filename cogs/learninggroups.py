@@ -656,6 +656,14 @@ class LearningGroups(commands.Cog):
                 elif channel_config.get("state") == GroupState.CLOSED:
                     await ctx.channel.send("Wenn diese Gruppe privat werden soll, ist das Kommando das du brauchst: `!lg private`")
 
+    @cmd_lg.command(name="debug")
+    @commands.check(utils.is_mod)
+    async def cmd_debug(self, ctx):
+        channel_config = self.channels[str(ctx.channel.id)]
+        if not channel_config:
+            await ctx.channel.send("None")
+            return
+        await ctx.channel.send(str(channel_config))
 
 
     @help(
