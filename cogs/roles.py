@@ -1,8 +1,8 @@
 import json
 import os
 
-import discord
-from discord.ext import commands
+import disnake
+from disnake.ext import commands
 
 import utils
 from cogs.help import help, handle_error, help_category
@@ -14,10 +14,10 @@ class Roles(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.roles_file = os.getenv("DISCORD_ROLES_FILE")
-        self.channel_id = int(os.getenv("DISCORD_ROLLEN_CHANNEL"))
-        self.degree_program_message_id = int(os.getenv("DISCORD_DEGREE_PROGRAM_MSG"))
-        self.color_message_id = int(os.getenv("DISCORD_COLOR_MSG"))
-        self.special_message_id = int(os.getenv("DISCORD_SPECIAL_MSG"))
+        self.channel_id = int(os.getenv("DISCORD_ROLLEN_CHANNEL", "0"))
+        self.degree_program_message_id = int(os.getenv("DISCORD_DEGREE_PROGRAM_MSG", "0"))
+        self.color_message_id = int(os.getenv("DISCORD_COLOR_MSG", "0"))
+        self.special_message_id = int(os.getenv("DISCORD_SPECIAL_MSG", "0"))
         self.assignable_roles = {}
         self.load_roles()
 
@@ -81,7 +81,7 @@ class Roles(commands.Cog):
         guild = ctx.guild
         members = await guild.fetch_members().flatten()
         answer = f''
-        embed = discord.Embed(title="Statistiken",
+        embed = disnake.Embed(title="Statistiken",
                               description=f'Wir haben aktuell {len(members)} Mitglieder auf diesem Server, verteilt auf folgende Rollen:')
 
         for role in guild.roles:
@@ -114,7 +114,7 @@ class Roles(commands.Cog):
         message = await channel.fetch_message(self.degree_program_message_id)
         degree_program_emojis = self.get_degree_program_emojis()
 
-        embed = discord.Embed(title="Vergabe von Studiengangs-Rollen",
+        embed = disnake.Embed(title="Vergabe von Studiengangs-Rollen",
                               description="Durch klicken auf die entsprechende Reaktion kannst du dir die damit assoziierte Rolle zuweisen, oder entfernen. Dies funktioniert so, dass ein Klick auf die Reaktion die aktuelle Zuordnung dieser Rolle ändert. Das bedeutet, wenn du die Rolle, die mit <:St:763126549327118366> assoziiert ist, schon hast, aber die Reaktion noch nicht ausgewählt hast, dann wird dir bei einem Klick auf die Reaktion diese Rolle wieder weggenommen. ")
 
         value = f""
@@ -145,7 +145,7 @@ class Roles(commands.Cog):
         message = await channel.fetch_message(self.color_message_id)
         color_emojis = self.get_color_emojis()
 
-        embed = discord.Embed(title="Vergabe von Farb-Rollen",
+        embed = disnake.Embed(title="Vergabe von Farb-Rollen",
                               description="Durch klicken auf die entsprechende Reaktion kannst du dir die damit assoziierte Rolle zuweisen, oder entfernen. Dies funktioniert so, dass ein Klick auf die Reaktion die aktuelle Zuordnung dieser Rolle ändert. Das bedeutet, wenn du die Rolle, die mit <:FarbeGruen:771451407916204052> assoziiert ist, schon hast, aber die Reaktion noch nicht ausgewählt hast, dann wird dir bei einem Klick auf die Reaktion diese Rolle wieder weggenommen. ")
 
         await message.edit(content="", embed=embed)
@@ -167,7 +167,7 @@ class Roles(commands.Cog):
         message = await channel.fetch_message(self.special_message_id)
         special_emojis = self.get_special_emojis()
 
-        embed = discord.Embed(title="Vergabe von Spezial-Rollen",
+        embed = disnake.Embed(title="Vergabe von Spezial-Rollen",
                               description="Durch klicken auf die entsprechende Reaktion kannst du dir die damit assoziierte Rolle zuweisen, oder entfernen. Dies funktioniert so, dass ein Klick auf die Reaktion die aktuelle Zuordnung dieser Rolle ändert. Das bedeutet, wenn du die Rolle, die mit :exclamation: assoziiert ist, schon hast, aber die Reaktion noch nicht ausgewählt hast, dann wird dir bei einem Klick auf die Reaktion diese Rolle wieder weggenommen. ")
 
         value = f""

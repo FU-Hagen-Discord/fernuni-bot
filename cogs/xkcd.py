@@ -1,8 +1,8 @@
 import random
 import aiohttp
 
-import discord
-from discord.ext import commands
+import disnake
+from disnake.ext import commands
 from cogs.help import help
 
 
@@ -46,7 +46,7 @@ class Xkcd(commands.Cog):
         text = n_data['alt']
 
         # Comic embedden
-        e = discord.Embed()
+        e = disnake.Embed()
         e.set_image(url=img)
         e.url = img
         e.title = f'xkcd #{num}'

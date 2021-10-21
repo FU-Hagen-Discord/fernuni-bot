@@ -2,7 +2,7 @@ import json
 import os
 from datetime import datetime
 
-from discord.ext import commands
+from disnake.ext import commands
 
 import utils
 
@@ -10,7 +10,7 @@ import utils
 class Christmas(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.channel_id = int(os.getenv("DISCORD_ADVENT_CALENDAR_CHANNEL"))
+        self.channel_id = int(os.getenv("DISCORD_ADVENT_CALENDAR_CHANNEL", "0"))
         self.advent_calendar = []
         self.load_advent_calendar()
 

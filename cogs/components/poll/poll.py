@@ -1,4 +1,4 @@
-import discord
+import disnake
 import emoji
 
 DEFAULT_OPTIONS = ["🇦", "🇧", "🇨", "🇩", "🇪", "🇫", "🇬", "🇭", "🇮", "🇯", "🇰", "🇱", "🇲", "🇳", "🇴", "🇵", "🇶",
@@ -83,7 +83,7 @@ class Poll:
                 f"Fehler beim Erstellen der Umfrage! Es werden nicht mehr als {len(DEFAULT_OPTIONS)} Optionen unterstützt!")
             return
 
-        embed = discord.Embed(title=title, description=self.question)
+        embed = disnake.Embed(title=title, description=self.question)
         embed.add_field(name="Erstellt von", value=f'<@!{self.author}>', inline=False)
         embed.add_field(name="\u200b", value="\u200b", inline=False)
 

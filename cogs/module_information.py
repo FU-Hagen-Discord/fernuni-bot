@@ -2,8 +2,8 @@ import json
 import os
 import re
 
-import discord
-from discord.ext import commands, tasks
+import disnake
+from disnake.ext import commands, tasks
 
 import utils
 from cogs.components.module_information.scraper import Scraper
@@ -162,7 +162,7 @@ class ModuleInformation(commands.Cog):
                         if str(r.id) == course_of_studies['role']:
                             return course_of_studies['short']
             return None
-        except discord.ext.commands.errors.CommandInvokeError:
+        except disnake.ext.commands.errors.CommandInvokeError:
             return None
 
     async def download_for(self, ctx, title, module):
@@ -183,7 +183,7 @@ class ModuleInformation(commands.Cog):
         if not found:
             raise ModuleInformationNotFoundError
 
-        embed = discord.Embed(title=title,
+        embed = disnake.Embed(title=title,
                               description=desc,
                               color=19607)
         await ctx.channel.send(embed=embed)
@@ -230,7 +230,7 @@ class ModuleInformation(commands.Cog):
                 desc += f"[{course['number']} - {course['name']}]({course['url']})\n"
 
         desc += self.stg_string_for_desc(module)
-        embed = discord.Embed(title=f"Modul {data['title']}",
+        embed = disnake.Embed(title=f"Modul {data['title']}",
                               description=desc,
                               color=19607)
         await ctx.channel.send(embed=embed)
@@ -246,7 +246,7 @@ class ModuleInformation(commands.Cog):
         time = re.sub(r': *(\r*\n*)*', ':\n', data)
         desc = f"{time}"
         desc += self.stg_string_for_desc(module)
-        embed = discord.Embed(title=f"Arbeitsaufwand",
+        embed = disnake.Embed(title=f"Arbeitsaufwand",
                               description=desc,
                               color=19607)
         await ctx.channel.send(embed=embed)
@@ -263,7 +263,7 @@ class ModuleInformation(commands.Cog):
         for support in data:
             desc += f"[{support['title']}]({support['url']})\n"
         desc += self.stg_string_for_desc(module)
-        embed = discord.Embed(title=f"Mentoriate ",
+        embed = disnake.Embed(title=f"Mentoriate ",
                               description=desc,
                               color=19607)
         await ctx.channel.send(embed=embed)
@@ -291,7 +291,7 @@ class ModuleInformation(commands.Cog):
                 desc += f"Formale Voraussetzungen: \n{hard_requirements}\n\n"
         # desc += self.stg_string_for_desc(module)
 
-        embed = discord.Embed(title=f"Prüfungsinformationen",
+        embed = disnake.Embed(title=f"Prüfungsinformationen",
                               description=desc,
                               color=19607)
         await ctx.channel.send(embed=embed)

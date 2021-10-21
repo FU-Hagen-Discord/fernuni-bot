@@ -1,5 +1,5 @@
 import random
-from discord.ext import commands
+from disnake.ext import commands
 from cogs.help import help, handle_error
 
 class Armin(commands.Cog):

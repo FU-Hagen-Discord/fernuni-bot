@@ -1,7 +1,7 @@
 import os
 
-import discord
-from discord.ext import commands
+import disnake
+from disnake.ext import commands
 
 import utils
 from cogs.help import help, handle_error
@@ -10,8 +10,8 @@ from cogs.help import help, handle_error
 class Welcome(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.channel_id = int(os.getenv("DISCORD_WELCOME_CHANNEL"))
-        self.message_id = int(os.getenv("DISCORD_WELCOME_MSG"))
+        self.channel_id = int(os.getenv("DISCORD_WELCOME_CHANNEL", "0"))
+        self.message_id = int(os.getenv("DISCORD_WELCOME_MSG", "0"))
 
     @help(
       category="updater",
@@ -24,7 +24,7 @@ class Welcome(commands.Cog):
         channel = await self.bot.fetch_channel(self.channel_id)
         message = await channel.fetch_message(self.message_id)
 
-        embed = discord.Embed(title="Herzlich Willkommen auf dem Discord von Studierenden für Studierende.",
+        embed = disnake.Embed(title="Herzlich Willkommen auf dem Discord von Studierenden für Studierende.",
                               description="Disclaimer: Das hier ist kein offizieller Kanal der Fernuni. Hier findet auch keine offizielle Betreuung durch die Fernuni statt. Dieser Discord dient zum Austausch unter Studierenden über einzelne Kurse, um sich gegenseitig helfen zu können, aber auch um über andere Themen in einen Austausch zu treten. Es soll KEIN Ersatz für die Kanäle der Lehrgebiete sein, wie die Newsgroups, Moodle-Foren und was es noch so gibt. Der Discord soll die Möglichkeit bieten, feste Lerngruppen zu finden und sich in diesen gegenseitig zu helfen und zu treffen. Zudem soll er durch den Austausch in den Kanälen auch eine Art flexible Lerngruppe zu einzelnen Kursen ermöglichen. Daher ist unser Apell an euch: Nutzt bitte auch die Betreuungsangebote der entsprechenden Kurse, in die ihr eingeschrieben seid. ")
         #kürzen
         embed.set_thumbnail(

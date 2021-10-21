@@ -1,16 +1,21 @@
 import os
 
-import discord
+import disnake
 import re
+
+from disnake import ButtonStyle
+
+from views.dialog_view import DialogView
+
 
 async def send_dm(user, message, embed=None):
     """ Send DM to a user/member """
 
-    if type(user) is discord.User or type(user) is discord.Member:
+    if type(user) is disnake.User or type(user) is disnake.Member:
         if user.dm_channel is None:
             await user.create_dm()
 
-        await user.dm_channel.send(message, embed=embed)
+        return await user.dm_channel.send(message, embed=embed)
 
 
 def is_mod(ctx):
@@ -41,3 +46,12 @@ def to_minutes(time):
 
     return int(time)
 
+
+async def confirm(channel, title, description, message="", custom_prefix="", callback=None):
+    embed = disnake.Embed(title=title,
+                          description=description,
+                          color=19607)
+    return await channel.send(message, embed=embed, view=DialogView([
+        {"emoji": "👍", "custom_id": f"{custom_prefix}_yes", "style": ButtonStyle.green},
+        {"emoji": "👎", "custom_id": f"{custom_prefix}_no", "style": ButtonStyle.red},
+    ]))
