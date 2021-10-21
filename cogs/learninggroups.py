@@ -625,8 +625,8 @@ class LearningGroups(commands.Cog):
                         await ctx.channel.send("Die Lerngruppe wird nun in der Lerngruppenliste angezeigt.")
                 elif channel_config.get("state") == GroupState.OPEN:
                     await ctx.channel.send("Nichts zu tun. Offene Lerngruppen werden sowieso in der Liste angezeigt.")
-                elif channel_config.get("state") == GroupState.CLOSE:
-                    await ctx.channel.send("Warum dann nicht `!lg open`?")
+                elif channel_config.get("state") == GroupState.CLOSED:
+                    await ctx.channel.send("Möchtest du die Gruppen öffnen? Versuch‘s mit `!lg open`")
 
 
     @help(
@@ -653,11 +653,8 @@ class LearningGroups(commands.Cog):
                                            "Führe `!lg close` aus um die Lerngruppe zu schließen, "
                                            "oder `!lg private` um diese auf "
                                            "privat zu schalten.")
-                elif channel_config.get("state") == GroupState.CLOSE:
-                    await ctx.channel.send("Warum dann nicht `!lg open`?")
-
-
-
+                elif channel_config.get("state") == GroupState.CLOSED:
+                    await ctx.channel.send("Wenn diese Gruppe privat werden soll, ist das Kommando das du brauchst: `!lg private`")
 
 
 
