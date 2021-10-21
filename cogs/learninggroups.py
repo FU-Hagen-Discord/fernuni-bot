@@ -271,6 +271,7 @@ class LearningGroups(commands.Cog):
                 return False  # prevent api requests when nothing changed
             channel_config["state"] = state
             await self.alter_channel(channel, channel_config)
+            return True
 
     async def set_channel_listing(self, channel, is_listed):
         channel_config = self.channels[str(channel.id)]
@@ -282,6 +283,7 @@ class LearningGroups(commands.Cog):
                 return False  # prevent api requests when nothing changed
             channel_config["is_listed"] = is_listed
             await self.alter_channel(channel, channel_config)
+            return True
 
     async def alter_channel(self, channel, channel_config):
         self.groups["groups"][str(channel.id)]["last_rename"] = int(time.time())
