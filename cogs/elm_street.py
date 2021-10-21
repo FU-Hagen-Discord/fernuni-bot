@@ -211,11 +211,21 @@ class ElmStreet(commands.Cog):
         owner_id = self.groups.get(str(thread_id)).get('owner')
         if interaction.author.id == owner_id:
             if group := self.groups.get(str(interaction.channel.id)):
-                await interaction.response.send_message("Leute, der Spaß beginnt.... j@@@@@@@@@", view=self.get_stop_view())
+
                 elm_street_channel = await self.bot.fetch_channel(self.elm_street_channel_id)
                 group_message = await elm_street_channel.fetch_message(group["message"])
                 await group_message.delete()
                 await interaction.message.edit(view=self.get_start_view(disabled=True))
+
+                if value:   # auf Start geklickt
+                    await interaction.response.send_message("Leute, der Spaß beginnt.... j@@@@@@@@@", view=self.get_stop_view())
+                else:   # auf Abbrechen geklickt
+                    self.groups.pop(str(thread_id))
+                    self.save()
+                    await interaction.response.send_message(f"Du hast die Runde abgebrochen. Dieser Thread wurde "
+                                                            f"archiviert und du kannst in <#{self.elm_street_channel_id}>"
+                                                            f" eine neue Runde starten.", ephemeral=True)
+                    await interaction.channel.edit(archived=True)
         else:
             await interaction.response.send_message("Nur die Gruppenerstellerin kann die Gruppe starten lassen.",
                                                     ephemeral=True)
@@ -250,7 +260,8 @@ class ElmStreet(commands.Cog):
 
     def get_start_view(self, disabled=False):
         buttons = [
-            {"label": "Start", "style": ButtonStyle.green, "custom_id": "elm_street:start", "disabled": disabled}
+            {"label": "Start", "style": ButtonStyle.green, "value": True, "custom_id": "elm_street:start", "disabled": disabled},
+            {"label": "Abbrechen", "style": ButtonStyle.gray, "value": False, "custom_id": "elm_street:cancel", "disabled": disabled}
         ]
         return self.bot.view_manager.view(buttons, "on_start")
 
