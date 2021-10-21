@@ -375,7 +375,7 @@ class LearningGroups(commands.Cog):
     def channel_to_channel_config(self, channel):
         cid = str(channel.id)
         is_listed = channel.name[-1] == LG_LISTED_SYMBOL
-        result = re.match(r"([0-9]{4,6})-(.*)-([a-z0-9]+)$", channel.name[1:] if not is_listed else channel.name[1:-1])
+        result = re.match(r"([0-9]+)-(.*)-([a-z0-9]+)$", channel.name[1:] if not is_listed else channel.name[1:-1])
 
         state = None
         if channel.name[0] == LG_OPEN_SYMBOL:
