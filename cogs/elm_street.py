@@ -94,7 +94,8 @@ class ElmStreet(commands.Cog):
                         view=self.get_join_view(thread.id))
 
                     message = await interaction.original_message()
-                    self.groups[str(thread.id)] = {"message": message.id, "players": [author.id], "owner": author.id, "requests": []}
+                    self.groups[str(thread.id)] = {"message": message.id, "players": [author.id], "owner": author.id,
+                                                   "requests": [], 'stats': {'sweets': 0, 'courage': 0, 'doors': 0}}
                     self.save()
                 else:
                     await interaction.response.send_message(
@@ -214,15 +215,17 @@ class ElmStreet(commands.Cog):
             # Button disablen
             await interaction.message.edit(view=self.get_stop_view(disabled=True))
 
+            # Gruppenstatistik in elm-street posten
+            stats_embed = await self.group_stats(thread_id)
+            elm_street = await self.bot.fetch_channel(self.elm_street_channel_id)
+            await elm_street.send("", embed=stats_embed)
+
             # Gruppe aus json löschen
             group = self.groups.pop(str(thread_id))
             self.save()
 
             # Thread archivieren
             await interaction.channel.edit(archived=True)
-
-            # TODO: Gruppenstatistik in elm-street posten
-
         else:
             await interaction.response.send_message("Nur die Gruppenerstellerin kann die Gruppe beenden.",
                                                     ephemeral=True)
@@ -321,6 +324,24 @@ class ElmStreet(commands.Cog):
         embed.add_field(name=f"Süßigkeiten", value=scores)
         return embed
         #await elm_street_channel.send("", embed=embed)
+
+    async def group_stats(self, thread_id):
+        thread = await self.bot.fetch_channel(thread_id)
+        players = self.groups.get(str(thread_id)).get('players')
+        stats = self.groups.get(str(thread_id)).get('stats')
+
+        players_value = ', '.join([f'<@{int(player)}>' for player in players])
+        doors_value = stats.get('doors')
+        sweets_value = stats.get('sweets')
+        courage_value = stats.get('courage')
+
+        embed = disnake.Embed(title=f'Erfolge der Gruppe "{thread.name}"')
+        embed.add_field(name='Mitspieler', value=players_value, inline=False)
+        embed.add_field(name="Besuchte Türen", value=doors_value)
+        embed.add_field(name="Gesammelte Süßigkeiten", value=sweets_value)
+        embed.add_field(name="Verlorene Mutpunkte", value=courage_value)
+
+        return embed
 
     @tasks.loop(minutes=5)
     async def increase_courage(self):
