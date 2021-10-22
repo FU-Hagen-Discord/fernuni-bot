@@ -2,8 +2,7 @@ import json
 import uuid
 
 import disnake
-from disnake import ButtonStyle
-
+from disnake import  ButtonStyle
 
 class DialogView(disnake.ui.View):
 
@@ -24,7 +23,8 @@ class DialogView(disnake.ui.View):
             row=config.get("row", None)
         )
         button.value = config.get("value")
-        button.callback = self.internal_callback(button)
+        if self.callback:
+            button.callback = self.internal_callback(button)
         self.add_item(button)
 
     def internal_callback(self, button):
