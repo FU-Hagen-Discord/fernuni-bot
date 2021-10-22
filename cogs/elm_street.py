@@ -1,6 +1,7 @@
-from asyncio import sleep
 import json
 import os
+import secrets
+from asyncio import sleep
 from typing import Union
 
 import disnake
@@ -84,26 +85,14 @@ class ElmStreet(commands.Cog):
                 if not self.is_playing(author.id):
                     thread = await channel.create_thread(name=name, auto_archive_duration=1440, type=channel_type)
 
-                    await thread.send(f"Hallo {author.mention}. Der Streifzug deiner Gruppe durch die Elm-Street findet "
-                                      f"in diesem Thread statt. Sobald deine Gruppe sich zusammen  gefunden hat, kannst "
-                                      f"du über einen Klick auf den Start Button eure Reise starten.",
-                                      view=self.get_start_view())
+                    await thread.send(
+                        f"Hallo {author.mention}. Der Streifzug deiner Gruppe durch die Elm-Street findet "
+                        f"in diesem Thread statt. Sobald deine Gruppe sich zusammen  gefunden hat, kannst "
+                        f"du über einen Klick auf den Start Button eure Reise starten.",
+                        view=self.get_start_view())
 
-                    await interaction.response.send_message(
-                        f"Du bist mitten in einer Großstadt gelandet.\n"
-                        f"Der leise Wind weht Papier die Straße lang.\n"
-                        f"Ansonsten hörst du nur in der Ferne das Geräusch vorbeifahrender Autos.\n"
-                        f"Da, was war das?\n"
-                        f"Hat sich da nicht etwas bewegt?\n"
-                        f"Ein Schatten an der Mauer?\n"
-                        f"Ein Geräusch wie von Krallen auf Asphalt.\n"
-                        f"Du drehst dich im Kreis.\n"
-                        f"Ein leises Lachen in deinem Rücken.\n"
-                        f"Und da, gerade außerhalb deines Sichtfeldes eine Tür die sich quietschend öffnet.\n"
-                        f"Eine laute Stimme ruft fragend: \"Ich zieh los um die Häuser, wäre ja gelacht wenn nur Kinder heute "
-                        f"abend Süßkram bekommen. Wer ist mit dabei?\"\n"
-                        f"Du drehst dich zur Tür und siehst {author.mention}",
-                        view=self.get_join_view(thread.id))
+                    await interaction.response.send_message(self.get_invite_message(author),
+                                                            view=self.get_join_view(thread.id))
 
                     message = await interaction.original_message()
                     self.groups[str(thread.id)] = {"message": message.id, "players": [author.id], "owner": author.id,
@@ -119,8 +108,9 @@ class ElmStreet(commands.Cog):
                     "Du zitterst noch zu sehr von deiner letzten Runde. Ruh dich noch ein wenig aus bevor du weiter spielst.",
                     ephemeral=True)
         else:
-            await interaction.response.send_message(f"Gruppen können nur in <#{self.elm_street_channel_id}> gestartet werden.",
-                                                    ephemeral=True)
+            await interaction.response.send_message(
+                f"Gruppen können nur in <#{self.elm_street_channel_id}> gestartet werden.",
+                ephemeral=True)
 
     async def on_join(self, button: disnake.ui.Button, interaction: disnake.MessageInteraction, value=None):
         player = self.get_player(interaction.author)
@@ -133,10 +123,12 @@ class ElmStreet(commands.Cog):
                             if not self.is_playing(interaction.author.id):
                                 thread = await self.bot.fetch_channel(value)
                                 msg = await self.bot.view_manager.confirm(thread, "Neuer Rekrut",
-                                            f"{interaction.author.mention} würde sich gerne der Gruppe anschließen.",
-                                            fields =[{'name': 'aktuelle Mutpunkte', 'value': self.get_courage_message(player)}],
-                                            custom_prefix="rekrut",
-                                            callback_key="on_joined")
+                                                                          f"{interaction.author.mention} würde sich gerne der Gruppe anschließen.",
+                                                                          fields=[{'name': 'aktuelle Mutpunkte',
+                                                                                   'value': self.get_courage_message(
+                                                                                       player)}],
+                                                                          custom_prefix="rekrut",
+                                                                          callback_key="on_joined")
                                 player.get('messages').append({'id': msg.id, 'channel': thread.id})
                                 group.get('requests').append({'player': interaction.author.id, 'id': msg.id})
                                 self.save()
@@ -146,8 +138,9 @@ class ElmStreet(commands.Cog):
                                     "Beende erst das bisherige Abenteuer, bevor du dich einer neuen Gruppe anschließen kannst.",
                                     ephemeral=True)
                         else:
-                            await interaction.response.send_message("Du bist schon Teil dieser Gruppe! Schau doch mal in eurem "
-                                                                    "Thread vorbei.", ephemeral=True)
+                            await interaction.response.send_message(
+                                "Du bist schon Teil dieser Gruppe! Schau doch mal in eurem "
+                                "Thread vorbei.", ephemeral=True)
                     else:
                         await interaction.response.send_message(
                             "Du zitterst noch zu sehr von deiner letzten Runde. Ruh dich noch ein wenig aus bevor du weiter spielst.",
@@ -156,7 +149,7 @@ class ElmStreet(commands.Cog):
                     await interaction.response.send_message(
                         "Für diese Gruppe hast du dich schon beworben. Warte auf eine Entscheidung des Gruppenleiters.",
                         ephemeral=True)
-        except:
+        except Exception as e:
             await interaction.response.send_message(
                 "Ein Fehler ist aufgetreten. Überprüfe bitte, ob du der richtigen Gruppe beitreten wolltest. "
                 "Sollte der Fehler erneut auftreten, wende dich bitte an einen Mod.",
@@ -194,9 +187,10 @@ class ElmStreet(commands.Cog):
             else:
                 if group := self.groups.get(str(interaction.channel_id)):
                     user = self.bot.get_user(player_id)
-                    groupname = interaction.channel.name
-                    await send_dm(user, f"Die Gruppe {groupname} hat entschieden, dich nicht mitlaufen zu lassen, du siehst"
-                                        f" nicht gruselig genug aus. Zieh dich um und versuch es noch einmal.")
+                    texts = [
+                        "Wir wollen um die Häuser ziehen und Kinder erschrecken. Du schaust aus, als würdest du den Kindern lieber unsere Süßigkeiten geben. Versuch es woanders.",
+                        "Ich glaub du hast dich verlaufen, in dieser Gruppe können wir keine \"Piraten\", \"Einhörner\", \"Geister\", \"Katzen\" gebrauchen. Unser Dresscode ist: \"Werwolf\", \"Vampir\", \"Alice im Wunderland\", \"Hexe\"."]
+                    await send_dm(user, secrets.choice(texts))
                     group["requests"].remove({'player': player_id, 'id': interaction.message.id})
                     self.save()
                 # Request Nachricht aus diesem Thread und aus players löschen
@@ -217,17 +211,20 @@ class ElmStreet(commands.Cog):
                 await group_message.delete()
                 await interaction.message.edit(view=self.get_start_view(disabled=True))
 
-                if value:   # auf Start geklickt
-                    await interaction.response.send_message("Leute, der Spaß beginnt.... j@@@@@@@@@", view=self.get_stop_view())
-                else:   # auf Abbrechen geklickt
+                if value:  # auf Start geklickt
+                    await interaction.response.send_message(
+                        f"Seid ihr bereit? Taschenlampe am Gürtel, Schminke im Gesicht? Dann kann es ja losgehen.\n"
+                        f"Doch als ihr gerade in euer Abenteuer starten wollt, fällt <@!{secrets.choice(group.get('players'))}> auf, dass ihr euch erst noch Behälter für die erwarteten Süßigkeiten suchen müsst. Ihr schnappt euch also was gerade da ist: Einen Putzeimer, eine Plastiktüte von Aldi, einen Einhorn Rucksack, eine Reisetasche, eine Wickeltasche mit zweifelhaftem Inhalt, einen Rucksack, eine alte Holzkiste, einen Leinensack, einen Müllsack oder eine blaue Ikea Tasche.\n Nun aber los!",
+                        view=self.get_stop_view())
+                else:  # auf Abbrechen geklickt
                     self.groups.pop(str(thread_id))
                     self.save()
                     await interaction.response.send_message(f"Du hast die Runde abgebrochen. Dieser Thread wurde "
                                                             f"archiviert und du kannst in <#{self.elm_street_channel_id}>"
                                                             f" eine neue Runde starten.", ephemeral=True)
                     await interaction.channel.send(f"Dieses Abenteuer ist beendet und zum Nachlesen archiviert."
-                                                           f"\nFür mehr Halloween-Spaß, schau in <#{self.elm_street_channel_id}>"
-                                                           f"vorbei")
+                                                   f"\nFür mehr Halloween-Spaß, schau in <#{self.elm_street_channel_id}>"
+                                                   f"vorbei")
                     await interaction.channel.edit(archived=True)
         else:
             await interaction.response.send_message("Nur die Gruppenerstellerin kann die Gruppe starten lassen.",
@@ -251,8 +248,8 @@ class ElmStreet(commands.Cog):
 
             # Thread archivieren
             await interaction.channel.send(f"Dieses Abenteuer ist beendet und zum Nachlesen archiviert."
-                                                   f"\nFür mehr Halloween-Spaß, schau in <#{self.elm_street_channel_id}>"
-                                                   f"vorbei")
+                                           f"\nFür mehr Halloween-Spaß, schau in <#{self.elm_street_channel_id}>"
+                                           f"vorbei")
             await interaction.channel.edit(archived=True)
         else:
             await interaction.response.send_message("Nur die Gruppenerstellerin kann die Gruppe beenden.",
@@ -266,8 +263,10 @@ class ElmStreet(commands.Cog):
 
     def get_start_view(self, disabled=False):
         buttons = [
-            {"label": "Start", "style": ButtonStyle.green, "value": True, "custom_id": "elm_street:start", "disabled": disabled},
-            {"label": "Abbrechen", "style": ButtonStyle.gray, "value": False, "custom_id": "elm_street:cancel", "disabled": disabled}
+            {"label": "Start", "style": ButtonStyle.green, "value": True, "custom_id": "elm_street:start",
+             "disabled": disabled},
+            {"label": "Abbrechen", "style": ButtonStyle.gray, "value": False, "custom_id": "elm_street:cancel",
+             "disabled": disabled}
         ]
         return self.bot.view_manager.view(buttons, "on_start")
 
@@ -318,7 +317,7 @@ class ElmStreet(commands.Cog):
                     messages.remove(msg)
                     self.save()
 
-    async def leaderboard(self, all: ShowOption = 10, interaction:ApplicationCommandInteraction=None):
+    async def leaderboard(self, all: ShowOption = 10, interaction: ApplicationCommandInteraction = None):
         places = scores = "\u200b"
         place = 0
         max = 0 if all == "all" else 10
@@ -352,7 +351,7 @@ class ElmStreet(commands.Cog):
         embed.add_field(name=f"Sammlerin", value=places)
         embed.add_field(name=f"Süßigkeiten", value=scores)
         return embed
-        #await elm_street_channel.send("", embed=embed)
+        # await elm_street_channel.send("", embed=embed)
 
     async def group_stats(self, thread_id):
         thread = await self.bot.fetch_channel(thread_id)
@@ -371,6 +370,34 @@ class ElmStreet(commands.Cog):
         embed.add_field(name="Verlorene Mutpunkte", value=courage_value)
 
         return embed
+
+    def get_invite_message(self, author):
+        texts = [f"Du bist mitten in einer Großstadt gelandet.\n"
+                 f"Der leise Wind weht Papier die Straße lang.\n"
+                 f"Ansonsten hörst du nur in der Ferne das Geräusch vorbeifahrender Autos.\n"
+                 f"Da, was war das?\n"
+                 f"Hat sich da nicht etwas bewegt?\n"
+                 f"Ein Schatten an der Mauer?\n"
+                 f"Ein Geräusch wie von Krallen auf Asphalt.\n"
+                 f"Du drehst dich im Kreis.\n"
+                 f"Ein leises Lachen in deinem Rücken.\n"
+                 f"Und da, gerade außerhalb deines Sichtfeldes eine Tür die sich quietschend öffnet.\n"
+                 f"Eine laute Stimme ruft fragend: \"Ich zieh los um die Häuser, wäre ja gelacht wenn nur Kinder heute "
+                 f"abend Süßkram bekommen. Wer ist mit dabei?\"\n"
+                 f"Du drehst dich zur Tür und siehst {author.mention}",
+                 f"Eine Einladung über die Sozialen Netzwerke hat dich Aufmerksam werden lassen.\n"
+                 f"Darin war von einer großen Halloween Party die Rede.\n"
+                 f"Als Treffpunkt war ein Park in der Innenstadt angegeben.\n"
+                 f"Schon beim eintreffen merkst du, dass es keine angemeldete Party ist.\n"
+                 f"Überall ist Blaulicht und du siehst einige Polizeiwagen.\n"
+                 f"Du entscheides dich die Pläne für den Abend noch mal zu überdenken.\n"
+                 f"Aber was tun? \n"
+                 f"Deine Verkleidung ist zu aufwendig um schon wieder nach Hause zu gehen.\n"
+                 f"In deiner Nähe stehen noch andere Menschen in Verkleidung die nicht wissen was sie mit dem angebrochenen Abend anfangen sollen.\n"
+                 f"Da fragt {author.mention} laut in die Runde: \"Wer hat lust um die Häuser zu ziehen und gemeinsam Süßigkeiten zu sammeln?\""
+                 ]
+
+        return secrets.choice(texts)
 
     @tasks.loop(minutes=5)
     async def increase_courage(self):
