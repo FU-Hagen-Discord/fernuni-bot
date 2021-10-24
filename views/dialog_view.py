@@ -1,8 +1,6 @@
-import json
-import uuid
-
 import disnake
-from disnake import  ButtonStyle
+from disnake import ButtonStyle
+
 
 class DialogView(disnake.ui.View):
 
@@ -30,5 +28,5 @@ class DialogView(disnake.ui.View):
     def internal_callback(self, button):
         async def button_callback(interaction):
             await self.callback(button, interaction, value=button.value)
-        return button_callback
 
+        return button_callback

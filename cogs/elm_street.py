@@ -2,6 +2,7 @@ import json
 import os
 import secrets
 from asyncio import sleep
+from copy import deepcopy
 from typing import Union
 
 import disnake
@@ -31,12 +32,14 @@ class ElmStreet(commands.Cog):
         self.bot = bot
         self.groups = {}
         self.players = {}
+        self.story = {}
         self.load()
         self.elm_street_channel_id = int(os.getenv("DISCORD_ELM_STREET_CHANNEL"))
         self.bot.view_manager.register("on_join", self.on_join)
         self.bot.view_manager.register("on_joined", self.on_joined)
         self.bot.view_manager.register("on_start", self.on_start)
         self.bot.view_manager.register("on_stop", self.on_stop)
+        self.bot.view_manager.register("on_story", self.on_story)
 
         self.increase_courage.start()
 
@@ -45,6 +48,8 @@ class ElmStreet(commands.Cog):
             self.groups = json.load(groups_file)
         with open("data/elm_street_players.json", "r") as players_file:
             self.players = json.load(players_file)
+        with open("data/elm_street_story.json", "r") as story_file:
+            self.story = json.load(story_file)
 
     def save(self):
         with open("data/elm_street_groups.json", "w") as groups_file:
@@ -214,8 +219,8 @@ class ElmStreet(commands.Cog):
                 if value:  # auf Start geklickt
                     await interaction.response.send_message(
                         f"Seid ihr bereit? Taschenlampe am Gürtel, Schminke im Gesicht? Dann kann es ja losgehen.\n"
-                        f"Doch als ihr gerade in euer Abenteuer starten wollt, fällt <@!{secrets.choice(group.get('players'))}> auf, dass ihr euch erst noch Behälter für die erwarteten Süßigkeiten suchen müsst. Ihr schnappt euch also was gerade da ist: Einen Putzeimer, eine Plastiktüte von Aldi, einen Einhorn Rucksack, eine Reisetasche, eine Wickeltasche mit zweifelhaftem Inhalt, einen Rucksack, eine alte Holzkiste, einen Leinensack, einen Müllsack oder eine blaue Ikea Tasche.\n Nun aber los!",
-                        view=self.get_stop_view())
+                        f"Doch als ihr gerade in euer Abenteuer starten wollt, fällt <@!{secrets.choice(group.get('players'))}> auf, dass ihr euch erst noch Behälter für die erwarteten Süßigkeiten suchen müsst. Ihr schnappt euch also was gerade da ist: Einen Putzeimer, eine Plastiktüte von Aldi, einen Einhorn Rucksack, eine Reisetasche, eine Wickeltasche mit zweifelhaftem Inhalt, einen Rucksack, eine alte Holzkiste, einen Leinensack, einen Müllsack oder eine blaue Ikea Tasche.\n Nun aber los!")
+                    await self.on_story(button, interaction, "doors")
                 else:  # auf Abbrechen geklickt
                     self.groups.pop(str(thread_id))
                     self.save()
@@ -254,6 +259,28 @@ class ElmStreet(commands.Cog):
         else:
             await interaction.response.send_message("Nur die Gruppenerstellerin kann die Gruppe beenden.",
                                                     ephemeral=True)
+
+    async def on_story(self, button: disnake.ui.Button, interaction: disnake.MessageInteraction, value=None):
+        if interaction and not interaction.response._responded:
+            await interaction.response.defer()
+
+        if value == "stop":
+            await self.on_stop(button, interaction, value)
+
+        if events := self.story.get("events"):
+            if event := events.get(value):
+                channel = interaction.message.channel
+                choice = secrets.choice(event)
+                text = choice["text"]
+                view = self.get_story_view(choice["view"])
+                await channel.send(text, view=view)
+
+    def get_story_view(self, view_name: str):
+        if views := self.story.get("views"):
+            if buttons := views.get(view_name):
+                return self.bot.view_manager.view(deepcopy(buttons), "on_story")
+
+        return None
 
     def get_join_view(self, group_id: int):
         buttons = [
@@ -390,7 +417,7 @@ class ElmStreet(commands.Cog):
                  f"Als Treffpunkt war ein Park in der Innenstadt angegeben.\n"
                  f"Schon beim eintreffen merkst du, dass es keine angemeldete Party ist.\n"
                  f"Überall ist Blaulicht und du siehst einige Polizeiwagen.\n"
-                 f"Du entscheides dich die Pläne für den Abend noch mal zu überdenken.\n"
+                 f"Du entscheidest1221 3r dich die Pläne für den Abend noch mal zu überdenken.\n"
                  f"Aber was tun? \n"
                  f"Deine Verkleidung ist zu aufwendig um schon wieder nach Hause zu gehen.\n"
                  f"In deiner Nähe stehen noch andere Menschen in Verkleidung die nicht wissen was sie mit dem angebrochenen Abend anfangen sollen.\n"
