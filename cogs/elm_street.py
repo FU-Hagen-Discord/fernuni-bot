@@ -286,11 +286,12 @@ class ElmStreet(commands.Cog):
         if interaction and not interaction.response.is_done():
             await interaction.response.defer()
 
-        if not self.can_proceed_story(interaction.channel_id):
-            value = "fear"
 
         if value == "stop":
             await self.on_stop(button, interaction, value)
+
+        elif not self.can_proceed_story(interaction.channel_id):
+            value = "fear"
 
         if events := self.story.get("events"):
             if event := events.get(value):
@@ -300,7 +301,7 @@ class ElmStreet(commands.Cog):
                 view = self.get_story_view(choice["view"])
                 sweets = calculate_sweets(choice)
                 courage = calculate_courage(choice)
-                text = self.apply_sweets_and_courage(text, sweets, courage)
+                text = self.apply_sweets_and_courage(text, sweets, courage, interaction.channel_id)
                 await channel.send(text, view=view)
 
     def get_story_view(self, view_name: str):
@@ -357,9 +358,7 @@ class ElmStreet(commands.Cog):
             num_players += 1
             group_courage += player["courage"]
         average_courage = group_courage/num_players
-        print(f"Players: {num_players}\n"
-              f"Group Courage: {group_courage}" 
-              f"Average Courage: {average_courage}")
+     
         return self.min_group_courage < average_courage
 
     def can_play(self, player):
@@ -471,12 +470,21 @@ class ElmStreet(commands.Cog):
 
         return SystemRandom().choice(texts)
 
-    def apply_sweets_and_courage(self, text, sweets, courage):
+    def apply_sweets_and_courage(self, text, sweets, courage, thread_id):
         if sweets > 0:
             text += f"\n\nIhr erhaltet jeweils {sweets} Süßigkeiten."
         if courage > 0:
             text += f"\n\nIhr verliert jeweils {courage} Mutpunkte."
 
+        group = self.groups.get(str(thread_id))
+        player_ids = group.get("players")
+        for player_id in player_ids:
+            player = self.players.get(str(player_id))
+            player["sweets"] += sweets
+            player["courage"] -= courage
+
+        self.save()
+        #TODO Was passiert wenn die courage eines Players zu weit sinkt?
         return text
 
     @tasks.loop(minutes=5)
