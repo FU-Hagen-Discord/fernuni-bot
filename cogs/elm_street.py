@@ -1,8 +1,8 @@
 import json
 import os
-import secrets
 from asyncio import sleep
 from copy import deepcopy
+from random import SystemRandom
 from typing import Union
 
 import disnake
@@ -17,6 +17,26 @@ load_dotenv()
 
 def get_player_from_embed(embed: disnake.Embed):
     return embed.description.split()[0][2:-1]
+
+
+def calculate_sweets(event):
+    sweets_min = event.get("sweets_min")
+    sweets_max = event.get("sweets_max")
+
+    if sweets_min and sweets_max:
+        return SystemRandom().randint(sweets_min, sweets_max)
+
+    return 0
+
+
+def calculate_courage(event):
+    courage_min = event.get("courage_min")
+    courage_max = event.get("courage_max")
+
+    if courage_min and courage_max:
+        return SystemRandom().randint(courage_min, courage_max)
+
+    return 0
 
 
 ShowOption = commands.option_enum(["10", "all"])
@@ -195,7 +215,7 @@ class ElmStreet(commands.Cog):
                     texts = [
                         "Wir wollen um die Häuser ziehen und Kinder erschrecken. Du schaust aus, als würdest du den Kindern lieber unsere Süßigkeiten geben. Versuch es woanders.",
                         "Ich glaub du hast dich verlaufen, in dieser Gruppe können wir keine \"Piraten\", \"Einhörner\", \"Geister\", \"Katzen\" gebrauchen. Unser Dresscode ist: \"Werwolf\", \"Vampir\", \"Alice im Wunderland\", \"Hexe\"."]
-                    await send_dm(user, secrets.choice(texts))
+                    await send_dm(user, SystemRandom().choice(texts))
                     group["requests"].remove({'player': player_id, 'id': interaction.message.id})
                     self.save()
                 # Request Nachricht aus diesem Thread und aus players löschen
@@ -219,7 +239,7 @@ class ElmStreet(commands.Cog):
                 if value:  # auf Start geklickt
                     await interaction.response.send_message(
                         f"Seid ihr bereit? Taschenlampe am Gürtel, Schminke im Gesicht? Dann kann es ja losgehen.\n"
-                        f"Doch als ihr gerade in euer Abenteuer starten wollt, fällt <@!{secrets.choice(group.get('players'))}> auf, dass ihr euch erst noch Behälter für die erwarteten Süßigkeiten suchen müsst. Ihr schnappt euch also was gerade da ist: Einen Putzeimer, eine Plastiktüte von Aldi, einen Einhorn Rucksack, eine Reisetasche, eine Wickeltasche mit zweifelhaftem Inhalt, einen Rucksack, eine alte Holzkiste, einen Leinensack, einen Müllsack oder eine blaue Ikea Tasche.\n Nun aber los!")
+                        f"Doch als ihr gerade in euer Abenteuer starten wollt, fällt <@!{SystemRandom().choice(group.get('players'))}> auf, dass ihr euch erst noch Behälter für die erwarteten Süßigkeiten suchen müsst. Ihr schnappt euch also was gerade da ist: Einen Putzeimer, eine Plastiktüte von Aldi, einen Einhorn Rucksack, eine Reisetasche, eine Wickeltasche mit zweifelhaftem Inhalt, einen Rucksack, eine alte Holzkiste, einen Leinensack, einen Müllsack oder eine blaue Ikea Tasche.\n Nun aber los!")
                     await self.on_story(button, interaction, "doors")
                 else:  # auf Abbrechen geklickt
                     self.groups.pop(str(thread_id))
@@ -261,7 +281,7 @@ class ElmStreet(commands.Cog):
                                                     ephemeral=True)
 
     async def on_story(self, button: disnake.ui.Button, interaction: disnake.MessageInteraction, value=None):
-        if interaction and not interaction.response._responded:
+        if interaction and not interaction.response.is_done():
             await interaction.response.defer()
 
         if value == "stop":
@@ -270,9 +290,12 @@ class ElmStreet(commands.Cog):
         if events := self.story.get("events"):
             if event := events.get(value):
                 channel = interaction.message.channel
-                choice = secrets.choice(event)
+                choice = SystemRandom().choice(event)
                 text = choice["text"]
                 view = self.get_story_view(choice["view"])
+                sweets = calculate_sweets(choice)
+                courage = calculate_courage(choice)
+                text = self.apply_sweets_and_courage(text, sweets, courage)
                 await channel.send(text, view=view)
 
     def get_story_view(self, view_name: str):
@@ -424,7 +447,15 @@ class ElmStreet(commands.Cog):
                  f"Da fragt {author.mention} laut in die Runde: \"Wer hat lust um die Häuser zu ziehen und gemeinsam Süßigkeiten zu sammeln?\""
                  ]
 
-        return secrets.choice(texts)
+        return SystemRandom().choice(texts)
+
+    def apply_sweets_and_courage(self, text, sweets, courage):
+        if sweets > 0:
+            text += f"\n\nIhr erhaltet jeweils {sweets} Süßigkeiten."
+        if courage > 0:
+            text += f"\n\nIhr verliert jeweils {courage} Mutpunkte."
+
+        return text
 
     @tasks.loop(minutes=5)
     async def increase_courage(self):
