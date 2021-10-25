@@ -47,6 +47,8 @@ class ElmStreet(commands.Cog):
 
         self.max_courage = 100
         self.min_courage = 20
+        self.min_group_courage = 20
+
         self.inc_courage_step = 10
 
         self.bot = bot
@@ -284,6 +286,9 @@ class ElmStreet(commands.Cog):
         if interaction and not interaction.response.is_done():
             await interaction.response.defer()
 
+        if not self.can_proceed_story(interaction.channel_id):
+            value = "fear"
+
         if value == "stop":
             await self.on_stop(button, interaction, value)
 
@@ -339,6 +344,23 @@ class ElmStreet(commands.Cog):
                 if user_id in group.get('players'):
                     return True
         return False
+
+    def can_proceed_story(self, thread_id):
+        group = self.groups.get(str(thread_id))
+
+        player_ids = group.get("players")
+        num_players = 0
+        group_courage = 0
+
+        for player_id in player_ids:
+            player = self.players.get(str(player_id))
+            num_players += 1
+            group_courage += player["courage"]
+        average_courage = group_courage/num_players
+        print(f"Players: {num_players}\n"
+              f"Group Courage: {group_courage}" 
+              f"Average Courage: {average_courage}")
+        return self.min_group_courage < average_courage
 
     def can_play(self, player):
         if player.get('courage') < self.min_courage:
