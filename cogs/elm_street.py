@@ -292,6 +292,12 @@ class ElmStreet(commands.Cog):
                 value = "fear"
 
             if events := self.story.get("events"):
+                if value == "knock_on_door":
+                    group = self.groups.get(str(thread_id))
+                    group_stats = group.get('stats')
+                    group_stats['doors'] += 1
+                    self.save()
+
                 if event := events.get(value):
                     channel = interaction.message.channel
                     choice = SystemRandom().choice(event)
@@ -435,7 +441,10 @@ class ElmStreet(commands.Cog):
         sweets_value = stats.get('sweets')
         courage_value = stats.get('courage')
 
-        embed = disnake.Embed(title=f'Erfolge der Gruppe "{thread.name}"')
+        embed = disnake.Embed(title=f'Erfolge der Gruppe "{thread.name}"',
+                              description="Die Gruppe hat ihre Runde beendet. Hier siehst du, wieviel jeder einzelne "
+                                          "von ihnen gesammelt und verloren hat. Du denkst, du kannst es besser? "
+                                          "Starte eine Runde mit `/start-group <gruppenname>`")
         embed.add_field(name='Mitspieler', value=players_value, inline=False)
         embed.add_field(name="Besuchte Türen", value=doors_value)
         embed.add_field(name="Gesammelte Süßigkeiten", value=sweets_value)
@@ -484,9 +493,14 @@ class ElmStreet(commands.Cog):
             player["sweets"] += sweets
             player["courage"] -= courage
 
+        group_stats = group.get('stats')
+        group_stats['sweets'] += sweets
+        group_stats['courage'] += courage
+
         self.save()
         #TODO Was passiert wenn die courage eines Players zu weit sinkt?
         return text
+
 
     @tasks.loop(minutes=5)
     async def increase_courage(self):
