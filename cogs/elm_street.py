@@ -92,10 +92,26 @@ class ElmStreet(commands.Cog):
     async def cmd_group_stats(self, interaction: ApplicationCommandInteraction):
         thread_id = interaction.channel_id
         if str(thread_id) in self.groups.keys():
-            embed = await self.group_stats(interaction.channel_id)
+            embed = await self.get_group_stats_embed(interaction.channel_id)
             await interaction.response.send_message(embed=embed)
         else:
             await interaction.response.send_message("Gruppenstatistiken könen nur in Gruppenthreads ausgegeben werden."
+                                                    , ephemeral=True)
+
+    @commands.slash_command(name="stats",
+                            description="Zeigt deine persönliche Statistik an.",
+                            guild_ids=[int(os.getenv('DISCORD_GUILD'))])
+    async def cmd_stats(self, interaction: ApplicationCommandInteraction):
+        # Nur in elm-street oder Gruppenthread ausführbar
+        channel_id = interaction.channel_id
+        player_id = interaction.author.id
+
+        if str(channel_id) in self.groups.keys() or channel_id == self.elm_street_channel_id:
+            embed = self.get_personal_stats_embed(player_id)
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+        else:
+            await interaction.response.send_message("Statistiken können nur in Gruppenthreads oder in "
+                                                    "<#{self.elm_street_channel_id}> ausgegeben werden."
                                                     , ephemeral=True)
 
     @commands.slash_command(name="start-group",
@@ -265,7 +281,7 @@ class ElmStreet(commands.Cog):
         await interaction.message.edit(view=self.get_stop_view(disabled=True))
 
         # Gruppenstatistik in elm-street posten
-        stats_embed = await self.group_stats(thread_id)
+        stats_embed = await self.get_group_stats_embed(thread_id)
         elm_street = await self.bot.fetch_channel(self.elm_street_channel_id)
         await elm_street.send("", embed=stats_embed)
 
@@ -435,7 +451,7 @@ class ElmStreet(commands.Cog):
         return embed
         # await elm_street_channel.send("", embed=embed)
 
-    async def group_stats(self, thread_id):
+    async def get_group_stats_embed(self, thread_id):
         thread = await self.bot.fetch_channel(thread_id)
         players = self.groups.get(str(thread_id)).get('players')
         stats = self.groups.get(str(thread_id)).get('stats')
@@ -445,15 +461,19 @@ class ElmStreet(commands.Cog):
         sweets_value = stats.get('sweets')
         courage_value = stats.get('courage')
 
-        embed = disnake.Embed(title=f'Erfolge der Gruppe "{thread.name}"',
-                              description="Die Gruppe hat ihre Runde beendet. Hier siehst du, wieviel jeder einzelne "
-                                          "von ihnen gesammelt und verloren hat. Du denkst, du kannst es besser? "
-                                          "Starte eine Runde mit `/start-group <gruppenname>`")
+        embed = disnake.Embed(title=f'Erfolge der Gruppe "{thread.name}"')
         embed.add_field(name='Mitspieler', value=players_value, inline=False)
         embed.add_field(name="Besuchte Türen", value=doors_value)
         embed.add_field(name="Gesammelte Süßigkeiten", value=sweets_value)
         embed.add_field(name="Verlorene Mutpunkte", value=courage_value)
 
+        return embed
+
+    def get_personal_stats_embed(self, player_id):
+        player = self.players.get(str(player_id))
+        embed = disnake.Embed(title="Deine persönlichen Erfolge")
+        embed.add_field(name="Süßigkeiten", value=player['sweets'])
+        embed.add_field(name="Mutpunkte", value=player['courage'])
         return embed
 
     def get_invite_message(self, author):
