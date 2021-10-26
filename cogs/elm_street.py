@@ -534,24 +534,29 @@ class ElmStreet(commands.Cog):
 
     @tasks.loop(minutes=5)
     async def increase_courage(self):
+        actual_playing = []
+        for p in (self.groups.get(group).get('players') for group in self.groups):
+            actual_playing += p
         # pro Spieler: courage erhöhen
         for player in self.players:
-            player = self.players.get(player)
-            courage = player.get('courage')
-            if courage < self.max_courage:
-                courage += self.inc_courage_step
-                player['courage'] = courage if courage < self.max_courage else self.max_courage
-                self.save()
+            # nur wenn Spieler nicht gerade spielt
+            if int(player) not in actual_playing:
+                player = self.players.get(player)
+                courage = player.get('courage')
+                if courage < self.max_courage:
+                    courage += self.inc_courage_step
+                    player['courage'] = courage if courage < self.max_courage else self.max_courage
+                    self.save()
 
-                # pro Nachricht: Nachricht erneuern
-                if messages := player.get('messages'):
-                    for message in messages:
-                        channel = await self.bot.fetch_channel(message['channel'])
-                        msg = await channel.fetch_message(message['id'])
-                        embed = msg.embeds[0]
-                        embed.clear_fields()
-                        embed.add_field(name='aktuelle Mutpunkte', value=self.get_courage_message(player))
-                        await msg.edit(embed=embed)
+                    # pro Nachricht: Nachricht erneuern
+                    if messages := player.get('messages'):
+                        for message in messages:
+                            channel = await self.bot.fetch_channel(message['channel'])
+                            msg = await channel.fetch_message(message['id'])
+                            embed = msg.embeds[0]
+                            embed.clear_fields()
+                            embed.add_field(name='aktuelle Mutpunkte', value=self.get_courage_message(player))
+                            await msg.edit(embed=embed)
 
     @increase_courage.before_loop
     async def before_increase(self):
