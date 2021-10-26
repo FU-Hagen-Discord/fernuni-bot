@@ -57,6 +57,7 @@ class ElmStreet(commands.Cog):
         self.story = {}
         self.load()
         self.elm_street_channel_id = int(os.getenv("DISCORD_ELM_STREET_CHANNEL"))
+        self.halloween_category_id = int(os.getenv("DISCORD_HALLOWEEN_CATEGORY"))
         self.bot.view_manager.register("on_join", self.on_join)
         self.bot.view_manager.register("on_joined", self.on_joined)
         self.bot.view_manager.register("on_start", self.on_start)
@@ -119,19 +120,25 @@ class ElmStreet(commands.Cog):
                             guild_ids=[int(os.getenv('DISCORD_GUILD'))])
     async def cmd_start_group(self, interaction: ApplicationCommandInteraction, name: str):
         author = interaction.author
+        category = await self.bot.fetch_channel(self.halloween_category_id)
         channel = await self.bot.fetch_channel(self.elm_street_channel_id)
         channel_type = None if self.bot.is_prod() else disnake.ChannelType.public_thread
+
         player = self.get_player(author)
 
         if interaction.channel == channel:
             if self.can_play(player):
                 if not self.is_playing(author.id):
                     thread = await channel.create_thread(name=name, auto_archive_duration=1440, type=channel_type)
+                    voice_channel = await category.create_voice_channel(name)
+                    await voice_channel.set_permissions(interaction.author, view_channel=True)
 
                     await thread.send(
                         f"Hallo {author.mention}. Der Streifzug deiner Gruppe durch die Elm-Street findet "
                         f"in diesem Thread statt. Sobald deine Gruppe sich zusammen gefunden hat, kannst "
-                        f"du über einen Klick auf den Start Button eure Reise starten.",
+                        f"du über einen Klick auf den Start Button eure Reise starten.\n\n"
+                        f"Für das volle Gruselerlebnis könnt ihr euch während des Abenteuers gegenseitig "
+                        f"Schauermärchen in eurem Voice Channel {voice_channel.mention} erzählen.",
                         view=self.get_start_view())
 
                     await interaction.response.send_message(self.get_invite_message(author),
@@ -139,7 +146,8 @@ class ElmStreet(commands.Cog):
 
                     message = await interaction.original_message()
                     self.groups[str(thread.id)] = {"message": message.id, "players": [author.id], "owner": author.id,
-                                                   "requests": [], 'stats': {'sweets': 0, 'courage': 0, 'doors': 0}}
+                                                   "requests": [], 'stats': {'sweets': 0, 'courage': 0, 'doors': 0},
+                                                   "voice_channel": voice_channel.id}
                     self.save()
                 else:
                     await interaction.response.send_message(
@@ -220,6 +228,9 @@ class ElmStreet(commands.Cog):
                                 if request['player'] == player_id:
                                     thread = await self.bot.fetch_channel(int(thread_id))
                                     message = await thread.fetch_message(request['id'])
+                                    player = await self.bot.fetch_user(player_id)
+                                    voice_channel = await self.bot.fetch_channel(group["voice_channel"])
+                                    await voice_channel.set_permissions(player, view_channel=True)
                                     await message.delete()
                                     self.delete_message_from_player(player_id, request['id'])
                                     requests.remove(request)
@@ -260,6 +271,12 @@ class ElmStreet(commands.Cog):
                         f"Doch als ihr gerade in euer Abenteuer starten wollt, fällt <@!{SystemRandom().choice(group.get('players'))}> auf, dass ihr euch erst noch Behälter für die erwarteten Süßigkeiten suchen müsst. Ihr schnappt euch also was gerade da ist: Einen Putzeimer, eine Plastiktüte von Aldi, einen Einhorn Rucksack, eine Reisetasche, eine Wickeltasche mit zweifelhaftem Inhalt, einen Rucksack, eine alte Holzkiste, einen Leinensack, einen Müllsack oder eine blaue Ikea Tasche.\n Nun aber los!")
                     await self.on_story(button, interaction, "doors")
                 else:  # auf Abbrechen geklickt
+                    # voice channel löschen
+                    voice_channel_id = self.groups[str(thread_id)]["voice_channel"]
+                    voice_channel = await self.bot.fetch_channel(voice_channel_id)
+                    if len(voice_channel.members) == 0:
+                        await voice_channel.delete()
+
                     self.groups.pop(str(thread_id))
                     self.save()
                     await interaction.response.send_message(f"Du hast die Runde abgebrochen. Dieser Thread wurde "
@@ -270,9 +287,10 @@ class ElmStreet(commands.Cog):
                                                    f"vorbei")
                     await interaction.channel.edit(archived=True)
         else:
-            await interaction.response.send_message("Nur die Gruppenerstellerin kann die Gruppe starten lassen oder die "
-                                                    "Tour abbrechen.",
-                                                    ephemeral=True)
+            await interaction.response.send_message(
+                "Nur die Gruppenerstellerin kann die Gruppe starten lassen oder die "
+                "Tour abbrechen.",
+                ephemeral=True)
 
     async def on_stop(self, button: disnake.ui.Button, interaction: disnake.MessageInteraction, value=None):
         thread_id = interaction.channel_id
@@ -289,6 +307,12 @@ class ElmStreet(commands.Cog):
         sweets = self.groups.get(str(thread_id)).get('stats').get('sweets')
         self.share_sweets(sweets, thread_id)
 
+        # voice channel löschen
+        voice_channel_id = self.groups[str(thread_id)]["voice_channel"]
+        voice_channel = await self.bot.fetch_channel(voice_channel_id)
+        if len(voice_channel.members) == 0:
+            await voice_channel.delete()
+
         # Gruppe aus json löschen
         self.groups.pop(str(thread_id))
         self.save()
@@ -300,7 +324,7 @@ class ElmStreet(commands.Cog):
         await interaction.channel.edit(archived=True)
 
     async def on_story(self, button: disnake.ui.Button, interaction: disnake.MessageInteraction, value=None):
-        #if interaction and not interaction.response.is_done():
+        # if interaction and not interaction.response.is_done():
         #    await interaction.response.defer()
         thread_id = interaction.channel_id
         owner_id = self.groups.get(str(thread_id)).get('owner')
@@ -384,8 +408,8 @@ class ElmStreet(commands.Cog):
             player = self.players.get(str(player_id))
             num_players += 1
             group_courage += player["courage"]
-        average_courage = group_courage/num_players
-     
+        average_courage = group_courage / num_players
+
         return self.min_group_courage < average_courage
 
     def can_play(self, player):
@@ -504,6 +528,14 @@ class ElmStreet(commands.Cog):
 
         return SystemRandom().choice(texts)
 
+    def get_group_by_voice_id(self, voice_id):
+        for group in self.groups.values():
+            if vc := group.get("voice_channel"):
+                if vc == voice_id:
+                    return group
+
+        return None
+
     def apply_sweets_and_courage(self, text, sweets, courage, thread_id):
         if sweets > 0:
             text += f"\n\nIhr erhaltet jeweils {sweets} Süßigkeiten."
@@ -521,7 +553,7 @@ class ElmStreet(commands.Cog):
         group_stats['courage'] += courage
 
         self.save()
-        #TODO Was passiert wenn die courage eines Players zu weit sinkt?
+        # TODO Was passiert wenn die courage eines Players zu weit sinkt?
         return text
 
     def share_sweets(self, sweets, thread_id):
@@ -530,7 +562,6 @@ class ElmStreet(commands.Cog):
         for player_id in player_ids:
             player = self.players.get(str(player_id))
             player["sweets"] += sweets
-
 
     @tasks.loop(minutes=5)
     async def increase_courage(self):
@@ -561,3 +592,12 @@ class ElmStreet(commands.Cog):
     @increase_courage.before_loop
     async def before_increase(self):
         await sleep(10)
+
+    @commands.Cog.listener(name="on_voice_state_update")
+    async def voice_state_changed(self, member, before, after):
+        if not after.channel:
+            voice_channel_left = before.channel
+            if len(voice_channel_left.members) == 0 and \
+                    voice_channel_left.category_id == self.halloween_category_id and \
+                    not self.get_group_by_voice_id(voice_channel_left.id):
+                await voice_channel_left.delete()
