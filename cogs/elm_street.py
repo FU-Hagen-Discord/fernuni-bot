@@ -269,8 +269,12 @@ class ElmStreet(commands.Cog):
         elm_street = await self.bot.fetch_channel(self.elm_street_channel_id)
         await elm_street.send("", embed=stats_embed)
 
+        # jedem Spieler seine Süßigkeiten geben
+        sweets = self.groups.get(str(thread_id)).get('stats').get('sweets')
+        self.share_sweets(sweets, thread_id)
+
         # Gruppe aus json löschen
-        group = self.groups.pop(str(thread_id))
+        self.groups.pop(str(thread_id))
         self.save()
 
         # Thread archivieren
@@ -490,7 +494,6 @@ class ElmStreet(commands.Cog):
         player_ids = group.get("players")
         for player_id in player_ids:
             player = self.players.get(str(player_id))
-            player["sweets"] += sweets
             player["courage"] -= courage
 
         group_stats = group.get('stats')
@@ -500,6 +503,13 @@ class ElmStreet(commands.Cog):
         self.save()
         #TODO Was passiert wenn die courage eines Players zu weit sinkt?
         return text
+
+    def share_sweets(self, sweets, thread_id):
+        group = self.groups.get(str(thread_id))
+        player_ids = group.get("players")
+        for player_id in player_ids:
+            player = self.players.get(str(player_id))
+            player["sweets"] += sweets
 
 
     @tasks.loop(minutes=5)
