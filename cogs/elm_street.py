@@ -95,7 +95,7 @@ class ElmStreet(commands.Cog):
             embed = await self.get_group_stats_embed(interaction.channel_id)
             await interaction.response.send_message(embed=embed)
         else:
-            await interaction.response.send_message("Gruppenstatistiken könen nur in Gruppenthreads ausgegeben werden."
+            await interaction.response.send_message("Gruppenstatistiken können nur in Gruppenthreads ausgegeben werden."
                                                     , ephemeral=True)
 
     @commands.slash_command(name="stats",
@@ -130,7 +130,7 @@ class ElmStreet(commands.Cog):
 
                     await thread.send(
                         f"Hallo {author.mention}. Der Streifzug deiner Gruppe durch die Elm-Street findet "
-                        f"in diesem Thread statt. Sobald deine Gruppe sich zusammen  gefunden hat, kannst "
+                        f"in diesem Thread statt. Sobald deine Gruppe sich zusammen gefunden hat, kannst "
                         f"du über einen Klick auf den Start Button eure Reise starten.",
                         view=self.get_start_view())
 
@@ -195,7 +195,7 @@ class ElmStreet(commands.Cog):
         except Exception as e:
             await interaction.response.send_message(
                 "Ein Fehler ist aufgetreten. Überprüfe bitte, ob du der richtigen Gruppe beitreten wolltest. "
-                "Sollte der Fehler erneut auftreten, wende dich bitte an einen Mod.",
+                "Sollte der Fehler erneut auftreten, sende mir (Boty McBotface) bitte eine Direktnachricht.",
                 ephemeral=True)
 
         if not interaction.response.is_done():
@@ -256,7 +256,7 @@ class ElmStreet(commands.Cog):
 
                 if value:  # auf Start geklickt
                     await interaction.response.send_message(
-                        f"Seid ihr bereit? Taschenlampe am Gürtel, Schminke im Gesicht? Dann kann es ja losgehen.\n"
+                        f"Seid ihr bereit? Taschenlampe am Gürtel, Schminke im Gesicht? Dann kann es losgehen!\n"
                         f"Doch als ihr gerade in euer Abenteuer starten wollt, fällt <@!{SystemRandom().choice(group.get('players'))}> auf, dass ihr euch erst noch Behälter für die erwarteten Süßigkeiten suchen müsst. Ihr schnappt euch also was gerade da ist: Einen Putzeimer, eine Plastiktüte von Aldi, einen Einhorn Rucksack, eine Reisetasche, eine Wickeltasche mit zweifelhaftem Inhalt, einen Rucksack, eine alte Holzkiste, einen Leinensack, einen Müllsack oder eine blaue Ikea Tasche.\n Nun aber los!")
                     await self.on_story(button, interaction, "doors")
                 else:  # auf Abbrechen geklickt
@@ -478,7 +478,7 @@ class ElmStreet(commands.Cog):
 
     def get_invite_message(self, author):
         texts = [f"Du bist mitten in einer Großstadt gelandet.\n"
-                 f"Der leise Wind weht Papier die Straße lang.\n"
+                 f"Der leise Wind weht Papier die Straße lang. "
                  f"Ansonsten hörst du nur in der Ferne das Geräusch vorbeifahrender Autos.\n"
                  f"Da, was war das?\n"
                  f"Hat sich da nicht etwas bewegt?\n"
@@ -489,17 +489,17 @@ class ElmStreet(commands.Cog):
                  f"Und da, gerade außerhalb deines Sichtfeldes eine Tür die sich quietschend öffnet.\n"
                  f"Eine laute Stimme ruft fragend: \"Ich zieh los um die Häuser, wäre ja gelacht wenn nur Kinder heute "
                  f"abend Süßkram bekommen. Wer ist mit dabei?\"\n"
-                 f"Du drehst dich zur Tür und siehst {author.mention}",
-                 f"Eine Einladung über die Sozialen Netzwerke hat dich Aufmerksam werden lassen.\n"
-                 f"Darin war von einer großen Halloween Party die Rede.\n"
-                 f"Als Treffpunkt war ein Park in der Innenstadt angegeben.\n"
-                 f"Schon beim eintreffen merkst du, dass es keine angemeldete Party ist.\n"
-                 f"Überall ist Blaulicht und du siehst einige Polizeiwagen.\n"
-                 f"Du entscheidest1221 3r dich die Pläne für den Abend noch mal zu überdenken.\n"
+                 f"Du drehst dich zur Tür und siehst {author.mention}s entschlossenem Gesichtsausdruck.",
+                 f"Eine Einladung über die Sozialen Netzwerke hat dich Aufmerksam werden lassen. \n"
+                 f"Darin war von einer großen Halloween Party die Rede, "
+                 f"als Treffpunkt war ein Park in der Innenstadt angegeben.\n"
+                 f"Schon beim eintreffen merkst du, dass es keine angemeldete Party ist: "
+                 f"überall ist Blaulicht und du siehst einige Polizeiwagen.\n"
+                 f"Du entscheidest dich die Pläne für den Abend noch mal zu überdenken. "
                  f"Aber was tun? \n"
                  f"Deine Verkleidung ist zu aufwendig um schon wieder nach Hause zu gehen.\n"
-                 f"In deiner Nähe stehen noch andere Menschen in Verkleidung die nicht wissen was sie mit dem angebrochenen Abend anfangen sollen.\n"
-                 f"Da fragt {author.mention} laut in die Runde: \"Wer hat lust um die Häuser zu ziehen und gemeinsam Süßigkeiten zu sammeln?\""
+                 f"In deiner Nähe stehen noch andere Menschen in Verkleidung die nicht wissen was sie mit dem angebrochenen Abend anfangen sollen. "
+                 f"Da fragt {author.mention} laut in die Runde: \"Wer hat Lust um die Häuser zu ziehen und gemeinsam Süßigkeiten zu sammeln?\""
                  ]
 
         return SystemRandom().choice(texts)
