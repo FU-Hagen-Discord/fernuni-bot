@@ -254,55 +254,56 @@ class ElmStreet(commands.Cog):
                                                    f"vorbei")
                     await interaction.channel.edit(archived=True)
         else:
-            await interaction.response.send_message("Nur die Gruppenerstellerin kann die Gruppe starten lassen.",
+            await interaction.response.send_message("Nur die Gruppenerstellerin kann die Gruppe starten lassen oder die "
+                                                    "Tour abbrechen.",
                                                     ephemeral=True)
 
     async def on_stop(self, button: disnake.ui.Button, interaction: disnake.MessageInteraction, value=None):
         thread_id = interaction.channel_id
-        owner_id = self.groups.get(str(thread_id)).get('owner')
-        if interaction.author.id == owner_id:
-            # Button disablen
-            await interaction.message.edit(view=self.get_stop_view(disabled=True))
 
-            # Gruppenstatistik in elm-street posten
-            stats_embed = await self.group_stats(thread_id)
-            elm_street = await self.bot.fetch_channel(self.elm_street_channel_id)
-            await elm_street.send("", embed=stats_embed)
+        # Button disablen
+        await interaction.message.edit(view=self.get_stop_view(disabled=True))
 
-            # Gruppe aus json löschen
-            group = self.groups.pop(str(thread_id))
-            self.save()
+        # Gruppenstatistik in elm-street posten
+        stats_embed = await self.group_stats(thread_id)
+        elm_street = await self.bot.fetch_channel(self.elm_street_channel_id)
+        await elm_street.send("", embed=stats_embed)
 
-            # Thread archivieren
-            await interaction.channel.send(f"Dieses Abenteuer ist beendet und zum Nachlesen archiviert."
-                                           f"\nFür mehr Halloween-Spaß, schau in <#{self.elm_street_channel_id}>"
-                                           f"vorbei")
-            await interaction.channel.edit(archived=True)
-        else:
-            await interaction.response.send_message("Nur die Gruppenerstellerin kann die Gruppe beenden.",
-                                                    ephemeral=True)
+        # Gruppe aus json löschen
+        group = self.groups.pop(str(thread_id))
+        self.save()
+
+        # Thread archivieren
+        await interaction.channel.send(f"Dieses Abenteuer ist beendet und zum Nachlesen archiviert."
+                                       f"\nFür mehr Halloween-Spaß, schau in <#{self.elm_street_channel_id}>"
+                                       f"vorbei")
+        await interaction.channel.edit(archived=True)
 
     async def on_story(self, button: disnake.ui.Button, interaction: disnake.MessageInteraction, value=None):
-        if interaction and not interaction.response.is_done():
-            await interaction.response.defer()
+        #if interaction and not interaction.response.is_done():
+        #    await interaction.response.defer()
+        thread_id = interaction.channel_id
+        owner_id = self.groups.get(str(thread_id)).get('owner')
+        if interaction.author.id == owner_id:
+            if value == "stop":
+                await self.on_stop(button, interaction, value)
 
+            elif not self.can_proceed_story(interaction.channel_id):
+                value = "fear"
 
-        if value == "stop":
-            await self.on_stop(button, interaction, value)
-
-        elif not self.can_proceed_story(interaction.channel_id):
-            value = "fear"
-
-        if events := self.story.get("events"):
-            if event := events.get(value):
-                channel = interaction.message.channel
-                choice = SystemRandom().choice(event)
-                text = choice["text"]
-                view = self.get_story_view(choice["view"])
-                sweets = calculate_sweets(choice)
-                courage = calculate_courage(choice)
-                text = self.apply_sweets_and_courage(text, sweets, courage, interaction.channel_id)
-                await channel.send(text, view=view)
+            if events := self.story.get("events"):
+                if event := events.get(value):
+                    channel = interaction.message.channel
+                    choice = SystemRandom().choice(event)
+                    text = choice["text"]
+                    view = self.get_story_view(choice["view"])
+                    sweets = calculate_sweets(choice)
+                    courage = calculate_courage(choice)
+                    text = self.apply_sweets_and_courage(text, sweets, courage, interaction.channel_id)
+                    await channel.send(text, view=view)
+        else:
+            await interaction.response.send_message("Nur die Gruppenleiterin kann die Gruppe steuern.",
+                                                    ephemeral=True)
 
     def get_story_view(self, view_name: str):
         if views := self.story.get("views"):
