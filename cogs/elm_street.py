@@ -111,8 +111,8 @@ class ElmStreet(commands.Cog):
             embed = self.get_personal_stats_embed(player_id)
             await interaction.response.send_message(embed=embed, ephemeral=True)
         else:
-            await interaction.response.send_message("Statistiken können nur in Gruppenthreads oder in "
-                                                    "<#{self.elm_street_channel_id}> ausgegeben werden."
+            await interaction.response.send_message(f"Statistiken können nur in Gruppenthreads oder in "
+                                                    f"<#{self.elm_street_channel_id}> ausgegeben werden."
                                                     , ephemeral=True)
 
     @commands.slash_command(name="start-group",
