@@ -346,11 +346,14 @@ class ElmStreet(commands.Cog):
                     channel = interaction.message.channel
                     choice = SystemRandom().choice(event)
                     text = choice["text"]
-                    view = self.get_story_view(choice["view"])
+                    view = self.get_story_view(choice.get("view"))
                     sweets = calculate_sweets(choice)
                     courage = calculate_courage(choice)
                     text = self.apply_sweets_and_courage(text, sweets, courage, interaction.channel_id)
                     await channel.send(text, view=view)
+                    if next := choice.get("next"):
+                        await self.on_story(button, interaction, next)
+
         else:
             await interaction.response.send_message("Nur die Gruppenleiterin kann die Gruppe steuern.",
                                                     ephemeral=True)
