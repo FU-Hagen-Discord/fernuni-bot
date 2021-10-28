@@ -395,7 +395,7 @@ class ElmStreet(commands.Cog):
 
     def get_stop_view(self, disabled=False):
         buttons = [
-            {"label": "Beenden", "style": ButtonStyle.red, "custom_id": "elm_street:stop", "disabled": disabled}
+            {"label": "Beendet", "style": ButtonStyle.red, "custom_id": "elm_street:stop", "disabled": disabled}
         ]
         return self.bot.view_manager.view(buttons, "on_stop")
 
