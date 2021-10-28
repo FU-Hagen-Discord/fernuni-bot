@@ -16,7 +16,7 @@ load_dotenv()
 
 
 def get_player_from_embed(embed: disnake.Embed):
-    return embed.description.split()[0][2:-1]
+    return embed.description.split()[0].strip("<@>")
 
 
 def calculate_sweets(event):
