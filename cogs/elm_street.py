@@ -63,6 +63,7 @@ class ElmStreet(commands.Cog):
         self.bot.view_manager.register("on_start", self.on_start)
         self.bot.view_manager.register("on_stop", self.on_stop)
         self.bot.view_manager.register("on_story", self.on_story)
+        self.bot.view_manager.register("on_leave", self.on_leave)
 
         self.increase_courage.start()
 
@@ -97,6 +98,28 @@ class ElmStreet(commands.Cog):
             await interaction.response.send_message(embed=embed)
         else:
             await interaction.response.send_message("Gruppenstatistiken können nur in Gruppenthreads ausgegeben werden."
+                                                    , ephemeral=True)
+
+    @commands.slash_command(name="leave-group",
+                            description="Hiermit verlässt du deine aktuelle Gruppe",
+                            guild_ids=[int(os.getenv('DISCORD_GUILD'))])
+    async def cmd_leave_group(self, interaction: ApplicationCommandInteraction):
+        thread_id = interaction.channel_id
+        player_id = interaction.author.id
+        if group := self.groups.get(str(thread_id)):
+            if not player_id == group['owner']:
+                if player_id in group.get('players'):
+                    self.leave_group(thread_id, player_id)
+                    await interaction.response.send_message(f"<@{player_id}> hat die Gruppe verlassen.")
+                else:
+                    await interaction.response.send_message(
+                        "Du bist garnicht Teil dieser Gruppe.", ephemeral=True)
+            else:
+                await interaction.response.send_message(
+                    "Du darfst deine Gruppe nicht im Stich lassen. Als Gruppenleiterin kannst du sie höchstens beenden, "
+                    "aber nicht verlassen.", ephemeral=True)
+        else:
+            await interaction.response.send_message("Dieses Kommando kann nur in einem Gruppenthread ausgeführt werden."
                                                     , ephemeral=True)
 
     @commands.slash_command(name="stats",
@@ -237,7 +260,7 @@ class ElmStreet(commands.Cog):
                                     requests.remove(request)
 
                         await interaction.message.channel.send(
-                            f"<@!{player_id}> ist jetzt Teil der Crew! Herzlich willkommen.")
+                            f"<@!{player_id}> ist jetzt Teil der Crew! Herzlich willkommen.", view=self.get_leave_view())
                         self.save()
             else:
                 if group := self.groups.get(str(interaction.channel_id)):
@@ -372,6 +395,20 @@ class ElmStreet(commands.Cog):
             await interaction.response.send_message("Nur die Gruppenleiterin kann die Gruppe steuern.",
                                                     ephemeral=True)
 
+    async def on_leave(self,  button: disnake.ui.Button, interaction: disnake.MessageInteraction, value=None):
+        thread_id = interaction.channel_id
+        player_id = interaction.author.id
+        msg_player = interaction.message.mentions[0]
+
+        if msg_player.id == player_id:
+            self.leave_group(thread_id, player_id)
+            await interaction.response.send_message(f"<@{player_id}> hat die Gruppe verlassen.")
+            await interaction.message.edit(view=self.get_leave_view(disabled=True))
+        else:
+            await interaction.response.send_message(f"Nur <@{player_id}> darf diesen Button bedienen. Wenn du die Gruppe "
+                                                    f"verlassen willst, versuche es mit `/leave-group`", ephemeral=True)
+
+
     def get_story_view(self, view_name: str):
         if views := self.story.get("views"):
             if buttons := views.get(view_name):
@@ -396,9 +433,15 @@ class ElmStreet(commands.Cog):
 
     def get_stop_view(self, disabled=False):
         buttons = [
-            {"label": "Beenden", "style": ButtonStyle.red, "custom_id": "elm_street:stop", "disabled": disabled}
+            {"label": "Beendet", "style": ButtonStyle.red, "custom_id": "elm_street:stop", "disabled": disabled}
         ]
         return self.bot.view_manager.view(buttons, "on_stop")
+
+    def get_leave_view(self, disabled=False):
+        buttons = [
+            {"label": "Verlassen", "style": ButtonStyle.gray, "custom_id": "elm_street:leave", "disabled": disabled}
+        ]
+        return self.bot.view_manager.view(buttons, "on_leave")
 
     def is_playing(self, user_id: int = None):
         for group in self.groups.values():
@@ -579,6 +622,19 @@ class ElmStreet(commands.Cog):
         for player_id in player_ids:
             player = self.players.get(str(player_id))
             player["sweets"] += sweets
+
+    def leave_group(self, thread_id, player_id):
+        group = self.groups.get(str(thread_id))
+        group_players = group.get('players')
+        player = self.players.get(str(player_id))
+
+        # Spieler auszahlen
+        group_stats = group.get('stats')
+        player["sweets"] += group_stats['sweets']
+
+        # Spieler aus Gruppe löschen
+        group_players.remove(player_id)
+        self.save()
 
     @tasks.loop(minutes=5)
     async def increase_courage(self):
