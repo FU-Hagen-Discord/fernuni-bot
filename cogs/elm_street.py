@@ -359,7 +359,7 @@ class ElmStreet(commands.Cog):
                     sweets = calculate_sweets(choice)
                     courage = calculate_courage(choice)
                     text = self.apply_sweets_and_courage(text, sweets, courage, interaction.channel_id)
-                    await channel.send(text)
+                    await channel.send(f"```\n{text}\n```")
                     if view:
                         await channel.send("Was wollt ihr als nächstes tun?", view=view)
                     if next := choice.get("next"):
