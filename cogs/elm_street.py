@@ -334,7 +334,7 @@ class ElmStreet(commands.Cog):
 
     async def on_story(self, button: disnake.ui.Button, interaction: disnake.MessageInteraction, value=None):
         # if interaction and not interaction.response.is_done():
-        #    await interaction.response.defer()
+        #     await interaction.response.defer()
         thread_id = interaction.channel_id
         owner_id = self.groups.get(str(thread_id)).get('owner')
         if interaction.author.id == owner_id:
@@ -359,9 +359,13 @@ class ElmStreet(commands.Cog):
                     sweets = calculate_sweets(choice)
                     courage = calculate_courage(choice)
                     text = self.apply_sweets_and_courage(text, sweets, courage, interaction.channel_id)
-                    await channel.send(text, view=view)
+                    await channel.send(text)
+                    if view:
+                        await channel.send("Was wollt ihr als nächstes tun?", view=view)
                     if next := choice.get("next"):
                         await self.on_story(button, interaction, next)
+                    else:
+                        await interaction.message.delete()
         else:
             await interaction.response.send_message("Nur die Gruppenleiterin kann die Gruppe steuern.",
                                                     ephemeral=True)
