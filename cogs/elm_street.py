@@ -271,6 +271,7 @@ class ElmStreet(commands.Cog):
                 await interaction.message.edit(view=self.get_start_view(disabled=True))
 
                 if value:  # auf Start geklickt
+                    random_player = await self.bot.fetch_user(SystemRandom().choice(group.get('players')))
                     bags = ["einen Putzeimer, der", "eine Plastiktüte von Aldi, die", "einen Einhorn-Rucksack, der",
                             "eine Reisetasche, die", "eine Wickeltasche mit zweifelhaftem Inhalt, die",
                             "einen Rucksack, der", "eine alte Holzkiste, die", "einen Leinensack, der",
@@ -278,7 +279,7 @@ class ElmStreet(commands.Cog):
                             "eine blaue Ikea-Tasche, die"]
                     await interaction.response.send_message(
                         f"```\nSeid ihr bereit? Taschenlampe am Gürtel, Schminke im Gesicht? Dann kann es losgehen!\n"
-                        f"Doch als ihr gerade in euer Abenteuer starten wollt, fällt <@!{SystemRandom().choice(group.get('players'))}> auf, dass ihr euch erst noch Behälter für die erwarteten Süßigkeiten suchen müsst. \nIhr schnappt euch also {SystemRandom().choice(bags)} gerade da ist. \nNun aber los!\n```")
+                        f"Doch als ihr gerade in euer Abenteuer starten wollt, fällt {random_player.name} auf, dass ihr euch erst noch Behälter für die erwarteten Süßigkeiten suchen müsst. \nIhr schnappt euch also {SystemRandom().choice(bags)} gerade da ist. \nNun aber los!\n```")
                     await self.on_story(button, interaction, "doors")
                 else:  # auf Abbrechen geklickt
                     # voice channel löschen
