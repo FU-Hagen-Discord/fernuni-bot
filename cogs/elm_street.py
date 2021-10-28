@@ -277,8 +277,8 @@ class ElmStreet(commands.Cog):
                             "einen Müllsack, der", "einen Jutebeutel mit verwaschener gotischer Schrift, die",
                             "eine blaue Ikea-Tasche, die"]
                     await interaction.response.send_message(
-                        f"Seid ihr bereit? Taschenlampe am Gürtel, Schminke im Gesicht? Dann kann es losgehen!\n"
-                        f"Doch als ihr gerade in euer Abenteuer starten wollt, fällt <@!{SystemRandom().choice(group.get('players'))}> auf, dass ihr euch erst noch Behälter für die erwarteten Süßigkeiten suchen müsst. \nIhr schnappt euch also {SystemRandom().choice(bags)} gerade da ist. \nNun aber los!")
+                        f"```\nSeid ihr bereit? Taschenlampe am Gürtel, Schminke im Gesicht? Dann kann es losgehen!\n"
+                        f"Doch als ihr gerade in euer Abenteuer starten wollt, fällt <@!{SystemRandom().choice(group.get('players'))}> auf, dass ihr euch erst noch Behälter für die erwarteten Süßigkeiten suchen müsst. \nIhr schnappt euch also {SystemRandom().choice(bags)} gerade da ist. \nNun aber los!\n```")
                     await self.on_story(button, interaction, "doors")
                 else:  # auf Abbrechen geklickt
                     # voice channel löschen
