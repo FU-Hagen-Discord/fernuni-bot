@@ -529,7 +529,7 @@ class ElmStreet(commands.Cog):
                  f"Und da, gerade außerhalb deines Sichtfeldes eine Tür die sich quietschend öffnet.\n"
                  f"Eine laute Stimme ruft fragend: \"Ich zieh los um die Häuser, wäre ja gelacht wenn nur Kinder heute "
                  f"abend Süßkram bekommen. Wer ist mit dabei?\"\n"
-                 f"Du drehst dich zur Tür und siehst {author.mention}s entschlossenem Gesichtsausdruck.",
+                 f"Du drehst dich zur Tür und siehst {author.mention}s entschlossenen Gesichtsausdruck.",
                  f"Eine Einladung über die Sozialen Netzwerke hat dich Aufmerksam werden lassen. \n"
                  f"Darin war von einer großen Halloween Party die Rede, "
                  f"als Treffpunkt war ein Park in der Innenstadt angegeben.\n"
