@@ -300,8 +300,8 @@ class ElmStreet(commands.Cog):
                             "einen Müllsack, der", "einen Jutebeutel mit verwaschener gotischer Schrift, die",
                             "eine blaue Ikea-Tasche, die"]
                     await interaction.response.send_message(
-                        f"Seid ihr bereit? Taschenlampe am Gürtel, Schminke im Gesicht? Dann kann es losgehen!\n"
-                        f"Doch als ihr gerade in euer Abenteuer starten wollt, fällt <@!{SystemRandom().choice(group.get('players'))}> auf, dass ihr euch erst noch Behälter für die erwarteten Süßigkeiten suchen müsst. \nIhr schnappt euch also {SystemRandom().choice(bags)} gerade da ist. \nNun aber los!")
+                        f"```\nSeid ihr bereit? Taschenlampe am Gürtel, Schminke im Gesicht? Dann kann es losgehen!\n"
+                        f"Doch als ihr gerade in euer Abenteuer starten wollt, fällt <@!{SystemRandom().choice(group.get('players'))}> auf, dass ihr euch erst noch Behälter für die erwarteten Süßigkeiten suchen müsst. \nIhr schnappt euch also {SystemRandom().choice(bags)} gerade da ist. \nNun aber los!\n```")
                     await self.on_story(button, interaction, "doors")
                 else:  # auf Abbrechen geklickt
                     # voice channel löschen
@@ -383,7 +383,7 @@ class ElmStreet(commands.Cog):
                     sweets = calculate_sweets(choice)
                     courage = calculate_courage(choice)
                     text = self.apply_sweets_and_courage(text, sweets, courage, interaction.channel_id)
-                    await channel.send(text)
+                    await channel.send(f"```\n{text}\n```")
                     if view:
                         await channel.send("Was wollt ihr als nächstes tun?", view=view)
                     if next := choice.get("next"):
@@ -572,7 +572,7 @@ class ElmStreet(commands.Cog):
                  f"Und da, gerade außerhalb deines Sichtfeldes eine Tür die sich quietschend öffnet.\n"
                  f"Eine laute Stimme ruft fragend: \"Ich zieh los um die Häuser, wäre ja gelacht wenn nur Kinder heute "
                  f"abend Süßkram bekommen. Wer ist mit dabei?\"\n"
-                 f"Du drehst dich zur Tür und siehst {author.mention}s entschlossenem Gesichtsausdruck.",
+                 f"Du drehst dich zur Tür und siehst {author.mention}s entschlossenen Gesichtsausdruck.",
                  f"Eine Einladung über die Sozialen Netzwerke hat dich Aufmerksam werden lassen. \n"
                  f"Darin war von einer großen Halloween Party die Rede, "
                  f"als Treffpunkt war ein Park in der Innenstadt angegeben.\n"
