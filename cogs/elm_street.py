@@ -168,7 +168,8 @@ class ElmStreet(commands.Cog):
 
         try:
             if group := self.groups.get(str(value)):
-                if interaction.author.id not in group.get('requests'):
+                requests = [r['player'] for r in group.get('requests')]
+                if interaction.author.id not in requests:
                     if self.can_play(player):
                         if not self.is_already_in_this_group(interaction.author.id, interaction.message.id):
                             if not self.is_playing(interaction.author.id):
