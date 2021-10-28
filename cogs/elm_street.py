@@ -241,9 +241,13 @@ class ElmStreet(commands.Cog):
             else:
                 if group := self.groups.get(str(interaction.channel_id)):
                     user = self.bot.get_user(player_id)
+                    outfit = ["Piraten", "Einhörner", "Geister", "Katzen", "Weihnachtswichtel"]
+                    dresscode = ["Werwölfe", "Vampire", "Alice im Wunderland", "Hexen", "Zombies"]
                     texts = [
-                        "Wir wollen um die Häuser ziehen und Kinder erschrecken. Du schaust aus, als würdest du den Kindern lieber unsere Süßigkeiten geben. Versuch es woanders.",
-                        "Ich glaub du hast dich verlaufen, in dieser Gruppe können wir keine \"Piraten\", \"Einhörner\", \"Geister\", \"Katzen\" gebrauchen. Unser Dresscode ist: \"Werwolf\", \"Vampir\", \"Alice im Wunderland\", \"Hexe\"."]
+                        "Wir wollen um die Häuser ziehen und Kinder erschrecken. Du schaust aus, als würdest du den "
+                        "Kindern lieber unsere Süßigkeiten geben. Versuch es woanders.",
+                        f"Ich glaub du hast dich verlaufen, in dieser Gruppe können wir keine "
+                        f"{SystemRandom().choice(outfit)} gebrauchen. Unser Dresscode ist: {SystemRandom().choice(dresscode)}."]
                     await send_dm(user, SystemRandom().choice(texts))
                     group["requests"].remove({'player': player_id, 'id': interaction.message.id})
                     self.save()
@@ -266,9 +270,14 @@ class ElmStreet(commands.Cog):
                 await interaction.message.edit(view=self.get_start_view(disabled=True))
 
                 if value:  # auf Start geklickt
+                    bags = ["einen Putzeimer, der", "eine Plastiktüte von Aldi, die", "einen Einhorn-Rucksack, der",
+                            "eine Reisetasche, die", "eine Wickeltasche mit zweifelhaftem Inhalt, die",
+                            "einen Rucksack, der", "eine alte Holzkiste, die", "einen Leinensack, der",
+                            "einen Müllsack, der", "einen Jutebeutel mit verwaschener gotischer Schrift, die",
+                            "eine blaue Ikea-Tasche, die"]
                     await interaction.response.send_message(
                         f"Seid ihr bereit? Taschenlampe am Gürtel, Schminke im Gesicht? Dann kann es losgehen!\n"
-                        f"Doch als ihr gerade in euer Abenteuer starten wollt, fällt <@!{SystemRandom().choice(group.get('players'))}> auf, dass ihr euch erst noch Behälter für die erwarteten Süßigkeiten suchen müsst. Ihr schnappt euch also was gerade da ist: Einen Putzeimer, eine Plastiktüte von Aldi, einen Einhorn Rucksack, eine Reisetasche, eine Wickeltasche mit zweifelhaftem Inhalt, einen Rucksack, eine alte Holzkiste, einen Leinensack, einen Müllsack oder eine blaue Ikea Tasche.\n Nun aber los!")
+                        f"Doch als ihr gerade in euer Abenteuer starten wollt, fällt <@!{SystemRandom().choice(group.get('players'))}> auf, dass ihr euch erst noch Behälter für die erwarteten Süßigkeiten suchen müsst. \nIhr schnappt euch also {SystemRandom().choice(bags)} gerade da ist. \nNun aber los!")
                     await self.on_story(button, interaction, "doors")
                 else:  # auf Abbrechen geklickt
                     # voice channel löschen
@@ -353,7 +362,6 @@ class ElmStreet(commands.Cog):
                     await channel.send(text, view=view)
                     if next := choice.get("next"):
                         await self.on_story(button, interaction, next)
-
         else:
             await interaction.response.send_message("Nur die Gruppenleiterin kann die Gruppe steuern.",
                                                     ephemeral=True)
