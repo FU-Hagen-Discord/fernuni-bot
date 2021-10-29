@@ -154,7 +154,7 @@ class ElmStreet(commands.Cog):
                 if not self.is_playing(author.id):
                     thread = await channel.create_thread(name=name, auto_archive_duration=1440, type=channel_type)
                     voice_channel = await category.create_voice_channel(name)
-                    await voice_channel.set_permissions(interaction.author, view_channel=True)
+                    await voice_channel.set_permissions(interaction.author, view_channel=True, connect=True)
 
                     await thread.send(
                         f"Hallo {author.mention}. Der Streifzug deiner Gruppe durch die Elm-Street findet "
@@ -254,7 +254,7 @@ class ElmStreet(commands.Cog):
                                     message = await thread.fetch_message(request['id'])
                                     player = await self.bot.fetch_user(player_id)
                                     voice_channel = await self.bot.fetch_channel(group["voice_channel"])
-                                    await voice_channel.set_permissions(player, view_channel=True)
+                                    await voice_channel.set_permissions(player, view_channel=True, connect=True)
                                     await message.delete()
                                     self.delete_message_from_player(player_id, request['id'])
                                     requests.remove(request)
@@ -333,9 +333,11 @@ class ElmStreet(commands.Cog):
         await interaction.message.edit(view=self.get_stop_view(disabled=True))
 
         # Gruppenstatistik in elm-street posten
+        leaderboard_embed = await self.leaderboard(all=True)
         stats_embed = await self.get_group_stats_embed(thread_id)
         elm_street = await self.bot.fetch_channel(self.elm_street_channel_id)
         await elm_street.send("", embed=stats_embed)
+        await interaction.response.send_message("", embed=leaderboard_embed)
 
         # jedem Spieler seine Süßigkeiten geben
         sweets = self.groups.get(str(thread_id)).get('stats').get('sweets')
