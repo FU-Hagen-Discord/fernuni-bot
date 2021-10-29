@@ -26,7 +26,7 @@ def calculate_sweets(event):
     if sweets_min and sweets_max:
         return SystemRandom().randint(sweets_min, sweets_max)
 
-    return 0
+    return None
 
 
 def calculate_courage(event):
@@ -36,10 +36,19 @@ def calculate_courage(event):
     if courage_min and courage_max:
         return SystemRandom().randint(courage_min, courage_max)
 
-    return 0
+    return None
 
 
 ShowOption = commands.option_enum(["10", "all"])
+
+
+def get_doors_visited(group):
+    if doors_visited := group.get("doors_visited"):
+        return doors_visited
+    else:
+        doors_visited = []
+        group["doors_visited"] = doors_visited
+        return doors_visited
 
 
 class ElmStreet(commands.Cog):
@@ -260,7 +269,8 @@ class ElmStreet(commands.Cog):
                                     requests.remove(request)
 
                         await interaction.message.channel.send(
-                            f"<@!{player_id}> ist jetzt Teil der Crew! Herzlich willkommen.", view=self.get_leave_view())
+                            f"<@!{player_id}> ist jetzt Teil der Crew! Herzlich willkommen.",
+                            view=self.get_leave_view())
                         self.save()
             else:
                 if group := self.groups.get(str(interaction.channel_id)):
@@ -360,10 +370,9 @@ class ElmStreet(commands.Cog):
         await interaction.channel.edit(archived=True)
 
     async def on_story(self, button: disnake.ui.Button, interaction: disnake.MessageInteraction, value=None):
-        # if interaction and not interaction.response.is_done():
-        #     await interaction.response.defer()
         thread_id = interaction.channel_id
-        owner_id = self.groups.get(str(thread_id)).get('owner')
+        group = self.groups.get(str(thread_id))
+        owner_id = group.get('owner')
         if interaction.author.id == owner_id:
             if value == "stop":
                 await self.on_stop(button, interaction, value)
@@ -380,24 +389,32 @@ class ElmStreet(commands.Cog):
 
                 if event := events.get(value):
                     channel = interaction.message.channel
-                    choice = SystemRandom().choice(event)
-                    text = choice["text"]
-                    view = self.get_story_view(choice.get("view"))
-                    sweets = calculate_sweets(choice)
-                    courage = calculate_courage(choice)
-                    text = self.apply_sweets_and_courage(text, sweets, courage, interaction.channel_id)
-                    await channel.send(f"```\n{text}\n```")
-                    if view:
-                        await channel.send("Was wollt ihr als nächstes tun?", view=view)
-                    if next := choice.get("next"):
-                        await self.on_story(button, interaction, next)
-                    else:
+                    choice = self.get_choice(value, event, group)
+                    if not choice:
+                        view = self.get_story_view("fear")
+                        await channel.send("```\nAls ihr euch auf den Weg zur nächsten Tür macht, seht ihr am Horizont "
+                                           "langsam die Sonne aufgehen. Ihr betrachtet eure Beute und beschließt, "
+                                           "für dieses Jahr die Jagd zu beenden und tretet den Heimweg an.\n```",
+                                           view=view)
                         await interaction.message.delete()
+                    else:
+                        text = choice["text"]
+                        view = self.get_story_view(choice.get("view"))
+                        sweets = calculate_sweets(choice)
+                        courage = calculate_courage(choice)
+                        text = self.apply_sweets_and_courage(text, sweets, courage, interaction.channel_id)
+                        await channel.send(f"```\n{text}\n```")
+                        if view:
+                            await channel.send("Was wollt ihr als nächstes tun?", view=view)
+                        if next := choice.get("next"):
+                            await self.on_story(button, interaction, next)
+                        else:
+                            await interaction.message.delete()
         else:
             await interaction.response.send_message("Nur die Gruppenleiterin kann die Gruppe steuern.",
                                                     ephemeral=True)
 
-    async def on_leave(self,  button: disnake.ui.Button, interaction: disnake.MessageInteraction, value=None):
+    async def on_leave(self, button: disnake.ui.Button, interaction: disnake.MessageInteraction, value=None):
         thread_id = interaction.channel_id
         player_id = interaction.author.id
         msg_player = interaction.message.mentions[0]
@@ -407,9 +424,26 @@ class ElmStreet(commands.Cog):
             await interaction.response.send_message(f"<@{player_id}> hat die Gruppe verlassen.")
             await interaction.message.edit(view=self.get_leave_view(disabled=True))
         else:
-            await interaction.response.send_message(f"Nur <@{player_id}> darf diesen Button bedienen. Wenn du die Gruppe "
-                                                    f"verlassen willst, versuche es mit `/leave-group`", ephemeral=True)
+            await interaction.response.send_message(
+                f"Nur <@{player_id}> darf diesen Button bedienen. Wenn du die Gruppe "
+                f"verlassen willst, versuche es mit `/leave-group`", ephemeral=True)
 
+    def get_choice(self, key, event, group):
+        if key == "doors":
+            doors_visited = get_doors_visited(group)
+            r = list(range(0, len(event) - 1))
+            for door_visited in doors_visited:
+                r.remove(door_visited)
+
+            if len(r) == 0:
+                return None
+
+            i = SystemRandom().choice(r)
+            doors_visited.append(i)
+            self.save()
+            return event[i]
+        else:
+            return SystemRandom().choice(event)
 
     def get_story_view(self, view_name: str):
         if views := self.story.get("views"):
@@ -599,24 +633,25 @@ class ElmStreet(commands.Cog):
         return None
 
     def apply_sweets_and_courage(self, text, sweets, courage, thread_id):
-        if sweets > 0:
-            text += f"\n\nIhr erhaltet jeweils {sweets} Süßigkeiten."
-        if sweets = 0:
-            text += f"\n\nIhr habt genau so viele Süßigkeiten wie vorher."
-        if sweets < 0:
-            text += f"\n\nIhr verliert jeweils {sweets} Süßigkeiten."
-        if courage > 0:
-            text += f"\n\nIhr verliert jeweils {courage} Mutpunkte."
-
         group = self.groups.get(str(thread_id))
         player_ids = group.get("players")
-        for player_id in player_ids:
-            player = self.players.get(str(player_id))
-            player["courage"] -= courage
-
         group_stats = group.get('stats')
-        group_stats['sweets'] += sweets
-        group_stats['courage'] += courage
+
+        if sweets:
+            if sweets > 0:
+                text += f"\n\nIhr erhaltet jeweils {sweets} Süßigkeiten."
+            if sweets == 0:
+                text += f"\n\nIhr habt genau so viele Süßigkeiten wie vorher."
+            if sweets < 0:
+                text += f"\n\nIhr verliert jeweils {sweets} Süßigkeiten."
+            group_stats['sweets'] += sweets
+        if courage:
+            if courage > 0:
+                text += f"\n\nIhr verliert jeweils {courage} Mutpunkte."
+            for player_id in player_ids:
+                player = self.players.get(str(player_id))
+                player["courage"] -= courage
+            group_stats['courage'] += courage
 
         self.save()
         # TODO Was passiert wenn die courage eines Players zu weit sinkt?
