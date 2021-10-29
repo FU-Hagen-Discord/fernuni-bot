@@ -601,6 +601,10 @@ class ElmStreet(commands.Cog):
     def apply_sweets_and_courage(self, text, sweets, courage, thread_id):
         if sweets > 0:
             text += f"\n\nIhr erhaltet jeweils {sweets} Süßigkeiten."
+        if sweets = 0:
+            text += f"\n\nIhr habt genau so viele Süßigkeiten wie vorher."
+        if sweets < 0:
+            text += f"\n\nIhr verliert jeweils {sweets} Süßigkeiten."
         if courage > 0:
             text += f"\n\nIhr verliert jeweils {courage} Mutpunkte."
 
