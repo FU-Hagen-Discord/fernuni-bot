@@ -333,11 +333,11 @@ class ElmStreet(commands.Cog):
         await interaction.message.edit(view=self.get_stop_view(disabled=True))
 
         # Gruppenstatistik in elm-street posten
-        leaderboard_embed = await self.leaderboard(all=True)
+        leaderboard_embed = await self.leaderboard(all="all")
         stats_embed = await self.get_group_stats_embed(thread_id)
         elm_street = await self.bot.fetch_channel(self.elm_street_channel_id)
         await elm_street.send("", embed=stats_embed)
-        await interaction.response.send_message("", embed=leaderboard_embed)
+        await elm_street.send("", embed=leaderboard_embed)
 
         # jedem Spieler seine Süßigkeiten geben
         sweets = self.groups.get(str(thread_id)).get('stats').get('sweets')
