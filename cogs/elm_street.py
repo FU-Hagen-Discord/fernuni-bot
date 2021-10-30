@@ -161,26 +161,32 @@ class ElmStreet(commands.Cog):
         if interaction.channel == channel:
             if self.can_play(player):
                 if not self.is_playing(author.id):
-                    thread = await channel.create_thread(name=name, auto_archive_duration=1440, type=channel_type)
-                    voice_channel = await category.create_voice_channel(name)
-                    await voice_channel.set_permissions(interaction.author, view_channel=True, connect=True)
+                    if player["courage"] >= 50:
+                        thread = await channel.create_thread(name=name, auto_archive_duration=1440, type=channel_type)
+                        voice_channel = await category.create_voice_channel(name)
+                        await voice_channel.set_permissions(interaction.author, view_channel=True, connect=True)
 
-                    await thread.send(
-                        f"Hallo {author.mention}. Der Streifzug deiner Gruppe durch die Elm-Street findet "
-                        f"in diesem Thread statt. Sobald deine Gruppe sich zusammen gefunden hat, kannst "
-                        f"du über einen Klick auf den Start Button eure Reise starten.\n\n"
-                        f"Für das volle Gruselerlebnis könnt ihr euch während des Abenteuers gegenseitig "
-                        f"Schauermärchen in eurem Voice Channel {voice_channel.mention} erzählen.",
-                        view=self.get_start_view())
+                        await thread.send(
+                            f"Hallo {author.mention}. Der Streifzug deiner Gruppe durch die Elm-Street findet "
+                            f"in diesem Thread statt. Sobald deine Gruppe sich zusammen gefunden hat, kannst "
+                            f"du über einen Klick auf den Start Button eure Reise starten.\n\n"
+                            f"Für das volle Gruselerlebnis könnt ihr euch während des Abenteuers gegenseitig "
+                            f"Schauermärchen in eurem Voice Channel {voice_channel.mention} erzählen.",
+                            view=self.get_start_view())
 
-                    await interaction.response.send_message(self.get_invite_message(author),
-                                                            view=self.get_join_view(thread.id))
+                        await interaction.response.send_message(self.get_invite_message(author),
+                                                                view=self.get_join_view(thread.id))
 
-                    message = await interaction.original_message()
-                    self.groups[str(thread.id)] = {"message": message.id, "players": [author.id], "owner": author.id,
-                                                   "requests": [], 'stats': {'sweets': 0, 'courage': 0, 'doors': 0},
-                                                   "voice_channel": voice_channel.id}
-                    self.save()
+                        message = await interaction.original_message()
+                        self.groups[str(thread.id)] = {"message": message.id, "players": [author.id],
+                                                       "owner": author.id,
+                                                       "requests": [], 'stats': {'sweets': 0, 'courage': 0, 'doors': 0},
+                                                       "voice_channel": voice_channel.id}
+                        self.save()
+                    else:
+                        await interaction.response.send_message(
+                            "Du fühlst dich derzeit noch nicht mutig genug, um aus Süßigkeitenjagd zu gehen. Warte, bis deine Mutpunkte wieder mindestens 50 betragen. Den aktuellen Stand deiner Mutpunkte kannst du über /stats prüfen.",
+                            ephemeral=True)
                 else:
                     await interaction.response.send_message(
                         "Es tut mir leid, aber du kannst nicht an mehr als einer Jagd gleichzeitig teilnehmen. "
@@ -205,17 +211,22 @@ class ElmStreet(commands.Cog):
                     if self.can_play(player):
                         if not self.is_already_in_this_group(interaction.author.id, interaction.message.id):
                             if not self.is_playing(interaction.author.id):
-                                thread = await self.bot.fetch_channel(value)
-                                msg = await self.bot.view_manager.confirm(thread, "Neuer Rekrut",
-                                                                          f"{interaction.author.mention} würde sich gerne der Gruppe anschließen.",
-                                                                          fields=[{'name': 'aktuelle Mutpunkte',
-                                                                                   'value': self.get_courage_message(
-                                                                                       player)}],
-                                                                          custom_prefix="rekrut",
-                                                                          callback_key="on_joined")
-                                player.get('messages').append({'id': msg.id, 'channel': thread.id})
-                                group.get('requests').append({'player': interaction.author.id, 'id': msg.id})
-                                self.save()
+                                if player["courage"] >= 50:
+                                    thread = await self.bot.fetch_channel(value)
+                                    msg = await self.bot.view_manager.confirm(thread, "Neuer Rekrut",
+                                                                              f"{interaction.author.mention} würde sich gerne der Gruppe anschließen.",
+                                                                              fields=[{'name': 'aktuelle Mutpunkte',
+                                                                                       'value': self.get_courage_message(
+                                                                                           player)}],
+                                                                              custom_prefix="rekrut",
+                                                                              callback_key="on_joined")
+                                    player.get('messages').append({'id': msg.id, 'channel': thread.id})
+                                    group.get('requests').append({'player': interaction.author.id, 'id': msg.id})
+                                    self.save()
+                                else:
+                                    await interaction.response.send_message(
+                                        "Du fühlst dich derzeit noch nicht mutig genug, um aus Süßigkeitenjagd zu gehen. Warte, bis deine Mutpunkte wieder mindestens 50 betragen. Den aktuellen Stand deiner Mutpunkte kannst du über /stats prüfen.",
+                                        ephemeral=True)
                             else:
                                 await interaction.response.send_message(
                                     "Es tut mir leid, aber du kannst nicht an mehr als einer Jagd gleichzeitig teilnehmen. "
@@ -249,8 +260,8 @@ class ElmStreet(commands.Cog):
         owner_id = self.groups.get(str(thread_id)).get('owner')
 
         if interaction.author.id == owner_id:
-            if value:
-                if group := self.groups.get(str(interaction.channel_id)):
+            if group := self.groups.get(str(interaction.channel_id)):
+                if value:
                     if not self.is_playing(player_id):
                         group["players"].append(player_id)
 
@@ -272,22 +283,8 @@ class ElmStreet(commands.Cog):
                             f"<@!{player_id}> ist jetzt Teil der Crew! Herzlich willkommen.",
                             view=self.get_leave_view())
                         self.save()
-            else:
-                if group := self.groups.get(str(interaction.channel_id)):
-                    user = self.bot.get_user(player_id)
-                    outfit = ["Piraten", "Einhörner", "Geister", "Katzen", "Weihnachtswichtel"]
-                    dresscode = ["Werwölfe", "Vampire", "Alice im Wunderland", "Hexen", "Zombies"]
-                    texts = [
-                        "Wir wollen um die Häuser ziehen und Kinder erschrecken. Du schaust aus, als würdest du den "
-                        "Kindern lieber unsere Süßigkeiten geben. Versuch es woanders.",
-                        f"Ich glaub du hast dich verlaufen, in dieser Gruppe können wir keine "
-                        f"{SystemRandom().choice(outfit)} gebrauchen. Unser Dresscode ist: {SystemRandom().choice(dresscode)}."]
-                    await send_dm(user, SystemRandom().choice(texts))
-                    group["requests"].remove({'player': player_id, 'id': interaction.message.id})
-                    self.save()
-                # Request Nachricht aus diesem Thread und aus players löschen
-                self.delete_message_from_player(player_id, interaction.message.id)
-                await interaction.message.delete()
+                else:
+                    await self.deny_join_request(group, interaction.message, player_id)
         else:
             await interaction.response.send_message("Nur die Gruppenerstellerin kann User annehmen oder ablehnen.",
                                                     ephemeral=True)
@@ -304,6 +301,7 @@ class ElmStreet(commands.Cog):
                 await interaction.message.edit(view=self.get_start_view(disabled=True))
 
                 if value:  # auf Start geklickt
+                    await self.deny_open_join_requests(thread_id, group)
                     random_player = await self.bot.fetch_user(SystemRandom().choice(group.get('players')))
                     bags = ["einen Putzeimer, der", "eine Plastiktüte von Aldi, die", "einen Einhorn-Rucksack, der",
                             "eine Reisetasche, die", "eine Wickeltasche mit zweifelhaftem Inhalt, die",
@@ -676,6 +674,30 @@ class ElmStreet(commands.Cog):
         # Spieler aus Gruppe löschen
         group_players.remove(player_id)
         self.save()
+
+    async def deny_join_request(self, group, message, player_id):
+        user = self.bot.get_user(player_id)
+        outfit = ["Piraten", "Einhörner", "Geister", "Katzen", "Weihnachtswichtel"]
+        dresscode = ["Werwölfe", "Vampire", "Alice im Wunderland", "Hexen", "Zombies"]
+        texts = [
+            "Wir wollen um die Häuser ziehen und Kinder erschrecken. Du schaust aus, als würdest du den "
+            "Kindern lieber unsere Süßigkeiten geben. Versuch es woanders.",
+            f"Ich glaub du hast dich verlaufen, in dieser Gruppe können wir keine "
+            f"{SystemRandom().choice(outfit)} gebrauchen. Unser Dresscode ist: {SystemRandom().choice(dresscode)}."]
+        await send_dm(user, SystemRandom().choice(texts))
+        group["requests"].remove({'player': player_id, 'id': message.id})
+        self.save()
+        # Request Nachricht aus diesem Thread und aus players löschen
+        self.delete_message_from_player(player_id, message.id)
+        await message.delete()
+
+    async def deny_open_join_requests(self, thread_id, group):
+        thread = await self.bot.fetch_channel(thread_id)
+
+        if requests := group.get("requests"):
+            for request in requests:
+                message = await thread.fetch_message(request["id"])
+                await self.deny_join_request(group, message, request["player"])
 
     @tasks.loop(minutes=5)
     async def increase_courage(self):
