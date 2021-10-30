@@ -135,17 +135,8 @@ class ElmStreet(commands.Cog):
                             description="Zeigt deine persönliche Statistik an.",
                             guild_ids=[int(os.getenv('DISCORD_GUILD'))])
     async def cmd_stats(self, interaction: ApplicationCommandInteraction):
-        # Nur in elm-street oder Gruppenthread ausführbar
-        channel_id = interaction.channel_id
-        player_id = interaction.author.id
-
-        if str(channel_id) in self.groups.keys() or channel_id == self.elm_street_channel_id:
-            embed = self.get_personal_stats_embed(player_id)
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-        else:
-            await interaction.response.send_message(f"Statistiken können nur in Gruppenthreads oder in "
-                                                    f"<#{self.elm_street_channel_id}> ausgegeben werden."
-                                                    , ephemeral=True)
+        embed = self.get_personal_stats_embed(interaction.author.id)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @commands.slash_command(name="start-group",
                             description="Erstelle eine Gruppe für einen Streifzug durch die Elm Street",
