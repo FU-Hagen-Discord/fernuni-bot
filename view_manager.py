@@ -16,8 +16,11 @@ class ViewManager:
 
     def on_ready(self):
         for view_id in self.views:
-            view = self.build_view(view_id)
-            self.bot.add_view(view)
+            try:
+                view = self.build_view(view_id)
+                self.bot.add_view(view)
+            except:
+                pass
 
     def save(self):
         with open("data/views.json", "w") as file:
