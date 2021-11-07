@@ -4,10 +4,9 @@ import disnake
 from disnake.ext import commands
 from dotenv import load_dotenv
 
-from view_manager import ViewManager
 from cogs import appointments, calmdown, christmas, easter, github, help, learninggroups, links, \
-    news, polls, roles, support, text_commands, voice, welcome, xkcd, module_information, elm_street
-# , timer
+    news, polls, roles, support, text_commands, voice, welcome, xkcd, module_information
+from view_manager import ViewManager
 
 # .env file is necessary in the same directory, that contains several strings.
 load_dotenv()
@@ -44,7 +43,7 @@ class Boty(commands.Bot):
         self.add_cog(calmdown.Calmdown(self))
         self.add_cog(github.Github(self))
         # self.add_cog(timer.Timer(self))
-        self.add_cog(elm_street.ElmStreet(self))
+        # self.add_cog(elm_street.ElmStreet(self))
     def is_prod(self):
         return os.getenv("DISCORD_PROD") == "True"
 
