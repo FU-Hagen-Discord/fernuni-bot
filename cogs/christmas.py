@@ -79,7 +79,15 @@ class Christmas(commands.Cog):
     async def assign_day(self, day: int, member: Member, name: str):
         category = await self.bot.fetch_channel(self.seasonal_events_category)
         channel = await category.create_text_channel(f"{day}-{name}")
+        await channel.set_permissions(member.roles[0], view_channel=False)
         await channel.set_permissions(member, view_channel=True)
+        await channel.send(f"Vielen Dank {member.mention}, dass du für das {day}. Türchen etwas zum Thema {name} "
+                           f"vorbereiten möchtest. Dieser Channel ist für dich gedacht. Du kannst hier deinen Beitrag "
+                           f"vorbereiten. Am {day}.12.2021 um 00:00 werden alle Nachrichten von dir, die in diesem "
+                           f"Channel bis dahin geschrieben wurden, in einen eigenen Thread für diesen Tag übernommen. "
+                           f"Beachte bitte, dass Sticker nicht verwendet werden können. Das gleiche gilt für Emojis, "
+                           f"die nicht von diesem Server sind. Das Mod-Team wünscht dir viel Spaß bei der "
+                           f"Vorbereitung.")
         self.advent_calendar[day - 1]["channel"] = channel.id
         self.advent_calendar[day - 1]["assigned"] = True
         self.advent_calendar[day - 1]["assignee"] = member.id
