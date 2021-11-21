@@ -80,9 +80,6 @@ class Christmas(commands.Cog):
                                                     ephemeral=True)
         else:
             await interaction.response.defer(ephemeral=True)
-            channel = await self.bot.fetch_channel(self.advent_calendar[day - 1]["channel"])
-            member = await self.bot.fetch_user(self.advent_calendar[day - 1]["assignee"])
-            await channel.set_permissions(member, overwrite=None)
             await self.assign_day(day, member, name)
             await interaction.edit_original_message(content="Das gewählte Türchen wurde vergeben.")
 
@@ -97,6 +94,9 @@ class Christmas(commands.Cog):
                                                     "jemanden zu vergeben.", ephemeral=True)
         else:
             await interaction.response.defer(ephemeral=True)
+            channel = await self.bot.fetch_channel(self.advent_calendar[day - 1]["channel"])
+            old_member = await self.bot.fetch_user(self.advent_calendar[day - 1]["assignee"])
+            await channel.set_permissions(old_member, overwrite=None)
             await self.assign_day(day, member, name)
             await interaction.edit_original_message(content="Das gewählte Türchen wurde neu vergeben.")
 
