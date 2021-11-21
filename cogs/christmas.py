@@ -53,16 +53,52 @@ class Christmas(commands.Cog):
     async def cmd_advent(self, interaction: ApplicationCommandInteraction):
         pass
 
+    @cmd_advent.sub_command(name="list", description="Erhalte die Liste aller Türchen mit Zuordnung und Thema")
+    @commands.check(utils.is_mod)
+    async def cmd_advent_list(self, interaction: ApplicationCommandInteraction):
+        message = f"__**Adventskalender 2021**__\n\n"
+
+        for day in self.advent_calendar:
+            message += f"{day['number']}. "
+            if day["assigned"]:
+                message += f"<@!{day['assignee']}>: \"{day['name']}\""
+            else:
+                message += f"noch nicht zugewiesen"
+
+            message += "\n"
+
+        await interaction.response.send_message(message, ephemeral=True)
+
     @cmd_advent.sub_command(name="assign", description="Einer Person ein Türchen zuweisen",
                             guild_ids=[int(os.getenv('DISCORD_GUILD'))])
     @commands.check(utils.is_mod)
     async def cmd_advent_assign(self, interaction: ApplicationCommandInteraction, day: int, member: Member, name: str):
         if self.advent_calendar[day - 1]["assigned"]:
-            await interaction.response.send_message("Das gewählte Türchen ist bereits vergeben.", ephemeral=True)
+            await interaction.response.send_message("Das gewählte Türchen ist bereits vergeben. \n"
+                                                    "Wenn du das Türchen an jemand anderen vergeben möchtest, oder das "
+                                                    "Thema ändern möchtest, verwende `/advent reassign`.",
+                                                    ephemeral=True)
+        else:
+            await interaction.response.defer(ephemeral=True)
+            channel = await self.bot.fetch_channel(self.advent_calendar[day - 1]["channel"])
+            member = await self.bot.fetch_user(self.advent_calendar[day - 1]["assignee"])
+            await channel.set_permissions(member, overwrite=None)
+            await self.assign_day(day, member, name)
+            await interaction.edit_original_message(content="Das gewählte Türchen wurde vergeben.")
+
+    @cmd_advent.sub_command(name="reassign", description="Ein Türchen neu zuweisen",
+                            guild_ids=[int(os.getenv('DISCORD_GUILD'))])
+    @commands.check(utils.is_mod)
+    async def cmd_advent_reassign(self, interaction: ApplicationCommandInteraction, day: int, member: Member,
+                                  name: str):
+        if not self.advent_calendar[day - 1]["assigned"]:
+            await interaction.response.send_message("Das gewählte Türchen ist noch nicht vergeben. \n"
+                                                    "Bitte verwende `/advent assign` um das Türchen an "
+                                                    "jemanden zu vergeben.", ephemeral=True)
         else:
             await interaction.response.defer(ephemeral=True)
             await self.assign_day(day, member, name)
-            await interaction.edit_original_message(content="Das gewählte Türchen wurde vergeben.")
+            await interaction.edit_original_message(content="Das gewählte Türchen wurde neu vergeben.")
 
     @cmd_advent.sub_command(name="remaining", description="Noch nicht zugewiesene Türchen ausgeben lassen.",
                             guild_ids=[int(os.getenv('DISCORD_GUILD'))])
@@ -83,11 +119,12 @@ class Christmas(commands.Cog):
         await channel.set_permissions(member, view_channel=True)
         await channel.send(f"Vielen Dank {member.mention}, dass du für das {day}. Türchen etwas zum Thema {name} "
                            f"vorbereiten möchtest. Dieser Channel ist für dich gedacht. Du kannst hier deinen Beitrag "
-                           f"vorbereiten. Am {day}.12.2021 um 00:00 werden alle Nachrichten von dir, die in diesem "
-                           f"Channel bis dahin geschrieben wurden, in einen eigenen Thread für diesen Tag übernommen. "
+                           f"vorbereiten.\n\n"
+                           f"Am {day}.12.2021 um 00:00 werden alle Nachrichten von dir, die in diesem Channel bis "
+                           f"dahin geschrieben wurden, in einen eigenen Thread für diesen Tag übernommen.\n\n"
                            f"Beachte bitte, dass Sticker nicht verwendet werden können. Das gleiche gilt für Emojis, "
-                           f"die nicht von diesem Server sind. Das Mod-Team wünscht dir viel Spaß bei der "
-                           f"Vorbereitung.")
+                           f"die nicht von diesem Server sind.\n\n"
+                           f"Das Mod-Team wünscht dir viel Spaß bei der Vorbereitung.")
         self.advent_calendar[day - 1]["channel"] = channel.id
         self.advent_calendar[day - 1]["assigned"] = True
         self.advent_calendar[day - 1]["assignee"] = member.id
