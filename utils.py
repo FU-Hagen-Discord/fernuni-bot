@@ -1,11 +1,15 @@
 import os
+import re
+from datetime import datetime
 
 import disnake
-import re
-
 from disnake import ButtonStyle
+from dotenv import load_dotenv
 
 from views.dialog_view import DialogView
+
+load_dotenv()
+DATE_TIME_FMT = os.getenv("DISCORD_DATE_TIME_FORMAT")
 
 
 async def send_dm(user, message, embed=None):
@@ -55,3 +59,19 @@ async def confirm(channel, title, description, message="", custom_prefix="", cal
         {"emoji": "👍", "custom_id": f"{custom_prefix}_yes", "style": ButtonStyle.green},
         {"emoji": "👎", "custom_id": f"{custom_prefix}_no", "style": ButtonStyle.red},
     ]))
+
+
+def date_to_string(date: datetime):
+    return date.strftime(DATE_TIME_FMT)
+
+
+def date_from_string(date: str):
+    return datetime.strptime(date, DATE_TIME_FMT)
+
+
+async def files_from_attachments(attachments):
+    files = []
+    for attachment in attachments:
+        files.append(await attachment.to_file(spoiler=attachment.is_spoiler()))
+
+    return files
