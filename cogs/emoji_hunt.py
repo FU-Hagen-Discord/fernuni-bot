@@ -4,7 +4,7 @@ from disnake.ext import commands
 from cogs.help import handle_error
 
 
-class Easter(commands.Cog):
+class Emoji_Hunt(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.data = self.load_data()
@@ -12,11 +12,11 @@ class Easter(commands.Cog):
         # self.reaction_timer.start()
 
     def load_data(self):
-        data_file = open("data/easter.json", mode="r")
+        data_file = open("data/emoji_hunt.json", mode="r")
         return json.load(data_file)
 
     def save_data(self):
-        data_file = open("data/easter.json", mode="w")
+        data_file = open("data/emoji_hunt.json", mode="w")
         json.dump(self.data, data_file)
 
     # @commands.Cog.listener(name="on_message")
