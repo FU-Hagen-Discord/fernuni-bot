@@ -4,7 +4,7 @@ from disnake.ext import commands
 from cogs.help import handle_error
 
 
-class Emoji_Hunt(commands.Cog):
+class EmojiHunt(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.data = self.load_data()
@@ -56,8 +56,8 @@ class Emoji_Hunt(commands.Cog):
     @commands.command(name="leaderboard")
     async def cmd_leaderboard(self, ctx, all=None):
         leaderboard = self.data["leaderboard"]
-        embed = disnake.Embed(title="Egg-Hunt Leaderboard", description="Wer hat bisher die meisten Eier gefunden???")
-        embed.set_thumbnail(url="https://www.planet-wissen.de/kultur/religion/ostern/tempxostereiergjpg100~_v-gseagaleriexl.jpg")
+        embed = disnake.Embed(title="Schneeburg Leaderboard", description="Wer hat am meisten Schnee getürmt?")
+        embed.set_thumbnail(url="https://external-preview.redd.it/vFsRraBXc5hfUGRWtPPF-NG5maHEPRWTIqamB24whF8.jpg?width=960&crop=smart&auto=webp&s=24d42c9b4f5239a4c3cac79e704b7129c9e2e4d3")
 
         places = scores = "\u200b"
         place = 0
@@ -80,7 +80,7 @@ class Emoji_Hunt(commands.Cog):
             except:
                 pass
 
-        embed.add_field(name=f"Sucherin", value=places)
+        embed.add_field(name=f"Jägerin", value=places)
         embed.add_field(name=f"Eier", value=scores)
         await ctx.send("", embed=embed)
 
