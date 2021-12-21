@@ -56,7 +56,7 @@ class EmojiHunt(commands.Cog):
     @commands.command(name="leaderboard")
     async def cmd_leaderboard(self, ctx, all=None):
         leaderboard = self.data["leaderboard"]
-        embed = disnake.Embed(title="Schneeburg Leaderboard", description="Wer hat am meisten Schnee getürmt?")
+        embed = disnake.Embed(title="Emojijagd Leaderboard", description="Wer hat am meisten Emojis gefunden?")
         embed.set_thumbnail(url="https://external-preview.redd.it/vFsRraBXc5hfUGRWtPPF-NG5maHEPRWTIqamB24whF8.jpg?width=960&crop=smart&auto=webp&s=24d42c9b4f5239a4c3cac79e704b7129c9e2e4d3")
 
         places = scores = "\u200b"
@@ -81,7 +81,7 @@ class EmojiHunt(commands.Cog):
                 pass
 
         embed.add_field(name=f"Jägerin", value=places)
-        embed.add_field(name=f"Eier", value=scores)
+        embed.add_field(name=f"Emojis", value=scores)
         await ctx.send("", embed=embed)
 
     # @tasks.loop(seconds=1)
