@@ -1,4 +1,5 @@
 import json
+import random
 import disnake
 from disnake.ext import commands, tasks
 from cogs.help import handle_error
