@@ -88,7 +88,7 @@ class EmojiHunt(commands.Cog):
     @tasks.loop(seconds=1)
     async def reaction_timer(self):
         delete = []
-            for message in self.messages:
+        for message in self.messages:
             if random.random() < 0.6:
                 if random.random() < 0.85:
                     await message.add_reaction(random.choice(self.data["reactions_add"]))
