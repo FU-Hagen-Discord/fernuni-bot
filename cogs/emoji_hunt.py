@@ -19,39 +19,39 @@ class EmojiHunt(commands.Cog):
         data_file = open("data/emoji_hunt.json", mode="w")
         json.dump(self.data, data_file)
 
-     @commands.Cog.listener(name="on_message")
-     async def hide(self, message):
-         if message.author == self.bot.user:
-             return
+    @commands.Cog.listener(name="on_message")
+    async def hide(self, message):
+        if message.author == self.bot.user:
+            return
     
-         if message.channel.id in self.data["channels"]:
-             if random.random() < self.data["probability"]:
-                 self.messages.append(message)
+        if message.channel.id in self.data["channels"]:
+            if random.random() < self.data["probability"]:
+                self.messages.append(message)
     
-     @commands.Cog.listener(name="on_raw_reaction_add")
-     async def seek(self, payload):
+    @commands.Cog.listener(name="on_raw_reaction_add")
+    async def seek(self, payload):
     
-         if payload.member == self.bot.user or payload.message_id not in self.data["message_ids"]:
-             return
+        if payload.member == self.bot.user or payload.message_id not in self.data["message_ids"]:
+            return
     
-         modifier = 1 if payload.emoji.name in self.data["reactions_add"] else -1 if payload.emoji.name in self.data[
-             "reactions_remove"] else 0
-         if modifier != 0:
-             self.data["message_ids"].remove(payload.message_id)
-             self.modify_leaderboard(payload.user_id, modifier)
+        modifier = 1 if payload.emoji.name in self.data["reactions_add"] else -1 if payload.emoji.name in self.data[
+            "reactions_remove"] else 0
+        if modifier != 0:
+            self.data["message_ids"].remove(payload.message_id)
+            self.modify_leaderboard(payload.user_id, modifier)
     
-             channel = await self.bot.fetch_channel(payload.channel_id)
-             message = await channel.fetch_message(payload.message_id)
-             await message.clear_reaction(payload.emoji.name)
-             self.save_data()
+            channel = await self.bot.fetch_channel(payload.channel_id)
+            message = await channel.fetch_message(payload.message_id)
+            await message.clear_reaction(payload.emoji.name)
+            self.save_data()
     
-     def modify_leaderboard(self, user_id, modifier):
-         if score := self.data["leaderboard"].get(str(user_id)):
-             self.data["leaderboard"][str(user_id)] = score + modifier
-         else:
-             self.data["leaderboard"][str(user_id)] = modifier
+    def modify_leaderboard(self, user_id, modifier):
+        if score := self.data["leaderboard"].get(str(user_id)):
+            self.data["leaderboard"][str(user_id)] = score + modifier
+        else:
+            self.data["leaderboard"][str(user_id)] = modifier
     
-         self.save_data()
+        self.save_data()
 
     @help()
     @commands.command(name="leaderboard")
