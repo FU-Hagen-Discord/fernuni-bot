@@ -53,7 +53,6 @@ class EmojiHunt(commands.Cog):
     
         self.save_data()
 
-    @help()
     @commands.command(name="leaderboard")
     async def cmd_leaderboard(self, ctx, all=None):
         leaderboard = self.data["leaderboard"]
