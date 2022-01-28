@@ -4,7 +4,7 @@ import disnake
 from disnake.ext import commands
 from dotenv import load_dotenv
 
-from cogs import appointments, calmdown, easter, github, help, learninggroups, links, timer, \
+from cogs import appointments, calmdown, github, help, learninggroups, links, timer, \
     news, polls, roles, support, text_commands, voice, welcome, xkcd, module_information
 from view_manager import ViewManager
 
@@ -49,7 +49,6 @@ class Boty(commands.Bot):
         self.add_cog(news.News(self))
         self.add_cog(links.Links(self))
         self.add_cog(voice.Voice(self))
-        self.add_cog(emoji_hunt.EmojiHunt(self))
         self.add_cog(learninggroups.LearningGroups(self))
         self.add_cog(module_information.ModuleInformation(self))
         self.add_cog(xkcd.Xkcd(self))
