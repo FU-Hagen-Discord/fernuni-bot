@@ -5,6 +5,7 @@ from copy import deepcopy
 import aiohttp
 from bs4 import BeautifulSoup
 import disnake
+from disnake import ApplicationCommandInteraction
 from disnake.ext import commands, tasks
 from cogs.help import help, handle_error, help_category
 
@@ -58,21 +59,28 @@ class Joboffers(commands.Cog):
         },
         brief="Ruft Jobangebote für Studiernde der Fernuni Hagen auf."
     )
-    @commands.group(name="jobs", aliases=["offers","stellen","joboffers"], pass_context=True)
-    async def cmd_jobs(self, ctx, fak=None):
+    @commands.slash_command(name="jobs", aliases=["offers","stellen","joboffers"],
+                            description="Liste Jobangebote der Uni auf",
+                            options=[disnake.Option(name="faculty",
+                                                    description="Fakultät",
+                                                    choices=[disnake.OptionChoice('mi','mi'),
+                                                             disnake.OptionChoice('rewi','rewi'),
+                                                             disnake.OptionChoice('wiwi','wiwi'),
+                                                             disnake.OptionChoice('ksw','ksw'),
+                                                             disnake.OptionChoice('psy','psy'),
+                                                             disnake.OptionChoice('other','other')])])
+    async def cmd_jobs(self, interaction: ApplicationCommandInteraction, faculty: str = STD_FAK):
         await self.fetch_joboffers()
-        if not fak:
-            fak = STD_FAK
 
         embed = disnake.Embed(title="Stellenangebote der Uni",
-                              description=f"Ich habe folgende Stellenangebote der Fakultät {fak} gefunden:")
-        if offers := self.joboffers.get(fak):
+                              description=f"Ich habe folgende Stellenangebote der Fakultät {faculty} gefunden:")
+        if offers := self.joboffers.get(faculty):
             for offer in offers:
                 offer = offers[offer]
                 descr = f"{offer['info']}\nDeadline: {offer['deadline']}\n{offer['link']}"
                 embed.add_field(name=offer['title'], value=descr, inline=False)
 
-        await ctx.channel.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
 
     async def post_new_jobs(self, jobs):
