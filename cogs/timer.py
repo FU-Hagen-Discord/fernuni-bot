@@ -50,8 +50,6 @@ class Timer(commands.Cog):
             await self.on_unsubscribe(button, interaction)
         elif custom_id == timer_view.SKIP:
             await self.on_skip(button, interaction)
-        elif custom_id == timer_view.RESTART:
-            await self.on_restart(button, interaction)
         elif custom_id == timer_view.STOP:
             await self.on_stop(button, interaction)
 
@@ -152,7 +150,6 @@ class Timer(commands.Cog):
         descr = f"👍 beim Timer anmelden\n\n" \
                 f"👎 beim Timer abmelden\n\n" \
                 f"⏩ Phase überspringen\n\n" \
-                f"🔄 Timer neu starten\n\n" \
                 f"🛑 Timer beenden\n"
         zeiten = f"{working_time} Minuten Arbeiten\n{break_time} Minuten Pause"
         remaining_value = f"{remaining} Minuten"
@@ -299,4 +296,4 @@ class Timer(commands.Cog):
     @cmd_timer.error
     async def timer_error(self, ctx, error):
         await ctx.send("Das habe ich nicht verstanden. Die Timer-Syntax ist:\n"
-                       "`!timer <learning-time?> <break-time?> <name?>`\n")
+                       "`/timer <learning-time?> <break-time?> <name?>`\n")

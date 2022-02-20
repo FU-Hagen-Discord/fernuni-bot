@@ -2,10 +2,14 @@ import disnake
 from disnake import MessageInteraction, ButtonStyle
 from disnake.ui import Button, View
 
+VOICY = "timerview:voicy"
+SOUND = "timerview:sound"
+STATS = "timerview:stats"
+MANUAL = "timerview:manual"
+
 SUBSCRIBE = "timerview:subscribe"
 UNSUBSCRIBE = "timerview:unsubscribe"
 SKIP = "timverview:skip"
-RESTART = "timverview:restart"
 STOP = "timverview:stop"
 
 
@@ -14,23 +18,35 @@ class TimerView(View):
         super().__init__(timeout=None)
         self.callback = callback
 
-    @disnake.ui.button(emoji="👍", style=ButtonStyle.grey, custom_id=SUBSCRIBE)
+    @disnake.ui.button(emoji="🔊", style=ButtonStyle.grey, custom_id=VOICY, row=1)
+    async def btn_voicy(self, button: Button, interaction: MessageInteraction):
+        await self.callback(button, interaction)
+
+    @disnake.ui.button(emoji="🎶", style=ButtonStyle.grey, custom_id=SOUND, row=1)
+    async def btn_sound(self, button: Button, interaction: MessageInteraction):
+        await self.callback(button, interaction)
+
+    @disnake.ui.button(emoji="📈", style=ButtonStyle.grey, custom_id=STATS, row=1)
+    async def btn_stats(self, button: Button, interaction: MessageInteraction):
+        await self.callback(button, interaction)
+
+    @disnake.ui.button(emoji="⁉", style=ButtonStyle.grey, custom_id=MANUAL, row=1)
+    async def btn_manual(self, button: Button, interaction: MessageInteraction):
+        await self.callback(button, interaction)
+
+    @disnake.ui.button(emoji="👍", style=ButtonStyle.grey, custom_id=SUBSCRIBE, row=0)
     async def btn_subscribe(self, button: Button, interaction: MessageInteraction):
         await self.callback(button, interaction)
 
-    @disnake.ui.button(emoji="👎", style=ButtonStyle.grey, custom_id=UNSUBSCRIBE)
+    @disnake.ui.button(emoji="👎", style=ButtonStyle.grey, custom_id=UNSUBSCRIBE, row=0)
     async def btn_unsubscribe(self, button: Button, interaction: MessageInteraction):
         await self.callback(button, interaction)
 
-    @disnake.ui.button(emoji="⏩", style=ButtonStyle.grey, custom_id=SKIP)
+    @disnake.ui.button(emoji="⏩", style=ButtonStyle.grey, custom_id=SKIP, row=0)
     async def btn_skip(self, button: Button, interaction: MessageInteraction):
         await self.callback(button, interaction)
 
-    @disnake.ui.button(emoji="🔄", style=ButtonStyle.grey, custom_id=RESTART)
-    async def btn_restart(self, button: Button, interaction: MessageInteraction):
-        await self.callback(button, interaction)
-
-    @disnake.ui.button(emoji="🛑", style=ButtonStyle.grey, custom_id=STOP)
+    @disnake.ui.button(emoji="🛑", style=ButtonStyle.grey, custom_id=STOP, row=0)
     async def btn_stop(self, button: Button, interaction: MessageInteraction):
         await self.callback(button, interaction)
 
