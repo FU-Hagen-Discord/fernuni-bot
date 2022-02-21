@@ -6,9 +6,9 @@ from copy import deepcopy
 from datetime import datetime, timedelta
 
 import disnake
-from disnake import MessageInteraction, ApplicationCommandInteraction
+from disnake import MessageInteraction, ApplicationCommandInteraction, SelectOption
 from disnake.ext import commands, tasks
-from disnake.ui import Button
+from disnake.ui import Button, Select
 
 from views import timer_view
 
@@ -138,7 +138,6 @@ class Timer(commands.Cog):
             await interaction.response.send_message("Etwas ist schiefgelaufen...", ephemeral=True)
 
     async def on_voicy(self, button: Button, interaction: MessageInteraction):
-        # TODO
         msg_id = str(interaction.message.id)
         if timer := self.running_timers.get(msg_id):
             mute = timer['voicy']
@@ -168,8 +167,15 @@ class Timer(commands.Cog):
                          f"🔇 Keinen Sound abspielen\n" \
                          f"🎶 Soundschema auswählen\n" \
                          f"📈 Timersession in die Statistik aufnehmen\n\n" \
-                         f"Für detailliertere Informationen, gib `!help timer` ein."
-        await interaction.response.send_message(manual_message, ephemeral=True)
+                         f"Für detailliertere Informationen:"
+
+        # TODO: in separate View verlegen
+        menu_view = timer_view.ManualSelectView(callback=self.on_manual_select)
+        await interaction.response.send_message(manual_message, view=menu_view, ephemeral=True)
+
+    async def on_manual_select(self, select: Select, interaction: MessageInteraction):
+        content = select.values[0]
+        await interaction.response.edit_message(content=content)
 
     def create_embed(self, name, status, working_time, break_time, remaining, registered, voicy):
         color = disnake.Colour.green() if status == "Arbeiten" else 0xFFC63A if status == "Pause" else disnake.Colour.red()

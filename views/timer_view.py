@@ -1,6 +1,6 @@
 import disnake
-from disnake import MessageInteraction, ButtonStyle
-from disnake.ui import Button, View
+from disnake import MessageInteraction, ButtonStyle, SelectOption
+from disnake.ui import Button, View, Select
 
 VOICY = "timerview:voicy"
 SOUND = "timerview:sound"
@@ -62,3 +62,21 @@ class TimerView(View):
             self.children[0].emoji = "🔇"
             self.children[1].disabled = False
         await interaction.response.edit_message(view=self)
+
+class ManualSelectView(View):
+    def __init__(self, callback):
+        super().__init__(timeout=None)
+        self.callback = callback
+
+    @disnake.ui.select(custom_id="manual_dropdown",
+                       placeholder="wähle hier eine Option aus",
+                       min_values=1,
+                       max_values=1,
+                       options=[SelectOption(label="👍 beim Timer anmelden", value="subscribe"),
+                                SelectOption(label="👎 beim Timer abmelden", value="unsubscribe"),
+                                SelectOption(label="⏩ Phase überspringen", value="skip"),
+                                SelectOption(label="🛑 Timer beenden", value="stop"),
+                                SelectOption(label="🔊/🔇 Voicy-Option", value="voicy"),
+                                SelectOption(label="📈 Statistik", value="stats")])
+    async def sel_manual(self, option: SelectOption, interaction: MessageInteraction):
+        await self.callback(option, interaction)
