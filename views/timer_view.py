@@ -22,11 +22,11 @@ class TimerView(View):
     async def btn_voicy(self, button: Button, interaction: MessageInteraction):
         await self.callback(button, interaction)
 
-    @disnake.ui.button(emoji="🎶", style=ButtonStyle.grey, custom_id=SOUND, row=1)
+    @disnake.ui.button(emoji="🎶", style=ButtonStyle.grey, custom_id=SOUND, row=1, disabled=True)
     async def btn_sound(self, button: Button, interaction: MessageInteraction):
         await self.callback(button, interaction)
 
-    @disnake.ui.button(emoji="📈", style=ButtonStyle.grey, custom_id=STATS, row=1)
+    @disnake.ui.button(emoji="📈", style=ButtonStyle.grey, custom_id=STATS, row=1, disabled=True)
     async def btn_stats(self, button: Button, interaction: MessageInteraction):
         await self.callback(button, interaction)
 
@@ -53,3 +53,12 @@ class TimerView(View):
     def disable(self):
         for button in self.children:
             button.disabled = True
+
+    async def change_voicy_button(self, interaction, mute):
+        if mute:
+            self.children[0].emoji = "🔊"
+            self.children[1].disabled = True
+        else:
+            self.children[0].emoji = "🔇"
+            self.children[1].disabled = False
+        await interaction.response.edit_message(view=self)

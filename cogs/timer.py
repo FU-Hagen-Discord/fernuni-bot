@@ -67,8 +67,8 @@ class Timer(commands.Cog):
             if str(interaction.author.id) not in timer['registered']:
                 timer['registered'].append(str(interaction.author.id))
                 self.save()
-                name, status, wt, bt, remaining, registered, _ = self.get_details(msg_id)
-                embed = self.create_embed(name, status, wt, bt, remaining, registered)
+                name, status, wt, bt, remaining, registered, _, voicy = self.get_details(msg_id)
+                embed = self.create_embed(name, status, wt, bt, remaining, registered, voicy)
                 await interaction.message.edit(embed=embed, view=self.get_view())
                 await interaction.response.send_message("Du hast dich erfolgreich angemeldet", ephemeral=True)
             else:
@@ -87,8 +87,8 @@ class Timer(commands.Cog):
                 else:
                     timer['registered'].remove(str(interaction.author.id))
                     self.save()
-                    name, status, wt, bt, remaining, registered, _ = self.get_details(msg_id)
-                    embed = self.create_embed(name, status, wt, bt, remaining, registered)
+                    name, status, wt, bt, remaining, registered, _ , voicy= self.get_details(msg_id)
+                    embed = self.create_embed(name, status, wt, bt, remaining, registered, voicy)
                     await interaction.message.edit(embed=embed, view=self.get_view())
                     await interaction.response.send_message("Du hast dich erfolgreich abgemeldet", ephemeral=True)
             else:
@@ -137,7 +137,15 @@ class Timer(commands.Cog):
 
     async def on_voicy(self, button: Button, interaction: MessageInteraction):
         # TODO
-        pass
+        msg_id = str(interaction.message.id)
+        if timer := self.running_timers.get(msg_id):
+            mute = timer['voicy']
+            view = self.get_view()
+            timer['voicy'] = not timer['voicy']
+            await self.edit_message(msg_id, create_new=False)
+            await view.change_voicy_button(interaction, mute=mute)
+        else:
+            await interaction.response.send_message("Etwas ist schiefgelaufen...", ephemeral=True)
 
     async def on_sound(self, button: Button, interaction: MessageInteraction):
         # TODO
@@ -158,10 +166,10 @@ class Timer(commands.Cog):
                          f"🔇 Keinen Sound abspielen\n" \
                          f"🎶 Soundschema auswählen\n" \
                          f"📈 Timersession in die Statistik aufnehmen\n\n" \
-                         f"Für detailliertere Informatinen, gib `!help timer` ein."
+                         f"Für detailliertere Informationen, gib `!help timer` ein."
         await interaction.response.send_message(manual_message, ephemeral=True)
 
-    def create_embed(self, name, status, working_time, break_time, remaining, registered):
+    def create_embed(self, name, status, working_time, break_time, remaining, registered, voicy):
         color = disnake.Colour.green() if status == "Arbeiten" else 0xFFC63A if status == "Pause" else disnake.Colour.red()
 
         zeiten = f"{working_time} Minuten Arbeiten\n{break_time} Minuten Pause"
@@ -170,10 +178,12 @@ class Timer(commands.Cog):
         end_value = f" [bis {endzeit} Uhr]" if status != "Beendet" else ""
         user_list = [self.bot.get_user(int(user_id)) for user_id in registered]
         angemeldet_value = ", ".join([user.mention for user in user_list])
-        help_value = f"⁉ ruft eine Bedienungsanleitung auf."
-        info_value = f"🔇 Kein Voicy-Beitritt\n" \
+        voicy_info = "🔊 Soundwiedergabe im Voicy" if voicy else "🔇 Kein Voicy-Beitritt"
+
+        info_value = f"{voicy_info}\n" \
                      f"🎶 -\n" \
-                     f"📈 Session geht in die Statistik ein"
+                     f"📈 Session geht in die Statistik ein\n\n" \
+                     f"⁉ ruft eine Bedienungsanleitung auf."
 
         descr = f"Jetzt: {status} {end_value}\n" \
                 f"noch {remaining_value}\n\n" \
@@ -185,7 +195,6 @@ class Timer(commands.Cog):
         embed.add_field(name="Zeiten:", value=zeiten, inline=False)
         embed.add_field(name="Infos:", value=info_value, inline=False)
         embed.add_field(name="angemeldete User:", value=angemeldet_value if registered else "-", inline=False)
-        embed.add_field(name="Hilfe:", value=help_value, inline=False)
 
         return embed
 
@@ -197,8 +206,9 @@ class Timer(commands.Cog):
         remaining = working_time
         status = "Arbeiten"
         registered = [str(interaction.author.id)]
+        voicy = False
 
-        embed = self.create_embed(name, status, working_time, break_time, remaining, registered)
+        embed = self.create_embed(name, status, working_time, break_time, remaining, registered, voicy)
         await interaction.response.send_message(embed=embed, view=self.get_view())
         message = await interaction.original_message()
 
@@ -208,7 +218,8 @@ class Timer(commands.Cog):
                                                 'break_time': break_time,
                                                 'remaining': remaining,
                                                 'registered': registered,
-                                                'channel': interaction.channel_id}
+                                                'channel': interaction.channel_id,
+                                                'voicy': voicy}
         self.save()
         await self.make_sound(registered, 'roll_with_it-outro.mp3')
 
@@ -231,14 +242,16 @@ class Timer(commands.Cog):
                 return "Beendet"
 
     def get_details(self, msg_id):
-        name = self.running_timers[msg_id]['name']
-        status = self.running_timers[msg_id]['status']
-        wt = self.running_timers[msg_id]['working_time']
-        bt = self.running_timers[msg_id]['break_time']
-        remaining = self.running_timers[msg_id]['remaining']
-        registered = self.running_timers[msg_id]['registered']
-        channel = self.running_timers[msg_id]['channel']
-        return name, status, wt, bt, remaining, registered, channel
+        if timer := self.running_timers.get(msg_id):
+            name = timer['name']
+            status = timer['status']
+            wt = timer['working_time']
+            bt = timer['break_time']
+            remaining = timer['remaining']
+            registered = timer['registered']
+            channel = timer['channel']
+            voicy = timer['voicy']
+            return name, status, wt, bt, remaining, registered, channel, voicy
 
     async def edit_message(self, msg_id, mentions=None, create_new=True):
         if timer := self.running_timers.get(msg_id):
@@ -247,8 +260,8 @@ class Timer(commands.Cog):
             try:
                 msg = await channel.fetch_message(int(msg_id))
 
-                name, status, wt, bt, remaining, registered, _ = self.get_details(msg_id)
-                embed = self.create_embed(name, status, wt, bt, remaining, registered)
+                name, status, wt, bt, remaining, registered, _, voicy = self.get_details(msg_id)
+                embed = self.create_embed(name, status, wt, bt, remaining, registered, voicy)
 
                 if create_new:
                     await msg.delete()
