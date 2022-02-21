@@ -102,11 +102,12 @@ class Timer(commands.Cog):
             registered = timer['registered']
             if str(interaction.author.id) in timer['registered']:
                 new_phase = await self.switch_phase(msg_id)
-                if new_phase == "Pause":
-                    await self.make_sound(registered, 'groove-intro.mp3')
-                else:
-                    await self.make_sound(registered, 'roll_with_it-outro.mp3')
-                await interaction.response.send_message("Erfolgreich übersprungen", ephemeral=True)
+                if timer['voicy']:
+                    await interaction.response.send_message("Erfolgreich übersprungen", ephemeral=True)
+                    if new_phase == "Pause":
+                        await self.make_sound(registered, 'groove-intro.mp3')
+                    else:
+                        await self.make_sound(registered, 'roll_with_it-outro.mp3')
             else:
                 await interaction.response.send_message("Nur angemeldete Personen können den Timer bedienen.",
                                                         ephemeral=True)
@@ -125,7 +126,8 @@ class Timer(commands.Cog):
 
                 await interaction.response.send_message("Erfolgreich beendet", ephemeral=True)
                 if new_msg_id := await self.edit_message(msg_id, mentions=mentions):
-                    await self.make_sound(registered, 'applause.mp3')
+                    if timer['voicy']:
+                        await self.make_sound(registered, 'applause.mp3')
                     self.running_timers.pop(new_msg_id)
                     self.save()
             else:
@@ -221,7 +223,8 @@ class Timer(commands.Cog):
                                                 'channel': interaction.channel_id,
                                                 'voicy': voicy}
         self.save()
-        await self.make_sound(registered, 'roll_with_it-outro.mp3')
+        #if voicy:
+        #    await self.make_sound(registered, 'roll_with_it-outro.mp3')
 
     async def switch_phase(self, msg_id):
         if timer := self.running_timers.get(msg_id):
@@ -312,14 +315,16 @@ class Timer(commands.Cog):
     async def run_timer(self):
         timers_copy = deepcopy(self.running_timers)
         for msg_id in timers_copy:
-            registered = self.running_timers[msg_id]['registered']
-            self.running_timers[msg_id]['remaining'] -= 1
-            if self.running_timers[msg_id]['remaining'] <= 0:
+            timer = self.running_timers[msg_id]
+            registered = timer['registered']
+            timer['remaining'] -= 1
+            if timer['remaining'] <= 0:
                 new_phase = await self.switch_phase(msg_id)
-                if new_phase == "Pause":
-                    await self.make_sound(registered, 'groove-intro.mp3')
-                elif new_phase == "Arbeiten":
-                    await self.make_sound(registered, 'roll_with_it-outro.mp3')
+                if timer['voicy']:
+                    if new_phase == "Pause":
+                        await self.make_sound(registered, 'groove-intro.mp3')
+                    elif new_phase == "Arbeiten":
+                        await self.make_sound(registered, 'roll_with_it-outro.mp3')
             else:
                 await self.edit_message(msg_id, create_new=False)
 
