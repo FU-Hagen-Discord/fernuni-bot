@@ -52,6 +52,14 @@ class Timer(commands.Cog):
             await self.on_skip(button, interaction)
         elif custom_id == timer_view.STOP:
             await self.on_stop(button, interaction)
+        elif custom_id == timer_view.VOICY:
+            await self.on_voicy(button, interaction)
+        elif custom_id == timer_view.SOUND:
+            await self.on_sound(button, interaction)
+        elif custom_id == timer_view.STATS:
+            await self.on_stats(button, interaction)
+        elif custom_id == timer_view.MANUAL:
+            await self.on_manual(button, interaction)
 
     async def on_subscribe(self, button: Button, interaction: MessageInteraction):
         msg_id = str(interaction.message.id)
@@ -105,24 +113,6 @@ class Timer(commands.Cog):
         else:
             await interaction.response.send_message("Etwas ist schiefgelaufen...", ephemeral=True)
 
-    async def on_restart(self, button: Button, interaction: MessageInteraction):
-        msg_id = str(interaction.message.id)
-        if timer := self.running_timers.get(msg_id):
-            registered = timer['registered']
-            if str(interaction.author.id) in timer['registered']:
-                timer['status'] = 'Arbeiten'
-                timer['remaining'] = timer['working_time']
-                self.save()
-
-                await self.edit_message(msg_id)
-                await self.make_sound(registered, 'roll_with_it-outro.mp3')
-                await interaction.response.send_message("Erfolgreich neugestartet", ephemeral=True)
-            else:
-                await interaction.response.send_message("Nur angemeldete Personen können den Timer neu starten.",
-                                                        ephemeral=True)
-        else:
-            await interaction.response.send_message("Etwas ist schiefgelaufen...", ephemeral=True)
-
     async def on_stop(self, button: Button, interaction: MessageInteraction):
         msg_id = str(interaction.message.id)
         if timer := self.running_timers.get(msg_id):
@@ -145,26 +135,57 @@ class Timer(commands.Cog):
         else:
             await interaction.response.send_message("Etwas ist schiefgelaufen...", ephemeral=True)
 
+    async def on_voicy(self, button: Button, interaction: MessageInteraction):
+        # TODO
+        pass
+
+    async def on_sound(self, button: Button, interaction: MessageInteraction):
+        # TODO
+        pass
+
+    async def on_stats(self, button: Button, interaction: MessageInteraction):
+        # TODO
+        pass
+
+    async def on_manual(self, button: Button, interaction: MessageInteraction):
+        # TODO
+        manual_message = f"So kannst du den Timer bedienen:\n\n" \
+                         f"👍 beim Timer anmelden\n" \
+                         f"👎 beim Timer abmelden\n" \
+                         f"⏩ Phase überspringen\n" \
+                         f"🛑 Timer beenden\n" \
+                         f"🔊 Sound abspielen bei Phasenwechsel\n" \
+                         f"🔇 Keinen Sound abspielen\n" \
+                         f"🎶 Soundschema auswählen\n" \
+                         f"📈 Timersession in die Statistik aufnehmen\n\n" \
+                         f"Für detailliertere Informatinen, gib `!help timer` ein."
+        await interaction.response.send_message(manual_message, ephemeral=True)
+
     def create_embed(self, name, status, working_time, break_time, remaining, registered):
         color = disnake.Colour.green() if status == "Arbeiten" else 0xFFC63A if status == "Pause" else disnake.Colour.red()
-        descr = f"👍 beim Timer anmelden\n\n" \
-                f"👎 beim Timer abmelden\n\n" \
-                f"⏩ Phase überspringen\n\n" \
-                f"🛑 Timer beenden\n"
+
         zeiten = f"{working_time} Minuten Arbeiten\n{break_time} Minuten Pause"
         remaining_value = f"{remaining} Minuten"
         endzeit = (datetime.now() + timedelta(minutes=remaining)).strftime("%H:%M")
         end_value = f" [bis {endzeit} Uhr]" if status != "Beendet" else ""
         user_list = [self.bot.get_user(int(user_id)) for user_id in registered]
         angemeldet_value = ", ".join([user.mention for user in user_list])
+        help_value = f"⁉ ruft eine Bedienungsanleitung auf."
+        info_value = f"🔇 Kein Voicy-Beitritt\n" \
+                     f"🎶 -\n" \
+                     f"📈 Session geht in die Statistik ein"
+
+        descr = f"Jetzt: {status} {end_value}\n" \
+                f"noch {remaining_value}\n\n" \
 
         embed = disnake.Embed(title=name,
-                              description=f'Jetzt: {status}',
+                              description=descr,
                               color=color)
-        embed.add_field(name="Bedienung:", value=descr, inline=False)
+
         embed.add_field(name="Zeiten:", value=zeiten, inline=False)
-        embed.add_field(name="verbleibende Zeit:", value=remaining_value + end_value, inline=False)
+        embed.add_field(name="Infos:", value=info_value, inline=False)
         embed.add_field(name="angemeldete User:", value=angemeldet_value if registered else "-", inline=False)
+        embed.add_field(name="Hilfe:", value=help_value, inline=False)
 
         return embed
 
