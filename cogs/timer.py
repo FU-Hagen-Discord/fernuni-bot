@@ -6,7 +6,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta
 
 import disnake
-from disnake import MessageInteraction, ApplicationCommandInteraction, SelectOption
+from disnake import MessageInteraction, ApplicationCommandInteraction
 from disnake.ext import commands, tasks
 from disnake.ui import Button, Select
 
@@ -67,8 +67,8 @@ class Timer(commands.Cog):
             if str(interaction.author.id) not in timer['registered']:
                 timer['registered'].append(str(interaction.author.id))
                 self.save()
-                name, status, wt, bt, remaining, registered, _, voicy = self.get_details(msg_id)
-                embed = self.create_embed(name, status, wt, bt, remaining, registered, voicy)
+                name, status, wt, bt, remaining, registered, _, voicy, sound = self.get_details(msg_id)
+                embed = self.create_embed(name, status, wt, bt, remaining, registered, voicy, sound)
                 await interaction.message.edit(embed=embed, view=self.get_view())
                 await interaction.response.send_message("Du hast dich erfolgreich angemeldet", ephemeral=True)
             else:
@@ -87,8 +87,8 @@ class Timer(commands.Cog):
                 else:
                     timer['registered'].remove(str(interaction.author.id))
                     self.save()
-                    name, status, wt, bt, remaining, registered, _ , voicy= self.get_details(msg_id)
-                    embed = self.create_embed(name, status, wt, bt, remaining, registered, voicy)
+                    name, status, wt, bt, remaining, registered, _, voicy, sound = self.get_details(msg_id)
+                    embed = self.create_embed(name, status, wt, bt, remaining, registered, voicy, sound)
                     await interaction.message.edit(embed=embed, view=self.get_view())
                     await interaction.response.send_message("Du hast dich erfolgreich abgemeldet", ephemeral=True)
             else:
@@ -105,11 +105,12 @@ class Timer(commands.Cog):
                 if timer['voicy']:
                     await interaction.response.send_message("Erfolgreich übersprungen", ephemeral=True)
                     if new_phase == "Pause":
-                        await self.make_sound(registered, 'groove-intro.mp3')
+                        await self.make_sound(registered, f"{timer['sound']}/pause.mp3")
                     else:
-                        await self.make_sound(registered, 'roll_with_it-outro.mp3')
+                        await self.make_sound(registered, f"{timer['sound']}/learning.mp3")
             else:
-                await interaction.response.send_message("Nur angemeldete Personen können den Timer bedienen.",
+                await interaction.response.send_message("Nur angemeldete Personen können den Timer bedienen.\n"
+                                                        "Klicke auf ⁉ für mehr Informationen.",
                                                         ephemeral=True)
         else:
             await interaction.response.send_message("Etwas ist schiefgelaufen...", ephemeral=True)
@@ -132,7 +133,8 @@ class Timer(commands.Cog):
                     self.save()
             else:
                 # Reply with a hidden message
-                await interaction.response.send_message("Nur angemeldete Personen können den Timer beenden.",
+                await interaction.response.send_message("Nur angemeldete Personen können den Timer beenden.\n"
+                                                        "Klicke auf ⁉ für mehr Informationen.",
                                                         ephemeral=True)
         else:
             await interaction.response.send_message("Etwas ist schiefgelaufen...", ephemeral=True)
@@ -140,21 +142,49 @@ class Timer(commands.Cog):
     async def on_voicy(self, button: Button, interaction: MessageInteraction):
         msg_id = str(interaction.message.id)
         if timer := self.running_timers.get(msg_id):
-            mute = timer['voicy']
-            view = self.get_view()
-            timer['voicy'] = not timer['voicy']
-            await self.edit_message(msg_id, create_new=False)
-            await view.change_voicy_button(interaction, mute=mute)
+            if str(interaction.author.id) in timer['registered']:
+                mute = timer['voicy']
+                view = self.get_view()
+                timer['voicy'] = not timer['voicy']
+                self.save()
+                await self.edit_message(msg_id, create_new=False)
+                await view.change_voicy_button(interaction, mute=mute)
+            else:
+                await interaction.response.send_message("Nur angemeldete Personen können den Timer bedienen.\n"
+                                                        "Klicke auf ⁉ für mehr Informationen.",
+                                                        ephemeral=True)
         else:
             await interaction.response.send_message("Etwas ist schiefgelaufen...", ephemeral=True)
 
     async def on_sound(self, button: Button, interaction: MessageInteraction):
-        # TODO
-        pass
+        msg_id = str(interaction.message.id)
+        if timer := self.running_timers.get(msg_id):
+            if str(interaction.author.id) in timer['registered']:
+                soundschemes = [scheme for scheme in os.listdir("./cogs/sounds") if scheme != 'applause.mp3']
+                current = soundschemes.index(timer['sound'])
+                next = (current + 1) % len(soundschemes)
+                timer['sound'] = soundschemes[next]
+                self.save()
+                await self.edit_message(msg_id, create_new=False)
+            else:
+                await interaction.response.send_message("Nur angemeldete Personen können den Timer bedienen.\n"
+                                                        "Klicke auf ⁉ für mehr Informationen.",
+                                                        ephemeral=True)
+        else:
+            await interaction.response.send_message("Etwas ist schiefgelaufen...", ephemeral=True)
 
     async def on_stats(self, button: Button, interaction: MessageInteraction):
-        # TODO
-        pass
+        msg_id = str(interaction.message.id)
+        if timer := self.running_timers.get(msg_id):
+            if str(interaction.author.id) in timer['registered']:
+                pass
+                # TODO
+            else:
+                await interaction.response.send_message("Nur angemeldete Personen können den Timer bedienen.\n"
+                                                        "Klicke auf ⁉ für mehr Informationen.",
+                                                        ephemeral=True)
+        else:
+            await interaction.response.send_message("Etwas ist schiefgelaufen...", ephemeral=True)
 
     async def on_manual(self, button: Button, interaction: MessageInteraction):
         manual_message = f"So kannst du den Timer bedienen:\n\n" \
@@ -172,7 +202,6 @@ class Timer(commands.Cog):
         await interaction.response.send_message(manual_message, view=menu_view, ephemeral=True)
 
     async def on_manual_select(self, select: Select, interaction: MessageInteraction):
-        # TODO: je nach Value den Inhalt anpassen
         if select.values[0] == "subscribe":
             content = "👍 beim Timer anmelden\n\n" \
                       "Hiermit meldest du dich bei diesem Timer an. \n" \
@@ -223,9 +252,12 @@ class Timer(commands.Cog):
                       "Wenn diese Session nicht in die Statistik aufgenommen \n" \
                       "werden soll, ist dies der Button deiner Wahl."
 
+        else:
+            content = "Etwas ist schief gelaufen..."
+
         await interaction.response.edit_message(content=content)
 
-    def create_embed(self, name, status, working_time, break_time, remaining, registered, voicy):
+    def create_embed(self, name, status, working_time, break_time, remaining, registered, voicy, sound):
         color = disnake.Colour.green() if status == "Arbeiten" else 0xFFC63A if status == "Pause" else disnake.Colour.red()
 
         zeiten = f"{working_time} Minuten Arbeiten\n{break_time} Minuten Pause"
@@ -235,9 +267,10 @@ class Timer(commands.Cog):
         user_list = [self.bot.get_user(int(user_id)) for user_id in registered]
         angemeldet_value = ", ".join([user.mention for user in user_list])
         voicy_info = "🔊 Soundwiedergabe im Voicy" if voicy else "🔇 Kein Voicy-Beitritt"
+        sound_info = f"🎶 {sound}" if voicy else "🎶 -"
 
         info_value = f"{voicy_info}\n" \
-                     f"🎶 -\n" \
+                     f"{sound_info}\n" \
                      f"📈 Session geht in die Statistik ein\n\n" \
                      f"⁉ ruft eine Bedienungsanleitung auf."
 
@@ -263,8 +296,9 @@ class Timer(commands.Cog):
         status = "Arbeiten"
         registered = [str(interaction.author.id)]
         voicy = False
+        sound = 'standard'
 
-        embed = self.create_embed(name, status, working_time, break_time, remaining, registered, voicy)
+        embed = self.create_embed(name, status, working_time, break_time, remaining, registered, voicy, sound)
         await interaction.response.send_message(embed=embed, view=self.get_view())
         message = await interaction.original_message()
 
@@ -275,10 +309,9 @@ class Timer(commands.Cog):
                                                 'remaining': remaining,
                                                 'registered': registered,
                                                 'channel': interaction.channel_id,
-                                                'voicy': voicy}
+                                                'voicy': voicy,
+                                                'sound': sound}
         self.save()
-        #if voicy:
-        #    await self.make_sound(registered, 'roll_with_it-outro.mp3')
 
     async def switch_phase(self, msg_id):
         if timer := self.running_timers.get(msg_id):
@@ -308,7 +341,8 @@ class Timer(commands.Cog):
             registered = timer['registered']
             channel = timer['channel']
             voicy = timer['voicy']
-            return name, status, wt, bt, remaining, registered, channel, voicy
+            sound = timer['sound']
+            return name, status, wt, bt, remaining, registered, channel, voicy, sound
 
     async def edit_message(self, msg_id, mentions=None, create_new=True):
         if timer := self.running_timers.get(msg_id):
@@ -317,8 +351,8 @@ class Timer(commands.Cog):
             try:
                 msg = await channel.fetch_message(int(msg_id))
 
-                name, status, wt, bt, remaining, registered, _, voicy = self.get_details(msg_id)
-                embed = self.create_embed(name, status, wt, bt, remaining, registered, voicy)
+                name, status, wt, bt, remaining, registered, _, voicy, sound = self.get_details(msg_id)
+                embed = self.create_embed(name, status, wt, bt, remaining, registered, voicy, sound)
 
                 if create_new:
                     await msg.delete()
@@ -376,11 +410,12 @@ class Timer(commands.Cog):
                 new_phase = await self.switch_phase(msg_id)
                 if timer['voicy']:
                     if new_phase == "Pause":
-                        await self.make_sound(registered, 'groove-intro.mp3')
+                        await self.make_sound(registered, f"{timer['sound']}/pause.mp3")
                     elif new_phase == "Arbeiten":
-                        await self.make_sound(registered, 'roll_with_it-outro.mp3')
+                        await self.make_sound(registered, f"{timer['sound']}/learning.mp3")
             else:
                 await self.edit_message(msg_id, create_new=False)
+
 
     @run_timer.before_loop
     async def before_timer(self):
