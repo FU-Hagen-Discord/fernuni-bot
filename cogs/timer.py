@@ -157,7 +157,6 @@ class Timer(commands.Cog):
         pass
 
     async def on_manual(self, button: Button, interaction: MessageInteraction):
-        # TODO
         manual_message = f"So kannst du den Timer bedienen:\n\n" \
                          f"👍 beim Timer anmelden\n" \
                          f"👎 beim Timer abmelden\n" \
@@ -169,12 +168,61 @@ class Timer(commands.Cog):
                          f"📈 Timersession in die Statistik aufnehmen\n\n" \
                          f"Für detailliertere Informationen:"
 
-        # TODO: in separate View verlegen
         menu_view = timer_view.ManualSelectView(callback=self.on_manual_select)
         await interaction.response.send_message(manual_message, view=menu_view, ephemeral=True)
 
     async def on_manual_select(self, select: Select, interaction: MessageInteraction):
-        content = select.values[0]
+        # TODO: je nach Value den Inhalt anpassen
+        if select.values[0] == "subscribe":
+            content = "👍 beim Timer anmelden\n\n" \
+                      "Hiermit meldest du dich bei diesem Timer an. \n" \
+                      "Du erscheinst dan in der Liste der angemeldeten\n" \
+                      "User, wirst angepingt beim Phasenwechsel und \n" \
+                      "kannst die anderen Buttons bedienen.\n\n"
+
+        elif select.values[0] == "unsubscribe":
+            content = "👎 beim Timer abmelden\n\n" \
+                      "Hiermit meldest du dich beim Timer ab.\n" \
+                      "Du erscheinst dann nicht mehr in der Liste \n" \
+                      "der angemeldeten User, wirst beim Phasenwechsel\n" \
+                      "nicht mehr angepingt und kannst die Buttons\n" \
+                      "nicht mehr bedienen.\n\n"
+
+        elif select.values[0] == "skip":
+            content = "⏩ Phase überspringen\n\n" \
+                      "Brauchst du eine Pause, obwohl gerade Lernphase \n" \
+                      "ist? Oder Willst du weiter lernen, obwohl gerade \n" \
+                      "die Pause angefangen hat? Dann ist dieser Button\n" \
+                      "der richtige für dich. (Wenn mehrere am Timer \n" \
+                      "angemeldet sind, besprich das erst mit den anderen.)\n\n"
+
+        elif select.values[0] == "stop":
+            content = f"🛑 Timer beenden\n\n" \
+                      f"Fertig für heute? Dieser Button beendet die \n" \
+                      f"Timer-Session. Wenn mehrere User am Timer \n" \
+                      "angemeldet sind, besprich das erst mit den anderen.\n\n"
+
+        elif select.values[0] == "voicy":
+            content = "🔊/🔇 Voicy-Option\n\n" \
+                      f"Wenn diese Option eingeschaltet ist, Kommt {self.bot.user.display_name}\n" \
+                      f"beim Phasenwechsel in den Voice-Channel in dem\n" \
+                      f"ihr euch gerade befindet und spielt einen Sound ab.\n" \
+                      f"Ist die Option ausgeschaltet, werdet ihr lediglich \n" \
+                      f"angepingt zum Phasenwechsel."
+
+        elif select.values[0] == "sound":
+            content = "🎶 Soundschema\n\n" \
+                      "Zur Besseren Unterscheidung wenn mehrere Timer mit\n" \
+                      "eingeschalteter Voicy-option laufen, kannst du hier\n" \
+                      "ein anderes Soundschema auswählen."
+
+        elif select.values[0] == "stats":
+            content = "📈 Statistik\n\n" \
+                      "Über die Timer-Nutzung wird eine Statistik geführt,\n" \
+                      "die kannst du mit dem Kommando `\\timer stats` einsehen.\n" \
+                      "Wenn diese Session nicht in die Statistik aufgenommen \n" \
+                      "werden soll, ist dies der Button deiner Wahl."
+
         await interaction.response.edit_message(content=content)
 
     def create_embed(self, name, status, working_time, break_time, remaining, registered, voicy):

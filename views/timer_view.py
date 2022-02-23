@@ -77,6 +77,7 @@ class ManualSelectView(View):
                                 SelectOption(label="⏩ Phase überspringen", value="skip"),
                                 SelectOption(label="🛑 Timer beenden", value="stop"),
                                 SelectOption(label="🔊/🔇 Voicy-Option", value="voicy"),
+                                SelectOption(label="🎶 Soundschema", value="sound"),
                                 SelectOption(label="📈 Statistik", value="stats")])
     async def sel_manual(self, option: SelectOption, interaction: MessageInteraction):
         await self.callback(option, interaction)
