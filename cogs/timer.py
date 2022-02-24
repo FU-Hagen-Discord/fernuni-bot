@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 import disnake
 from disnake import MessageInteraction, ApplicationCommandInteraction
 from disnake.ext import commands, tasks
-from disnake.ui import Button, Select
+from disnake.ui import Select
 
 from views import timer_view
 
@@ -47,8 +47,8 @@ class Timer(commands.Cog):
 
         if custom_id == timer_view.SUBSCRIBE:
             await self.on_subscribe(interaction)
-        elif custom_id == timer_view.UNSUBSCRIBE:
-            await self.on_unsubscribe(interaction)
+        elif custom_id == timer_view.RESTART:
+            await self.on_restart(interaction)
         elif custom_id == timer_view.SKIP:
             await self.on_skip(interaction)
         elif custom_id == timer_view.STOP:
@@ -65,7 +65,8 @@ class Timer(commands.Cog):
     async def on_subscribe(self, interaction: MessageInteraction):
         msg_id = str(interaction.message.id)
         if timer := self.running_timers.get(msg_id):
-            if str(interaction.author.id) not in timer['registered']:
+            registered = timer['registered']
+            if str(interaction.author.id) not in registered:
                 timer['registered'].append(str(interaction.author.id))
                 self.save()
                 name, status, wt, bt, remaining, registered, _, voicy, sound = self.get_details(msg_id)
@@ -73,15 +74,6 @@ class Timer(commands.Cog):
                 await interaction.message.edit(embed=embed, view=self.get_view(voicy=voicy))
                 await interaction.response.send_message("Du hast dich erfolgreich angemeldet", ephemeral=True)
             else:
-                await interaction.response.send_message("Du bist bereits angemeldet.", ephemeral=True)
-        else:
-            await interaction.response.send_message("Etwas ist schiefgelaufen...", ephemeral=True)
-
-    async def on_unsubscribe(self, interaction: MessageInteraction):
-        msg_id = str(interaction.message.id)
-        if timer := self.running_timers.get(msg_id):
-            registered = timer['registered']
-            if str(interaction.author.id) in registered:
                 if len(registered) == 1:
                     await self.on_stop(interaction)
                     return
@@ -92,8 +84,24 @@ class Timer(commands.Cog):
                     embed = self.create_embed(name, status, wt, bt, remaining, registered, voicy, sound)
                     await interaction.message.edit(embed=embed, view=self.get_view(voicy=voicy))
                     await interaction.response.send_message("Du hast dich erfolgreich abgemeldet", ephemeral=True)
+        else:
+            await interaction.response.send_message("Etwas ist schiefgelaufen...", ephemeral=True)
+
+    async def on_restart(self, interaction: MessageInteraction):
+        msg_id = str(interaction.message.id)
+        if timer := self.running_timers.get(msg_id):
+            registered = timer['registered']
+            if str(interaction.author.id) in timer['registered']:
+                timer['status'] = 'Arbeiten'
+                timer['remaining'] = timer['working_time']
+                self.save()
+
+                await self.edit_message(msg_id)
+                await self.make_sound(registered, 'roll_with_it-outro.mp3')
+                await interaction.response.send_message("Erfolgreich neugestartet", ephemeral=True)
             else:
-                await interaction.response.send_message("Du warst gar nicht angemeldet.", ephemeral=True)
+                await interaction.response.send_message("Nur angemeldete Personen können den Timer neu starten.",
+                                                        ephemeral=True)
         else:
             await interaction.response.send_message("Etwas ist schiefgelaufen...", ephemeral=True)
 
@@ -178,8 +186,8 @@ class Timer(commands.Cog):
         msg_id = str(interaction.message.id)
         if timer := self.running_timers.get(msg_id):
             if str(interaction.author.id) in timer['registered']:
-                pass
                 # TODO
+                await interaction.response.send_message("...", ephemeral=True)
             else:
                 await interaction.response.send_message("Nur angemeldete Personen können den Timer bedienen.\n"
                                                         "Klicke auf ⁉ für mehr Informationen.",
@@ -189,14 +197,13 @@ class Timer(commands.Cog):
 
     async def on_manual(self, interaction: MessageInteraction):
         manual_message = f"So kannst du den Timer bedienen:\n\n" \
-                         f"👍 beim Timer anmelden\n" \
-                         f"👎 beim Timer abmelden\n" \
+                         f"👋 beim Timer an/abmelden\n" \
+                         f"🔄 Session neu starten\n" \
                          f"⏩ Phase überspringen\n" \
                          f"🛑 Timer beenden\n" \
-                         f"🔊 Sound abspielen bei Phasenwechsel\n" \
-                         f"🔇 Keinen Sound abspielen\n" \
+                         f"🔊/🔇 Sound abspielen (oder nicht) bei Phasenwechsel\n" \
                          f"🎶 Soundschema auswählen\n" \
-                         f"📈 Timersession in die Statistik aufnehmen\n\n" \
+                         f"📈 Session in die Statistik aufnehmen\n\n" \
                          f"Für detailliertere Informationen:"
 
         menu_view = timer_view.ManualSelectView(callback=self.on_manual_select)
@@ -204,19 +211,15 @@ class Timer(commands.Cog):
 
     async def on_manual_select(self, select: Select, interaction: MessageInteraction):
         if select.values[0] == "subscribe":
-            content = "👍 beim Timer anmelden\n\n" \
-                      "Hiermit meldest du dich bei diesem Timer an. \n" \
-                      "Du erscheinst dan in der Liste der angemeldeten\n" \
-                      "User, wirst angepingt beim Phasenwechsel und \n" \
-                      "kannst die anderen Buttons bedienen.\n\n"
+            content = "👋 beim Timer an-/abmelden\n\n" \
+                      "Hiermit meldest du dich bei diesem Timer an (bzw. ab). \n" \
+                      "Du erscheinst dann (nicht mehr) in der Liste der angemeldeten\n" \
+                      "User, wirst (nicht mehr) angepingt beim Phasenwechsel und \n" \
+                      "kannst (nicht mehr) die anderen Buttons bedienen.\n\n"
 
-        elif select.values[0] == "unsubscribe":
-            content = "👎 beim Timer abmelden\n\n" \
-                      "Hiermit meldest du dich beim Timer ab.\n" \
-                      "Du erscheinst dann nicht mehr in der Liste \n" \
-                      "der angemeldeten User, wirst beim Phasenwechsel\n" \
-                      "nicht mehr angepingt und kannst die Buttons\n" \
-                      "nicht mehr bedienen.\n\n"
+        elif select.values[0] == "restart":
+            content = "🔄 Session neu starten\n\n" \
+                      "...\n\n"
 
         elif select.values[0] == "skip":
             content = "⏩ Phase überspringen\n\n" \

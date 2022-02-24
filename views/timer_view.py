@@ -1,6 +1,6 @@
 import disnake
-from disnake import MessageInteraction, ButtonStyle, SelectOption
-from disnake.ui import Button, View, Select
+from disnake import MessageInteraction, SelectOption
+from disnake.ui import Button, View
 
 VOICY = "timerview:voicy"
 SOUND = "timerview:sound"
@@ -8,7 +8,7 @@ STATS = "timerview:stats"
 MANUAL = "timerview:manual"
 
 SUBSCRIBE = "timerview:subscribe"
-UNSUBSCRIBE = "timerview:unsubscribe"
+RESTART = "timerview:restart"
 SKIP = "timverview:skip"
 STOP = "timverview:stop"
 
@@ -21,6 +21,7 @@ class TimerButton(Button):
     async def callback(self, interaction):
         await self.callback(interaction)
 
+
 class TimerView(View):
     def __init__(self, callback, voicy):
         super().__init__(timeout=None)
@@ -28,8 +29,8 @@ class TimerView(View):
         self.voicy_emoji = "🔇" if voicy else "🔊"
         self.disable_soundschemes = not voicy
 
-        custom_ids = [VOICY, SOUND, STATS, MANUAL, SUBSCRIBE, UNSUBSCRIBE, SKIP, STOP]
-        emojis = [self.voicy_emoji, "🎶", "📈", "⁉", "👍", "👎", "⏩", "🛑"]
+        custom_ids = [VOICY, SOUND, STATS, MANUAL, SUBSCRIBE, RESTART, SKIP, STOP]
+        emojis = [self.voicy_emoji, "🎶", "📈", "⁉", "👋", "🔄", "⏩", "🛑"]
 
         for i in range(8):
             self.add_item(TimerButton(
@@ -54,8 +55,8 @@ class ManualSelectView(View):
                        placeholder="wähle hier eine Option aus",
                        min_values=1,
                        max_values=1,
-                       options=[SelectOption(label="👍 beim Timer anmelden", value="subscribe"),
-                                SelectOption(label="👎 beim Timer abmelden", value="unsubscribe"),
+                       options=[SelectOption(label="👋 beim Timer an-/abmelden", value="subscribe"),
+                                SelectOption(label="🔄 Session neu starten", value="restart"),
                                 SelectOption(label="⏩ Phase überspringen", value="skip"),
                                 SelectOption(label="🛑 Timer beenden", value="stop"),
                                 SelectOption(label="🔊/🔇 Voicy-Option", value="voicy"),
