@@ -14,11 +14,11 @@ from cogs.help import help
   DISCORD_JOBOFFERS_FILE - json file mit allen aktuellen 
   DISCORD_JOBOFFERS_CHANNEL - Channel-ID für Stellenangebote
   DISCORD_JOBOFFERS_URL - URL von der die Stellenangebote geholt werde
-  DISCORD_JOBOFFERS_STD_FAK  - Fakultät deren Stellenangebote standtardmäßig gepostet werden
+  DISCORD_JOBOFFERS_STD_FAK  - Fakultät deren Stellenangebote standardmäßig gepostet werden
   
   Struktur der json:
   {fak:{id:{title:..., info:..., link:..., deadline:...}}
-  mit fak = [mi|rewi|wiwi|ksw|psy]
+  mit fak = [mi|rewi|wiwi|ksw|psy|other|all]
 """
 
 JOBS_URL = os.getenv("DISCORD_JOBOFFERS_URL")
@@ -69,14 +69,20 @@ class Joboffers(commands.Cog):
                                                              disnake.OptionChoice('wiwi','wiwi'),
                                                              disnake.OptionChoice('ksw','ksw'),
                                                              disnake.OptionChoice('psy','psy'),
-                                                             disnake.OptionChoice('other','other')])])
+                                                             disnake.OptionChoice('other','other'),
+                                                             disnake.OptionChoice('all','all')])])
     async def cmd_jobs(self, interaction: ApplicationCommandInteraction, faculty: str = STD_FAK):
         await self.fetch_joboffers()
 
+        fak_text = "aller Fakultäten" if faculty == 'all' else f"der Fakultät {faculty}"
+
         embed = disnake.Embed(title="Stellenangebote der Uni",
-                              description=f"Ich habe folgende Stellenangebote der Fakultät {faculty} gefunden:")
-        if offers := self.joboffers.get(faculty):
-            for offer_id, offer_data in self.joboffers.get(faculty).items():
+                              description=f"Ich habe folgende Stellenangebote {fak_text} gefunden:")
+
+        for fak, fak_offers in self.joboffers.items():
+            if STD_FAK != 'all' and fak != faculty:
+                continue
+            for offer_id, offer_data in fak_offers.items():
                 descr = f"{offer_data['info']}\nDeadline: {offer_data['deadline']}\n{offer_data['link']}"
                 embed.add_field(name=offer_data['title'], value=descr, inline=False)
 
@@ -84,8 +90,9 @@ class Joboffers(commands.Cog):
 
 
     async def post_new_jobs(self, jobs):
+        fak_text = "aller Fakultäten" if STD_FAK == 'all' else f"der Fakultät {STD_FAK}"
         embed = disnake.Embed(title="Neue Stellenangebote der Uni",
-                              description=f"Ich habe folgende neue Stellenangebote der Fakultät {STD_FAK} gefunden:")
+                              description=f"Ich habe folgende neue Stellenangebote {fak_text} gefunden:")
         for job in jobs:
             descr = f"{job['info']}\nDeadline: {job['deadline']}\n{job['link']}"
             embed.add_field(name=job['title'], value=descr, inline=False)
@@ -135,16 +142,21 @@ class Joboffers(commands.Cog):
 
     async def check_for_new_jobs(self, old_joboffers):
         new_jobs = []
-        if fak := self.joboffers.get(STD_FAK):
-            if fak_old := old_joboffers.get(STD_FAK):
-                for offer_id, offer_data in self.joboffers.get(STD_FAK).items():
+
+        for fak, fak_offers in self.joboffers.items():
+            if STD_FAK != 'all' and fak != STD_FAK:
+                continue
+
+            if fak_old := old_joboffers.get(fak):
+                for offer_id, offer_data in fak_offers.items():
                     if old_offer := fak_old.get(offer_id):
                         if offer_data != old_offer:
                             new_jobs.append(offer_data)
                     else:
                         new_jobs.append(offer_data)
             else:
-                for offer_id, offer_data in self.joboffers.get(STD_FAK).items():
+                for offer_id, offer_data in self.joboffers.get(fak).items():
                     new_jobs.append(offer_data)
+
         if new_jobs:
             await self.post_new_jobs(new_jobs)
