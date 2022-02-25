@@ -12,6 +12,25 @@ from disnake.ui import Select
 
 from views import timer_view
 
+"""
+  Environment Variablen:
+  DISCORD_TIMER_FILE - json file mit allen aktuell laufenden timern
+
+  Struktur der json:
+  {msg_id:{name:<Titel des Timers>, 
+           status:<Arbeiten|Pause|Beendet>, 
+           working_time:<eingestellte Arbeitszeit in Minuten>, 
+           break_time:<eingestellte Pausenzeit in Minuten>,
+           remaining:<verbleibende Zeit der aktuellen Phase in Minuten>,
+           registered:<Liste der angemeldeten User-IDs>,
+           channel:<ID des Channels in dem der Timer läuft>,
+           voicy:<True|False>,
+           sound:<aktuelles Soundschema>}
+           
+  Neue Soundschemata lassen sich hinzufügen mittels neuem Ordner 'cogs/sounds/<schema>'
+  in diesem müssen genau zwei Dateien sein: 'learning.mp3' und 'pause.mp3'
+"""
+
 
 class Timer(commands.Cog):
 
