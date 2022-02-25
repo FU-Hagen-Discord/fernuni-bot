@@ -18,7 +18,7 @@ from cogs.help import help
   
   Struktur der json:
   {fak:{id:{title:..., info:..., link:..., deadline:...}}
-  mit fak = [mi|rewi|wiwi|ksw|psy|other|all]
+  mit fak = [mi|rewi|wiwi|ksw|psy|other]
 """
 
 JOBS_URL = os.getenv("DISCORD_JOBOFFERS_URL")
