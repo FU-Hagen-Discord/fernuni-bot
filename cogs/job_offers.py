@@ -7,20 +7,19 @@ from bs4 import BeautifulSoup
 import disnake
 from disnake import ApplicationCommandInteraction
 from disnake.ext import commands, tasks
-from cogs.help import help, handle_error, help_category
+from cogs.help import help
 
 """
   Environment Variablen:
   DISCORD_JOBOFFERS_FILE - json file mit allen aktuellen 
   DISCORD_JOBOFFERS_CHANNEL - Channel-ID für Stellenangebote
+  DISCORD_JOBOFFERS_URL - URL von der die Stellenangebote geholt werde
+  DISCORD_JOBOFFERS_STD_FAK  - Fakultät deren Stellenangebote standtardmäßig gepostet werden
   
   Struktur der json:
   {fak:{id:{title:..., info:..., link:..., deadline:...}}
   mit fak = [mi|rewi|wiwi|ksw|psy]
 """
-
-JOBS_URL = "https://www.fernuni-hagen.de/uniintern/arbeitsthemen/karriere/stellen/include/hk.shtml"
-STD_FAK = "mi"
 
 
 class Joboffers(commands.Cog):
@@ -29,6 +28,8 @@ class Joboffers(commands.Cog):
         self.joboffers = {}
         self.joboffers_channel_id = int(os.getenv("DISCORD_JOBOFFERS_CHANNEL"))
         self.joboffers_file = os.getenv("DISCORD_JOBOFFERS_FILE")
+        self.jobs_url = os.getenv("DISCORD_JOBOFFERS_URL")
+        self.stad_fak = os.getenv("DISCORD_JOBOFFERS_STD_FAK")
         self.load_joboffers()
         self.update_loop.start()
 
@@ -69,7 +70,7 @@ class Joboffers(commands.Cog):
                                                              disnake.OptionChoice('ksw','ksw'),
                                                              disnake.OptionChoice('psy','psy'),
                                                              disnake.OptionChoice('other','other')])])
-    async def cmd_jobs(self, interaction: ApplicationCommandInteraction, faculty: str = STD_FAK):
+    async def cmd_jobs(self, interaction: ApplicationCommandInteraction, faculty: str):
         await self.fetch_joboffers()
 
         embed = disnake.Embed(title="Stellenangebote der Uni",
@@ -85,7 +86,7 @@ class Joboffers(commands.Cog):
 
     async def post_new_jobs(self, jobs):
         embed = disnake.Embed(title="Neue Stellenangebote der Uni",
-                              description=f"Ich habe folgende neue Stellenangebote der Fakultät {STD_FAK} gefunden:")
+                              description=f"Ich habe folgende neue Stellenangebote der Fakultät {self.stad_fak} gefunden:")
         for job in jobs:
             descr = f"{job['info']}\nDeadline: {job['deadline']}\n{job['link']}"
             embed.add_field(name=job['title'], value=descr, inline=False)
@@ -96,7 +97,7 @@ class Joboffers(commands.Cog):
 
     async def fetch_joboffers(self):
         sess = aiohttp.ClientSession()
-        req = await sess.get(JOBS_URL)
+        req = await sess.get(self.jobs_url)
         text = await req.read()
         await sess.close()
 
@@ -135,8 +136,8 @@ class Joboffers(commands.Cog):
 
     async def check_for_new_jobs(self, old_joboffers):
         new_jobs = []
-        if fak := self.joboffers.get(STD_FAK):
-            if fak_old := old_joboffers.get(STD_FAK):
+        if fak := self.joboffers.get(self.stad_fak):
+            if fak_old := old_joboffers.get(self.stad_fak):
                 for offer_id in fak:
                     offer = fak[offer_id]
                     if old_offer := fak_old.get(offer_id):
