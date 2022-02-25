@@ -240,6 +240,7 @@ class Timer(commands.Cog):
                       "kannst (nicht mehr) die anderen Buttons bedienen.\n\n"
 
         elif select.values[0] == "restart":
+            # TODO
             content = "🔄 Session neu starten\n\n" \
                       "...\n\n"
 
@@ -441,7 +442,6 @@ class Timer(commands.Cog):
                         await self.make_sound(registered, f"{timer['sound']}/learning.mp3")
             else:
                 await self.edit_message(msg_id, create_new=False)
-
 
     @run_timer.before_loop
     async def before_timer(self):
