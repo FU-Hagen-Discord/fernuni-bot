@@ -72,7 +72,7 @@ class Timer(commands.Cog):
                 name, status, wt, bt, remaining, registered, _, voicy, sound = self.get_details(msg_id)
                 embed = self.create_embed(name, status, wt, bt, remaining, registered, voicy, sound)
                 await interaction.message.edit(embed=embed, view=self.get_view(voicy=voicy))
-                await interaction.response.send_message("Du hast dich erfolgreich angemeldet", ephemeral=True)
+                await interaction.response.defer()
             else:
                 if len(registered) == 1:
                     await self.on_stop(interaction)
@@ -83,7 +83,7 @@ class Timer(commands.Cog):
                     name, status, wt, bt, remaining, registered, _, voicy, sound = self.get_details(msg_id)
                     embed = self.create_embed(name, status, wt, bt, remaining, registered, voicy, sound)
                     await interaction.message.edit(embed=embed, view=self.get_view(voicy=voicy))
-                    await interaction.response.send_message("Du hast dich erfolgreich abgemeldet", ephemeral=True)
+                    await interaction.response.defer()
         else:
             await interaction.response.send_message("Etwas ist schiefgelaufen...", ephemeral=True)
 
@@ -97,8 +97,12 @@ class Timer(commands.Cog):
                 self.save()
 
                 await self.edit_message(msg_id)
-                await self.make_sound(registered, 'roll_with_it-outro.mp3')
-                await interaction.response.send_message("Erfolgreich neugestartet", ephemeral=True)
+                if timer['voicy']:
+                    await self.make_sound(registered, f"{timer['sound']}/learning.mp3")
+
+                # TODO Session-Statistik zurücksetzen
+                await interaction.response.send_message("...Hier kommt ein Hinweis hin, dass die Sessionstatistik"
+                                                        "gelöscht wird bei Neustart....", ephemeral=True)
             else:
                 await interaction.response.send_message("Nur angemeldete Personen können den Timer neu starten.",
                                                         ephemeral=True)
@@ -112,7 +116,7 @@ class Timer(commands.Cog):
             if str(interaction.author.id) in timer['registered']:
                 new_phase = await self.switch_phase(msg_id)
                 if timer['voicy']:
-                    await interaction.response.send_message("Erfolgreich übersprungen", ephemeral=True)
+                    await interaction.response.defer()
                     if new_phase == "Pause":
                         await self.make_sound(registered, f"{timer['sound']}/pause.mp3")
                     else:
@@ -134,14 +138,13 @@ class Timer(commands.Cog):
                 timer['remaining'] = 0
                 timer['registered'] = []
 
-                await interaction.response.send_message("Erfolgreich beendet", ephemeral=True)
                 if new_msg_id := await self.edit_message(msg_id, mentions=mentions):
                     if timer['voicy']:
                         await self.make_sound(registered, 'applause.mp3')
                     self.running_timers.pop(new_msg_id)
                     self.save()
+                await interaction.response.defer()
             else:
-                # Reply with a hidden message
                 await interaction.response.send_message("Nur angemeldete Personen können den Timer beenden.\n"
                                                         "Klicke auf ⁉ für mehr Informationen.",
                                                         ephemeral=True)
@@ -156,7 +159,7 @@ class Timer(commands.Cog):
                 timer['voicy'] = not voicy
                 self.save()
                 await self.edit_message(msg_id, create_new=False)
-                await interaction.response.send_message("Voicy-Option erfolgreich geändert.", ephemeral=True)
+                await interaction.response.defer()
             else:
                 await interaction.response.send_message("Nur angemeldete Personen können den Timer bedienen.\n"
                                                         "Klicke auf ⁉ für mehr Informationen.",
@@ -174,7 +177,7 @@ class Timer(commands.Cog):
                 timer['sound'] = soundschemes[next]
                 self.save()
                 await self.edit_message(msg_id, create_new=False)
-                await interaction.response.send_message("Soundschema erfolgreich geändert.", ephemeral=True)
+                await interaction.response.defer()
             else:
                 await interaction.response.send_message("Nur angemeldete Personen können den Timer bedienen.\n"
                                                         "Klicke auf ⁉ für mehr Informationen.",
