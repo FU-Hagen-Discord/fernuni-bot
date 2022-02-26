@@ -109,24 +109,34 @@ class Timer(commands.Cog):
     async def on_restart(self, interaction: MessageInteraction):
         msg_id = str(interaction.message.id)
         if timer := self.running_timers.get(msg_id):
-            registered = timer['registered']
             if str(interaction.author.id) in timer['registered']:
-                timer['status'] = 'Arbeiten'
-                timer['remaining'] = timer['working_time']
-                self.save()
-
-                await self.edit_message(msg_id)
-                if timer['voicy']:
-                    await self.make_sound(registered, f"{timer['sound']}/learning.mp3")
-
-                # TODO Session-Statistik zurücksetzen
-                await interaction.response.send_message("...Hier kommt ein Hinweis hin, dass die Sessionstatistik"
-                                                        "gelöscht wird bei Neustart....", ephemeral=True)
+                restart_confirm_view = timer_view.RestartConfirmView(timer_id=msg_id, callback=self.on_restart_confirm)
+                await interaction.response.send_message("Ein Neustart des Timers setzt auch die aktuelle Session-"
+                                                        "Statistik zurück. Möchtest du das?",
+                                                        view=restart_confirm_view, ephemeral=True)
             else:
                 await interaction.response.send_message("Nur angemeldete Personen können den Timer neu starten.",
                                                         ephemeral=True)
         else:
             await interaction.response.send_message("Etwas ist schiefgelaufen...", ephemeral=True)
+
+    async def on_restart_confirm(self, interaction: MessageInteraction, msg_id):
+        restart_confirm_view = timer_view.RestartConfirmView(timer_id=msg_id, callback=self.on_restart_confirm)
+        restart_confirm_view.disable()
+        if interaction.data.custom_id == timer_view.RESTART_YES:
+            timer = self.running_timers.get(msg_id)
+            registered = timer['registered']
+            timer['status'] = 'Arbeiten'
+            timer['remaining'] = timer['working_time']
+            # TODO Session-Statistik zurücksetzen
+            self.save()
+            await self.edit_message(msg_id)
+            if timer['voicy']:
+                await self.make_sound(registered, f"{timer['sound']}/learning.mp3")
+            await interaction.response.edit_message(content="Timer neu gestartet und Session-Statistik zurück gesetzt,",
+                                                    view=restart_confirm_view)
+        else:
+            await interaction.response.edit_message(content="Timer nicht neu gestartet.", view=restart_confirm_view)
 
     async def on_skip(self, interaction: MessageInteraction):
         msg_id = str(interaction.message.id)
@@ -240,9 +250,10 @@ class Timer(commands.Cog):
                       "kannst (nicht mehr) die anderen Buttons bedienen.\n\n"
 
         elif select.values[0] == "restart":
-            # TODO
             content = "🔄 Session neu starten\n\n" \
-                      "...\n\n"
+                      "Startet den Timer neu mit allen eingestellten Werten und \n" \
+                      "setzt die aktuelle Session-Statistik zurück. (Wenn mehrere \n" \
+                      "am Timer angemeldet sind, besprich das erst mit den anderen.)\n\n"
 
         elif select.values[0] == "skip":
             content = "⏩ Phase überspringen\n\n" \
