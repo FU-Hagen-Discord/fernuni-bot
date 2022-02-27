@@ -7,7 +7,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta
 
 import disnake
-from disnake import MessageInteraction, ApplicationCommandInteraction, Option, OptionType
+from disnake import MessageInteraction, ApplicationCommandInteraction
 from disnake.ext import commands, tasks
 from disnake.ui import Select
 
@@ -346,29 +346,16 @@ class Timer(commands.Cog):
 
         return embed
 
-    @commands.slash_command(name="timer", description="Erstelle deine persönliche  Eieruhr",
-                            options=[Option(name="working_time",
-                                            description="Länge der Lernphasen in Minuten (default: 25)",
-                                            type=OptionType.integer,
-                                            required=False),
-                                     Option(name="break_time",
-                                            description="Länge der Pausenphasen in Minuten (default: 5)",
-                                            type=OptionType.integer,
-                                            required=False),
-                                     Option(name="name",
-                                            description="Name des Timers",
-                                            type=OptionType.string,
-                                            required=False),
-                                     Option(name="rounds",
-                                            description="Anzahl der geplanten Lernphasen (default: 0 = manuell beenden)",
-                                            type=OptionType.integer,
-                                            required=False)
-                                     ])
-    async def cmd_timer(self, interaction: ApplicationCommandInteraction,
-                        working_time: int = 25,
-                        break_time: int = 5,
-                        name: str = None,
-                        rounds: int = 0):
+    @commands.slash_command(description="Erstelle deine persönliche  Eieruhr")
+    async def timer(self, interaction: ApplicationCommandInteraction):
+        return
+
+    @timer.sub_command()
+    async def run(self, interaction: ApplicationCommandInteraction,
+                        working_time: int = commands.Param(default=25, description="Länge der Lernphasen in Minuten (default: 25)"),
+                        break_time: int = commands.Param(default=5, description="Länge der Pausenphasen in Minuten (default: 5)"),
+                        name: str = commands.Param(default=None, description="Name/Titel des Timers"),
+                        rounds: int = commands.Param(default=0, description="Anzahl der geplanten Lernphasen (default: 0 = manuell beenden)")):
 
         name = name if name else random.choice(self.default_names)
         remaining = working_time
@@ -377,7 +364,7 @@ class Timer(commands.Cog):
         voicy = False
         sound = 'standard'
         into_global_stats = True
-        session_stats = {'start': time.time(), 'learning_phases': 1}
+        session_stats = {'start': time.time(), 'rounds': 1}
 
         embed = self.create_embed(name, status, working_time, break_time, remaining, registered, voicy, sound, into_global_stats)
         await interaction.response.send_message(embed=embed, view=self.get_view(voicy=voicy))
@@ -397,18 +384,34 @@ class Timer(commands.Cog):
                                                 'planned_rounds': rounds}
         self.save_running_timers()
 
+    async def autocomp_stats_choices(inter: ApplicationCommandInteraction, user_input: str):
+        stats_choices = ["day", "week", "month", "semester"]
+        return [choice for choice in stats_choices if user_input.lower() in choice]
+
+    @timer.sub_command()
+    async def stats(self, interaction: ApplicationCommandInteraction,
+                    period: str = commands.Param(autocomplete=autocomp_stats_choices,
+                                                 description="day/week/month/semester")):
+        # TODO
+        await interaction.response.send_message(period, ephemeral=True)
+
     async def switch_phase(self, msg_id):
-        # TODO. Session-Statistik anpassen
-        # TODO: Rundenzahl mit planned_rounds vergleichen
         if timer := self.running_timers.get(msg_id):
             if timer['status'] == "Arbeiten":
-                timer['status'] = "Pause"
-                timer['remaining'] = timer['break_time']
+                if timer['planned_rounds'] == timer['session_stats']['rounds']:
+                    self.running_timers.pop(msg_id)
+                    self.save_running_timers()
+                    return "Beendet"
+                else:
+                    timer['status'] = "Pause"
+                    timer['remaining'] = timer['break_time']
             elif timer['status'] == "Pause":
+                timer['session_stats']['rounds'] += 1
                 timer['status'] = "Arbeiten"
                 timer['remaining'] = timer['working_time']
             else:
                 self.running_timers.pop(msg_id)
+                self.save_running_timers()
                 return "Beendet"
             self.save_running_timers()
 
@@ -509,7 +512,8 @@ class Timer(commands.Cog):
     async def before_timer(self):
         await sleep(60)
 
-    @cmd_timer.error
+    @timer.error
     async def timer_error(self, ctx, error):
         await ctx.send("Das habe ich nicht verstanden. Die Timer-Syntax ist:\n"
                        "`/timer <learning-time?> <break-time?> <name?>`\n")
+
