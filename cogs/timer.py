@@ -7,7 +7,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta
 
 import disnake
-from disnake import MessageInteraction, ApplicationCommandInteraction
+from disnake import MessageInteraction, ApplicationCommandInteraction, Option, OptionType
 from disnake.ext import commands, tasks
 from disnake.ui import Select
 
@@ -28,9 +28,11 @@ from views import timer_view
            channel:<ID des Channels in dem der Timer läuft>,
            voicy:<True|False>,
            sound:<aktuelles Soundschema>,
-           into_global_stats = <True|False>,
-           session_stats = {'start': <Zeitstempel>, 
-                            'learning_phases': <Anzahl der begonnenen Lernphasen>}
+           into_global_stats: <True|False>,
+           session_stats: {'start': <Zeitstempel>, 
+                           'learning_phases': <Anzahl der begonnenen Lernphasen>},
+           planned_rounds: <Anzahl geplanter Lernphasen für automatisches Beenden
+                            oder 0 für manuelles Beenden>}
            
   Neue Soundschemata lassen sich hinzufügen mittels neuem Ordner 'cogs/sounds/<schema>'
   in diesem müssen genau zwei Dateien sein: 'learning.mp3' und 'pause.mp3'
@@ -108,22 +110,17 @@ class Timer(commands.Cog):
             registered = timer['registered']
             if str(interaction.author.id) not in registered:
                 timer['registered'].append(str(interaction.author.id))
-                self.save_running_timers()
-                name, status, wt, bt, remaining, registered, _, voicy, sound, stats, _ = self.get_details(msg_id)
-                embed = self.create_embed(name, status, wt, bt, remaining, registered, voicy, sound, stats)
-                await interaction.message.edit(embed=embed, view=self.get_view(voicy=voicy))
-                await interaction.response.defer()
             else:
                 if len(registered) == 1:
                     await self.on_stop(interaction)
                     return
                 else:
                     timer['registered'].remove(str(interaction.author.id))
-                    self.save_running_timers()
-                    name, status, wt, bt, remaining, registered, _, voicy, sound, stats, _ = self.get_details(msg_id)
-                    embed = self.create_embed(name, status, wt, bt, remaining, registered, voicy, sound, stats)
-                    await interaction.message.edit(embed=embed, view=self.get_view(voicy=voicy))
-                    await interaction.response.defer()
+            self.save_running_timers()
+            name, status, wt, bt, remaining, registered, _, voicy, sound, stats, _ = self.get_details(msg_id)
+            embed = self.create_embed(name, status, wt, bt, remaining, registered, voicy, sound, stats)
+            await interaction.message.edit(embed=embed, view=self.get_view(voicy=voicy))
+            await interaction.response.defer()
         else:
             await interaction.response.send_message("Etwas ist schiefgelaufen...", ephemeral=True)
 
@@ -194,7 +191,7 @@ class Timer(commands.Cog):
                     self.running_timers.pop(new_msg_id)
                     self.save_running_timers()
                 await interaction.response.defer()
-                # TODO: Session-Statistik ind globale Statistik überführen
+                # TODO: Session-Statistik in globale Statistik überführen
                 # TODO: Session-Statistik ausgeben
             else:
                 await interaction.response.send_message("Nur angemeldete Personen können den Timer beenden.\n"
@@ -349,10 +346,30 @@ class Timer(commands.Cog):
 
         return embed
 
-    @commands.slash_command(name="timer", description="Erstelle deine persönliche  Eieruhr")
-    async def cmd_timer(self, interaction: ApplicationCommandInteraction, working_time: int = 25,
+    @commands.slash_command(name="timer", description="Erstelle deine persönliche  Eieruhr",
+                            options=[Option(name="working_time",
+                                            description="Länge der Lernphasen in Minuten (default: 25)",
+                                            type=OptionType.integer,
+                                            required=False),
+                                     Option(name="break_time",
+                                            description="Länge der Pausenphasen in Minuten (default: 5)",
+                                            type=OptionType.integer,
+                                            required=False),
+                                     Option(name="name",
+                                            description="Name des Timers",
+                                            type=OptionType.string,
+                                            required=False),
+                                     Option(name="rounds",
+                                            description="Anzahl der geplanten Lernphasen (default: 0 = manuell beenden)",
+                                            type=OptionType.integer,
+                                            required=False)
+                                     ])
+    async def cmd_timer(self, interaction: ApplicationCommandInteraction,
+                        working_time: int = 25,
                         break_time: int = 5,
-                        name: str = None):
+                        name: str = None,
+                        rounds: int = 0):
+
         name = name if name else random.choice(self.default_names)
         remaining = working_time
         status = "Arbeiten"
@@ -376,12 +393,13 @@ class Timer(commands.Cog):
                                                 'voicy': voicy,
                                                 'sound': sound,
                                                 'into_global_stats': into_global_stats,
-                                                'session_stats': session_stats}
+                                                'session_stats': session_stats,
+                                                'planned_rounds': rounds}
         self.save_running_timers()
 
-        # TODO: Session-Statistik starten
-
     async def switch_phase(self, msg_id):
+        # TODO. Session-Statistik anpassen
+        # TODO: Rundenzahl mit planned_rounds vergleichen
         if timer := self.running_timers.get(msg_id):
             if timer['status'] == "Arbeiten":
                 timer['status'] = "Pause"
@@ -471,6 +489,7 @@ class Timer(commands.Cog):
 
     @tasks.loop(minutes=1)
     async def run_timer(self):
+        # TODO: Endzeit statt verbleibende Zeit nutzen
         timers_copy = deepcopy(self.running_timers)
         for msg_id in timers_copy:
             timer = self.running_timers[msg_id]
