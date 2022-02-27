@@ -1,6 +1,7 @@
 import json
 import os
 import random
+import time
 from asyncio import sleep
 from copy import deepcopy
 from datetime import datetime, timedelta
@@ -15,6 +16,7 @@ from views import timer_view
 """
   Environment Variablen:
   DISCORD_TIMER_FILE - json file mit allen aktuell laufenden timern
+  DISCORD_TIMER_STATS_FILE - json file mit der Timer-Statistik
 
   Struktur der json:
   {msg_id:{name:<Titel des Timers>, 
@@ -25,7 +27,10 @@ from views import timer_view
            registered:<Liste der angemeldeten User-IDs>,
            channel:<ID des Channels in dem der Timer läuft>,
            voicy:<True|False>,
-           sound:<aktuelles Soundschema>}
+           sound:<aktuelles Soundschema>,
+           into_global_stats = <True|False>,
+           session_stats = {'start': <Zeitstempel>, 
+                            'learning_phases': <Anzahl der begonnenen Lernphasen>}
            
   Neue Soundschemata lassen sich hinzufügen mittels neuem Ordner 'cogs/sounds/<schema>'
   in diesem müssen genau zwei Dateien sein: 'learning.mp3' und 'pause.mp3'
@@ -37,28 +42,44 @@ class Timer(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.guild_id = int(os.getenv('DISCORD_GUILD'))
+        self.timer_file_path = os.getenv("DISCORD_TIMER_FILE")
+        self.stats_file_path = os.getenv("DISCORD_TIMER_STATS_FILE")
         self.default_names = ["Rapunzel", "Aschenputtel", "Schneewittchen", "Frau Holle", "Schneeweißchen und Rosenrot",
                               "Gestiefelter Kater", "Bremer Stadtmusikanten"]
-        self.timer_file_path = os.getenv("DISCORD_TIMER_FILE")
-        self.running_timers = self.load()
-        self.load()
+        self.running_timers = {}
+        self.stats = {}
+        self.load_running_timers()
+        self.load_stats()
         self.run_timer.start()
 
-    def load(self):
-        with open(self.timer_file_path, mode='r') as timer_file:
-            return json.load(timer_file)
+    def load_running_timers(self):
+        try:
+            with open(self.timer_file_path, mode='r') as timer_file:
+                self.running_timers = json.load(timer_file)
+        except FileNotFoundError:
+            # create file if not found
+            self.save_running_timers()
 
-    def save(self):
+    def load_stats(self):
+        try:
+            with open(self.stats_file_path, mode='r') as stats_file:
+                self.stats = json.load(stats_file)
+        except FileNotFoundError:
+            # create file if not found
+            self.save_stats()
+
+    def save_running_timers(self):
         with open(self.timer_file_path, mode='w') as timer_file:
             json.dump(self.running_timers, timer_file)
 
+    def save_stats(self):
+        with open(self.stats_file_path, mode='w') as stats_file:
+            json.dump(self.stats, stats_file)
+
     def get_view(self, disabled=False, voicy=False):
-
         view = timer_view.TimerView(callback=self.on_button_click, voicy=voicy)
-
         if disabled:
             view.disable()
-
         return view
 
     async def on_button_click(self, interaction: MessageInteraction):
@@ -87,9 +108,9 @@ class Timer(commands.Cog):
             registered = timer['registered']
             if str(interaction.author.id) not in registered:
                 timer['registered'].append(str(interaction.author.id))
-                self.save()
-                name, status, wt, bt, remaining, registered, _, voicy, sound = self.get_details(msg_id)
-                embed = self.create_embed(name, status, wt, bt, remaining, registered, voicy, sound)
+                self.save_running_timers()
+                name, status, wt, bt, remaining, registered, _, voicy, sound, stats, _ = self.get_details(msg_id)
+                embed = self.create_embed(name, status, wt, bt, remaining, registered, voicy, sound, stats)
                 await interaction.message.edit(embed=embed, view=self.get_view(voicy=voicy))
                 await interaction.response.defer()
             else:
@@ -98,9 +119,9 @@ class Timer(commands.Cog):
                     return
                 else:
                     timer['registered'].remove(str(interaction.author.id))
-                    self.save()
-                    name, status, wt, bt, remaining, registered, _, voicy, sound = self.get_details(msg_id)
-                    embed = self.create_embed(name, status, wt, bt, remaining, registered, voicy, sound)
+                    self.save_running_timers()
+                    name, status, wt, bt, remaining, registered, _, voicy, sound, stats, _ = self.get_details(msg_id)
+                    embed = self.create_embed(name, status, wt, bt, remaining, registered, voicy, sound, stats)
                     await interaction.message.edit(embed=embed, view=self.get_view(voicy=voicy))
                     await interaction.response.defer()
         else:
@@ -129,7 +150,7 @@ class Timer(commands.Cog):
             timer['status'] = 'Arbeiten'
             timer['remaining'] = timer['working_time']
             # TODO Session-Statistik zurücksetzen
-            self.save()
+            self.save_running_timers()
             await self.edit_message(msg_id)
             if timer['voicy']:
                 await self.make_sound(registered, f"{timer['sound']}/learning.mp3")
@@ -171,8 +192,10 @@ class Timer(commands.Cog):
                     if timer['voicy']:
                         await self.make_sound(registered, 'applause.mp3')
                     self.running_timers.pop(new_msg_id)
-                    self.save()
+                    self.save_running_timers()
                 await interaction.response.defer()
+                # TODO: Session-Statistik ind globale Statistik überführen
+                # TODO: Session-Statistik ausgeben
             else:
                 await interaction.response.send_message("Nur angemeldete Personen können den Timer beenden.\n"
                                                         "Klicke auf ⁉ für mehr Informationen.",
@@ -186,7 +209,7 @@ class Timer(commands.Cog):
             if str(interaction.author.id) in timer['registered']:
                 voicy = timer['voicy']
                 timer['voicy'] = not voicy
-                self.save()
+                self.save_running_timers()
                 await self.edit_message(msg_id, create_new=False)
                 await interaction.response.defer()
             else:
@@ -204,7 +227,7 @@ class Timer(commands.Cog):
                 current = soundschemes.index(timer['sound'])
                 next = (current + 1) % len(soundschemes)
                 timer['sound'] = soundschemes[next]
-                self.save()
+                self.save_running_timers()
                 await self.edit_message(msg_id, create_new=False)
                 await interaction.response.defer()
             else:
@@ -218,7 +241,7 @@ class Timer(commands.Cog):
         msg_id = str(interaction.message.id)
         if timer := self.running_timers.get(msg_id):
             if str(interaction.author.id) in timer['registered']:
-                # TODO
+                # TODO Toggle Session Statistik
                 await interaction.response.send_message("...", ephemeral=True)
             else:
                 await interaction.response.send_message("Nur angemeldete Personen können den Timer bedienen.\n"
@@ -295,7 +318,7 @@ class Timer(commands.Cog):
 
         await interaction.response.edit_message(content=content)
 
-    def create_embed(self, name, status, working_time, break_time, remaining, registered, voicy, sound):
+    def create_embed(self, name, status, working_time, break_time, remaining, registered, voicy, sound, stats):
         color = disnake.Colour.green() if status == "Arbeiten" else 0xFFC63A if status == "Pause" else disnake.Colour.red()
 
         zeiten = f"{working_time} Minuten Arbeiten\n{break_time} Minuten Pause"
@@ -306,10 +329,11 @@ class Timer(commands.Cog):
         angemeldet_value = ", ".join([user.mention for user in user_list])
         voicy_info = "🔊 Soundwiedergabe im Voicy" if voicy else "🔇 Kein Voicy-Beitritt"
         sound_info = f"🎶 {sound}" if voicy else "🎶 -"
+        stats_info = " " if stats else " **nicht** "
 
         info_value = f"{voicy_info}\n" \
                      f"{sound_info}\n" \
-                     f"📈 Session geht in die Statistik ein\n\n" \
+                     f"📈 Session geht{stats_info}in die Statistik ein\n\n" \
                      f"⁉ ruft eine Bedienungsanleitung auf."
 
         descr = f"Jetzt: {status} {end_value}\n" \
@@ -335,8 +359,10 @@ class Timer(commands.Cog):
         registered = [str(interaction.author.id)]
         voicy = False
         sound = 'standard'
+        into_global_stats = True
+        session_stats = {'start': time.time(), 'learning_phases': 1}
 
-        embed = self.create_embed(name, status, working_time, break_time, remaining, registered, voicy, sound)
+        embed = self.create_embed(name, status, working_time, break_time, remaining, registered, voicy, sound, into_global_stats)
         await interaction.response.send_message(embed=embed, view=self.get_view(voicy=voicy))
         message = await interaction.original_message()
 
@@ -348,8 +374,12 @@ class Timer(commands.Cog):
                                                 'registered': registered,
                                                 'channel': interaction.channel_id,
                                                 'voicy': voicy,
-                                                'sound': sound}
-        self.save()
+                                                'sound': sound,
+                                                'into_global_stats': into_global_stats,
+                                                'session_stats': session_stats}
+        self.save_running_timers()
+
+        # TODO: Session-Statistik starten
 
     async def switch_phase(self, msg_id):
         if timer := self.running_timers.get(msg_id):
@@ -362,7 +392,7 @@ class Timer(commands.Cog):
             else:
                 self.running_timers.pop(msg_id)
                 return "Beendet"
-            self.save()
+            self.save_running_timers()
 
             if new_msg_id := await self.edit_message(msg_id):
                 return self.running_timers[new_msg_id]['status']
@@ -380,7 +410,9 @@ class Timer(commands.Cog):
             channel = timer['channel']
             voicy = timer['voicy']
             sound = timer['sound']
-            return name, status, wt, bt, remaining, registered, channel, voicy, sound
+            into_global_stats = timer['into_global_stats']
+            session_stats = timer['session_stats']
+            return name, status, wt, bt, remaining, registered, channel, voicy, sound, into_global_stats, session_stats
 
     async def edit_message(self, msg_id, mentions=None, create_new=True):
         if timer := self.running_timers.get(msg_id):
@@ -389,8 +421,8 @@ class Timer(commands.Cog):
             try:
                 msg = await channel.fetch_message(int(msg_id))
 
-                name, status, wt, bt, remaining, registered, _, voicy, sound = self.get_details(msg_id)
-                embed = self.create_embed(name, status, wt, bt, remaining, registered, voicy, sound)
+                name, status, wt, bt, remaining, registered, _, voicy, sound, stats, _ = self.get_details(msg_id)
+                embed = self.create_embed(name, status, wt, bt, remaining, registered, voicy, sound, stats)
 
                 if create_new:
                     await msg.delete()
@@ -403,14 +435,14 @@ class Timer(commands.Cog):
                         new_msg = await channel.send(mentions, embed=embed, view=self.get_view(voicy=voicy))
                     self.running_timers[str(new_msg.id)] = self.running_timers[msg_id]
                     self.running_timers.pop(msg_id)
-                    self.save()
+                    self.save_running_timers()
                     msg = new_msg
                 else:
                     await msg.edit(embed=embed, view=self.get_view(voicy=voicy))
                 return str(msg.id)
             except disnake.errors.NotFound:
                 self.running_timers.pop(msg_id)
-                self.save()
+                self.save_running_timers()
                 return None
 
     def get_mentions(self, msg_id):
