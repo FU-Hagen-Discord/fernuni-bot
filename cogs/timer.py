@@ -146,7 +146,9 @@ class Timer(commands.Cog):
             registered = timer['registered']
             timer['status'] = 'Arbeiten'
             timer['remaining'] = timer['working_time']
-            # TODO Session-Statistik zurücksetzen
+            # Statistik zurück setzen
+            session_stats = {'start': time.time(), 'rounds': 1}
+            timer['session_stats'] = session_stats
             self.save_running_timers()
             await self.edit_message(msg_id)
             if timer['voicy']:
