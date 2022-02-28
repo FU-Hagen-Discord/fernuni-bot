@@ -23,7 +23,7 @@ from views import timer_view
            status:<Arbeiten|Pause|Beendet>, 
            working_time:<eingestellte Arbeitszeit in Minuten>, 
            break_time:<eingestellte Pausenzeit in Minuten>,
-           remaining:<verbleibende Zeit der aktuellen Phase in Minuten>,
+           end_of_phase:<Zeitstempel der Endzeit der aktuellen Phase>,
            registered:<Liste der angemeldeten User-IDs>,
            channel:<ID des Channels in dem der Timer läuft>,
            voicy:<True|False>,
@@ -117,8 +117,8 @@ class Timer(commands.Cog):
                 else:
                     timer['registered'].remove(str(interaction.author.id))
             self.save_running_timers()
-            name, status, wt, bt, remaining, registered, _, voicy, sound, stats, _ = self.get_details(msg_id)
-            embed = self.create_embed(name, status, wt, bt, remaining, registered, voicy, sound, stats)
+            name, status, wt, bt, end_of_phase, registered, _, voicy, sound, stats, _ = self.get_details(msg_id)
+            embed = self.create_embed(name, status, wt, bt, end_of_phase, registered, voicy, sound, stats)
             await interaction.message.edit(embed=embed, view=self.get_view(voicy=voicy))
             await interaction.response.defer()
         else:
@@ -145,7 +145,7 @@ class Timer(commands.Cog):
             timer = self.running_timers.get(msg_id)
             registered = timer['registered']
             timer['status'] = 'Arbeiten'
-            timer['remaining'] = timer['working_time']
+            timer['end_of_phase'] = datetime.timestamp(datetime.now() + timedelta(timer['working_time']))
             # Statistik zurück setzen
             session_stats = {'start': time.time(), 'rounds': 1}
             timer['session_stats'] = session_stats
@@ -184,7 +184,7 @@ class Timer(commands.Cog):
             if str(interaction.author.id) in timer['registered']:
                 mentions = self.get_mentions(msg_id)
                 timer['status'] = "Beendet"
-                timer['remaining'] = 0
+                #timer['remaining'] = 0
                 timer['registered'] = []
 
                 if new_msg_id := await self.edit_message(msg_id, mentions=mentions):
@@ -317,12 +317,13 @@ class Timer(commands.Cog):
 
         await interaction.response.edit_message(content=content)
 
-    def create_embed(self, name, status, working_time, break_time, remaining, registered, voicy, sound, stats):
+    def create_embed(self, name, status, working_time, break_time, end_of_phase, registered, voicy, sound, stats):
         color = disnake.Colour.green() if status == "Arbeiten" else 0xFFC63A if status == "Pause" else disnake.Colour.red()
 
         zeiten = f"{working_time} Minuten Arbeiten\n{break_time} Minuten Pause"
-        remaining_value = f"{remaining} Minuten"
-        endzeit = (datetime.now() + timedelta(minutes=remaining)).strftime("%H:%M")
+        delta = datetime.fromtimestamp(end_of_phase - time.time()).strftime("%M")
+        remaining_value = f"{int(delta)+1} Minuten"
+        endzeit = datetime.fromtimestamp(end_of_phase).strftime("%H:%M")
         end_value = f" [bis {endzeit} Uhr]" if status != "Beendet" else ""
         user_list = [self.bot.get_user(int(user_id)) for user_id in registered]
         angemeldet_value = ", ".join([user.mention for user in user_list])
@@ -360,7 +361,7 @@ class Timer(commands.Cog):
                         rounds: int = commands.Param(default=0, description="Anzahl der geplanten Lernphasen (default: 0 = manuell beenden)")):
 
         name = name if name else random.choice(self.default_names)
-        remaining = working_time
+        end_of_phase = datetime.timestamp(datetime.now() + timedelta(minutes=working_time))
         status = "Arbeiten"
         registered = [str(interaction.author.id)]
         voicy = False
@@ -368,7 +369,7 @@ class Timer(commands.Cog):
         into_global_stats = True
         session_stats = {'start': time.time(), 'rounds': 1}
 
-        embed = self.create_embed(name, status, working_time, break_time, remaining, registered, voicy, sound, into_global_stats)
+        embed = self.create_embed(name, status, working_time, break_time, end_of_phase, registered, voicy, sound, into_global_stats)
         await interaction.response.send_message(embed=embed, view=self.get_view(voicy=voicy))
         message = await interaction.original_message()
 
@@ -376,7 +377,7 @@ class Timer(commands.Cog):
                                                 'status': status,
                                                 'working_time': working_time,
                                                 'break_time': break_time,
-                                                'remaining': remaining,
+                                                'end_of_phase': end_of_phase,
                                                 'registered': registered,
                                                 'channel': interaction.channel_id,
                                                 'voicy': voicy,
@@ -406,11 +407,11 @@ class Timer(commands.Cog):
                     return "Beendet"
                 else:
                     timer['status'] = "Pause"
-                    timer['remaining'] = timer['break_time']
+                    timer['end_of_phase'] = datetime.timestamp(datetime.now() + timedelta(minutes=timer['break_time']))
             elif timer['status'] == "Pause":
                 timer['session_stats']['rounds'] += 1
                 timer['status'] = "Arbeiten"
-                timer['remaining'] = timer['working_time']
+                timer['end_of_phase'] = datetime.timestamp(datetime.now() + timedelta(minutes=timer['working_time']))
             else:
                 self.running_timers.pop(msg_id)
                 self.save_running_timers()
@@ -428,14 +429,14 @@ class Timer(commands.Cog):
             status = timer['status']
             wt = timer['working_time']
             bt = timer['break_time']
-            remaining = timer['remaining']
+            end_of_phase = timer['end_of_phase']
             registered = timer['registered']
             channel = timer['channel']
             voicy = timer['voicy']
             sound = timer['sound']
             into_global_stats = timer['into_global_stats']
             session_stats = timer['session_stats']
-            return name, status, wt, bt, remaining, registered, channel, voicy, sound, into_global_stats, session_stats
+            return name, status, wt, bt, end_of_phase, registered, channel, voicy, sound, into_global_stats, session_stats
 
     async def edit_message(self, msg_id, mentions=None, create_new=True):
         if timer := self.running_timers.get(msg_id):
@@ -444,8 +445,8 @@ class Timer(commands.Cog):
             try:
                 msg = await channel.fetch_message(int(msg_id))
 
-                name, status, wt, bt, remaining, registered, _, voicy, sound, stats, _ = self.get_details(msg_id)
-                embed = self.create_embed(name, status, wt, bt, remaining, registered, voicy, sound, stats)
+                name, status, wt, bt, end_of_phase, registered, _, voicy, sound, stats, _ = self.get_details(msg_id)
+                embed = self.create_embed(name, status, wt, bt, end_of_phase, registered, voicy, sound, stats)
 
                 if create_new:
                     await msg.delete()
@@ -494,13 +495,11 @@ class Timer(commands.Cog):
 
     @tasks.loop(minutes=1)
     async def run_timer(self):
-        # TODO: Endzeit statt verbleibende Zeit nutzen
         timers_copy = deepcopy(self.running_timers)
         for msg_id in timers_copy:
             timer = self.running_timers[msg_id]
             registered = timer['registered']
-            timer['remaining'] -= 1
-            if timer['remaining'] <= 0:
+            if time.time() >= timer['end_of_phase']:
                 new_phase = await self.switch_phase(msg_id)
                 if timer['voicy']:
                     if new_phase == "Pause":
