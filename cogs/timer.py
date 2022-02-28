@@ -18,24 +18,28 @@ from views import timer_view
   DISCORD_TIMER_FILE - json file mit allen aktuell laufenden timern
   DISCORD_TIMER_STATS_FILE - json file mit der Timer-Statistik
 
-  Struktur der json:
-  {msg_id:{name:<Titel des Timers>, 
-           status:<Arbeiten|Pause|Beendet>, 
-           working_time:<eingestellte Arbeitszeit in Minuten>, 
-           break_time:<eingestellte Pausenzeit in Minuten>,
-           end_of_phase:<Zeitstempel der Endzeit der aktuellen Phase>,
-           registered:<Liste der angemeldeten User-IDs>,
-           channel:<ID des Channels in dem der Timer läuft>,
-           voicy:<True|False>,
-           sound:<aktuelles Soundschema>,
-           into_global_stats: <True|False>,
-           session_stats: {'start': <Zeitstempel>, 
-                           'learning_phases': <Anzahl der begonnenen Lernphasen>},
-           planned_rounds: <Anzahl geplanter Lernphasen für automatisches Beenden
-                            oder 0 für manuelles Beenden>}
+  Struktur der TIMER_FILE:
+  {<msg_id>:{name:<Titel des Timers>, 
+             status:<Arbeiten|Pause|Beendet>, 
+             working_time:<eingestellte Arbeitszeit in Minuten>, 
+             break_time:<eingestellte Pausenzeit in Minuten>,
+             end_of_phase:<Zeitstempel der Endzeit der aktuellen Phase>,
+             registered:<Liste der angemeldeten User-IDs>,
+             channel:<ID des Channels in dem der Timer läuft>,
+             voicy:<True|False>,
+             sound:<aktuelles Soundschema>,
+             into_global_stats: <True|False>,
+             session_stats: {'start': <Zeitstempel>, 
+                             'learning_phases': <Anzahl der begonnenen Lernphasen>},
+             planned_rounds: <Anzahl geplanter Lernphasen für automatisches Beenden oder 0 für manuelles Beenden>}}
            
   Neue Soundschemata lassen sich hinzufügen mittels neuem Ordner 'cogs/sounds/<schema>'
   in diesem müssen genau zwei Dateien sein: 'learning.mp3' und 'pause.mp3'
+  
+  Struktur der STATS_FILE:
+  {<user_id>:{<day>:{time:<geernte Zeit an dem Tag in Minuten>,
+                     sessions:<Anzahl der Timersessions an dem Tag>}}}
+  
 """
 
 
@@ -165,11 +169,12 @@ class Timer(commands.Cog):
             registered = timer['registered']
             if str(interaction.author.id) in timer['registered']:
                 await interaction.response.defer()
+                # TODO: resolve unknown interaction error
                 new_phase = await self.switch_phase(msg_id)
                 if timer['voicy']:
                     if new_phase == "Pause":
                         await self.make_sound(registered, f"{timer['sound']}/pause.mp3")
-                    else:
+                    if new_phase == "Arbeiten":
                         await self.make_sound(registered, f"{timer['sound']}/learning.mp3")
             else:
                 await interaction.response.send_message("Nur angemeldete Personen können den Timer bedienen.\n"
@@ -184,8 +189,6 @@ class Timer(commands.Cog):
             if str(interaction.author.id) in timer['registered']:
                 await interaction.response.defer()
                 await self.stop_timer(msg_id)
-                # TODO: Session-Statistik in globale Statistik überführen
-                # TODO: Session-Statistik ausgeben
             else:
                 await interaction.response.send_message("Nur angemeldete Personen können den Timer beenden.\n"
                                                         "Klicke auf ⁉ für mehr Informationen.",
@@ -195,6 +198,8 @@ class Timer(commands.Cog):
 
     async def stop_timer(self, msg_id):
         if timer := self.running_timers.get(msg_id):
+            if timer['into_global_stats']:
+                self.add_to_stats(timer['session_stats'], timer['registered'])
             registered = timer['registered']
             mentions = self.get_mentions(msg_id)
             timer['status'] = "Beendet"
@@ -205,7 +210,20 @@ class Timer(commands.Cog):
                     await self.make_sound(registered, 'applause.mp3')
                 self.running_timers.pop(new_msg_id)
                 self.save_running_timers()
+            # TODO: Session-Statistik ausgeben
 
+    def add_to_stats(self, session_stats, user_ids):
+        today = datetime.today().date().isoformat()
+        for user_id in user_ids:
+            if not self.stats.get(user_id):
+                self.stats[user_id] = {}
+            user_stats = self.stats.get(user_id)
+            if not user_stats.get(today):
+                user_stats[today] = {'time': 0, 'sessions': 0}
+            user_stats_today = user_stats.get(today)
+            user_stats_today['time'] += int((time.time() - session_stats['start'])/60)
+            user_stats_today['sessions'] += 1
+        self.save_stats()
 
     async def on_voicy(self, interaction: MessageInteraction):
         msg_id = str(interaction.message.id)
@@ -245,8 +263,9 @@ class Timer(commands.Cog):
         msg_id = str(interaction.message.id)
         if timer := self.running_timers.get(msg_id):
             if str(interaction.author.id) in timer['registered']:
-                # TODO Toggle Session Statistik
-                await interaction.response.send_message("...", ephemeral=True)
+                timer['into_global_stats'] = not timer['into_global_stats']
+                await interaction.response.defer()
+                await self.edit_message(msg_id, create_new=False)
             else:
                 await interaction.response.send_message("Nur angemeldete Personen können den Timer bedienen.\n"
                                                         "Klicke auf ⁉ für mehr Informationen.",
@@ -326,6 +345,7 @@ class Timer(commands.Cog):
         color = disnake.Colour.green() if status == "Arbeiten" else 0xFFC63A if status == "Pause" else disnake.Colour.red()
 
         zeiten = f"{working_time} Minuten Arbeiten\n{break_time} Minuten Pause"
+        # TODO delta gibt nicht immer die richtige Zeit (Bsp 60 obwohl eigentlich nur eine Minute verbleibend)
         delta = datetime.fromtimestamp(end_of_phase - time.time()).strftime("%M")
         remaining_value = f"noch {int(delta)+1} Minuten" if status != 'Beendet' else "-"
         endzeit = datetime.fromtimestamp(end_of_phase).strftime("%H:%M")
@@ -358,11 +378,11 @@ class Timer(commands.Cog):
 
         return embed
 
-    @commands.slash_command(description="Erstelle deine persönliche  Eieruhr")
+    @commands.slash_command()
     async def timer(self, interaction: ApplicationCommandInteraction):
         return
 
-    @timer.sub_command()
+    @timer.sub_command(description="Erstelle deine persönliche  Eieruhr")
     async def run(self, interaction: ApplicationCommandInteraction,
                         working_time: int = commands.Param(default=25, description="Länge der Lernphasen in Minuten (default: 25)"),
                         break_time: int = commands.Param(default=5, description="Länge der Pausenphasen in Minuten (default: 5)"),
@@ -402,7 +422,7 @@ class Timer(commands.Cog):
         stats_choices = ["day", "week", "month", "semester"]
         return [choice for choice in stats_choices if user_input.lower() in choice]
 
-    @timer.sub_command()
+    @timer.sub_command(description="Lass dir deine Statistik zur Timernutzung ausgeben.")
     async def stats(self, interaction: ApplicationCommandInteraction,
                     period: str = commands.Param(autocomplete=autocomp_stats_choices,
                                                  description="day/week/month/semester")):
@@ -412,9 +432,9 @@ class Timer(commands.Cog):
     async def switch_phase(self, msg_id):
         if timer := self.running_timers.get(msg_id):
             if timer['status'] == "Arbeiten":
-                if timer['session_stats']['rounds'] >= timer['planned_rounds']:
-                    #timer['status'] = "Beendet"
+                if (timer['session_stats']['rounds'] >= timer['planned_rounds']) and (timer['planned_rounds'] != 0):
                     await self.stop_timer(msg_id)
+                    return "Beendet"
                 else:
                     timer['status'] = "Pause"
                     timer['end_of_phase'] = datetime.timestamp(datetime.now() + timedelta(minutes=timer['break_time']))
