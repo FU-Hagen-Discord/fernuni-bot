@@ -30,14 +30,14 @@ from views import timer_view
              sound:<aktuelles Soundschema>,
              into_global_stats: <True|False>,
              session_stats: {'start': <Zeitstempel>, 
-                             'learning_phases': <Anzahl der begonnenen Lernphasen>},
+                             'rounds': <Anzahl der begonnenen Lernphasen>},
              planned_rounds: <Anzahl geplanter Lernphasen für automatisches Beenden oder 0 für manuelles Beenden>}}
            
   Neue Soundschemata lassen sich hinzufügen mittels neuem Ordner 'cogs/sounds/<schema>'
   in diesem müssen genau zwei Dateien sein: 'learning.mp3' und 'pause.mp3'
   
   Struktur der STATS_FILE:
-  {<user_id>:{<day>:{time:<geernte Zeit an dem Tag in Minuten>,
+  {<user_id>:{<day>:{time:<gelernte Zeit an dem Tag in Minuten>,
                      sessions:<Anzahl der Timersessions an dem Tag>}}}
   
 """
@@ -52,6 +52,8 @@ class Timer(commands.Cog):
         self.stats_file_path = os.getenv("DISCORD_TIMER_STATS_FILE")
         self.default_names = ["Rapunzel", "Aschenputtel", "Schneewittchen", "Frau Holle", "Schneeweißchen und Rosenrot",
                               "Gestiefelter Kater", "Bremer Stadtmusikanten"]
+        self.session_stat_messages = ["Fantastisch!", "Glückwunsch!", "Gut gemacht!", "Super!", "Spitze!", "Toll!",
+                                      "Mega!", "Weiter so!"]
         self.running_timers = {}
         self.stats = {}
         self.load_running_timers()
@@ -210,7 +212,6 @@ class Timer(commands.Cog):
                     await self.make_sound(registered, 'applause.mp3')
                 self.running_timers.pop(new_msg_id)
                 self.save_running_timers()
-            # TODO: Session-Statistik ausgeben
 
     def add_to_stats(self, session_stats, user_ids):
         today = datetime.today().date().isoformat()
@@ -345,8 +346,7 @@ class Timer(commands.Cog):
         color = disnake.Colour.green() if status == "Arbeiten" else 0xFFC63A if status == "Pause" else disnake.Colour.red()
 
         zeiten = f"{working_time} Minuten Arbeiten\n{break_time} Minuten Pause"
-        # TODO delta gibt nicht immer die richtige Zeit (Bsp 60 obwohl eigentlich nur eine Minute verbleibend)
-        delta = datetime.fromtimestamp(end_of_phase - time.time()).strftime("%M")
+        delta = int(end_of_phase - time.time())//60
         remaining_value = f"noch {int(delta)+1} Minuten" if status != 'Beendet' else "-"
         endzeit = datetime.fromtimestamp(end_of_phase).strftime("%H:%M")
         end_value = f" [bis {endzeit} Uhr]" if status != "Beendet" else ""
@@ -368,9 +368,21 @@ class Timer(commands.Cog):
                               description=descr,
                               color=color)
 
-        embed.add_field(name="Zeiten:", value=zeiten, inline=False)
-        embed.add_field(name="Infos:", value=info_value, inline=False)
-        embed.add_field(name="angemeldete User:", value=angemeldet_value if registered else "-", inline=False)
+        if status != "Beendet":
+            embed.add_field(name="Zeiten:", value=zeiten, inline=False)
+            embed.add_field(name="Infos:", value=info_value, inline=False)
+            embed.add_field(name="angemeldete User:", value=angemeldet_value if registered else "-", inline=False)
+        else:
+            end_title = random.choice(self.session_stat_messages)
+            rounds = session_stats['rounds']
+            pronoun = "Ihr habt" if len(registered) > 1 else "Du hast"
+            if working_time == 25 and break_time == 5:
+                end_info_start = f"{pronoun} {rounds} Pomodor{'i' if rounds > 1 else 'o'} geschafft.\n"
+            else:
+                minutes = int(time.time() - session_stats['start'])//60
+                end_info_start = f"{pronoun} {minutes} Minuten in {rounds} Runde{'n' if rounds > 1 else ''} gelernt.\n"
+            end_info_end = f"Diese Timer-Session ging{stats_info}in die Statistik ein."
+            embed.add_field(name=end_title, value=end_info_start + end_info_end, inline=False)
 
         round = session_stats['rounds']
         rounds = planned_rounds if planned_rounds != 0 else "∞"
