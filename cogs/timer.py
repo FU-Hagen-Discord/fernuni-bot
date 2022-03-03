@@ -171,7 +171,6 @@ class Timer(commands.Cog):
             registered = timer['registered']
             if str(interaction.author.id) in timer['registered']:
                 await interaction.response.defer()
-                # TODO: resolve unknown interaction error
                 new_phase = await self.switch_phase(msg_id)
                 if timer['voicy']:
                     if new_phase == "Pause":
@@ -438,8 +437,46 @@ class Timer(commands.Cog):
     async def stats(self, interaction: ApplicationCommandInteraction,
                     period: str = commands.Param(autocomplete=autocomp_stats_choices,
                                                  description="day/week/month/semester")):
+        # {<user_id>:{<day>:{time:<gelernte Zeit an dem Tag in Minuten>,
+        #                    sessions:<Anzahl der Timersessions an dem Tag>}}}
+
+        if period == "edit":
+            await self.edit_stats(interaction)
+        else:
+            today = datetime.today().date().isoformat()
+            if user_stats := self.stats.get(str(interaction.author.id)):
+                if period == 'day':
+                    if today_stats := user_stats.get(today):
+                        await interaction.response.send_message(
+                            f"Du hast heute schon {today_stats['time']} Minuten in {today_stats['sessions']} Sessions "
+                            f"gelernt. {random.choice(self.session_stat_messages)}",
+                            ephemeral=True)
+                    else:
+                        await interaction.response.send_message(
+                            "Für heute ist keine Statistik von dir vorhanden. Gib einen anderen Zeitraum an.",
+                            ephemeral=True)
+                elif period == 'week':
+                    # TODO
+                    pass
+                elif period == 'month':
+                    # TODO
+                    pass
+                elif period == 'semester':
+                    # TODO
+                    pass
+                else:
+                    await interaction.response.send_message(
+                        "Bitte gib für den Zeitraum day, week, month oder semester an.", ephemeral=True)
+            else:
+                await interaction.response.send_message("Von dir sind noch keine Einträge in der Statistik.\n"
+                                                        "Benutze den Timer mit dem Kommando `/timer run` zum Lernen "
+                                                        "und lass dir dann hier deine Erfolge anzeigen.",
+                                                        ephemeral=True)
+
+    @disnake.ext.commands.has_role(int(os.getenv('DISCORD_MOD_ROLE')))
+    async def edit_stats(self, interaction: ApplicationCommandInteraction):
         # TODO
-        await interaction.response.send_message(period, ephemeral=True)
+        pass
 
     async def switch_phase(self, msg_id):
         if timer := self.running_timers.get(msg_id):
