@@ -447,13 +447,16 @@ class Timer(commands.Cog):
             if user_stats := self.stats.get(str(interaction.author.id)):
                 if period == 'day':
                     if today_stats := user_stats.get(today):
+                        time = today_stats['time']
+                        sessions = today_stats['sessions']
                         await interaction.response.send_message(
-                            f"Du hast heute schon {today_stats['time']} Minuten in {today_stats['sessions']} Sessions "
-                            f"gelernt. {random.choice(self.session_stat_messages)}",
+                            f"Du hast heute schon {time} Minute{'n' if time>1 else ''} in {sessions} "
+                            f"Session{'s' if sessions>1 else ''} gelernt. {random.choice(self.session_stat_messages)}",
                             ephemeral=True)
                     else:
                         await interaction.response.send_message(
-                            "Für heute ist keine Statistik von dir vorhanden. Gib einen anderen Zeitraum an.",
+                            "Für heute ist keine Statistik von dir vorhanden. Nutze den Timer mit `/timer run` oder "
+                            "gib einen anderen Zeitraum an.",
                             ephemeral=True)
                 elif period == 'week':
                     # TODO
