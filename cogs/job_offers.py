@@ -5,9 +5,12 @@ from copy import deepcopy
 import aiohttp
 from bs4 import BeautifulSoup
 import disnake
-from disnake import ApplicationCommandInteraction
+from disnake import ApplicationCommandInteraction, MessageInteraction
 from disnake.ext import commands, tasks
+from disnake.ui import View, Button
+
 from cogs.help import help
+from views import joboffers_view
 
 """
   Environment Variablen:
@@ -69,19 +72,47 @@ class Joboffers(commands.Cog):
         await self.fetch_joboffers()
 
         fak_text = "aller Fakultäten" if chosen_faculty == 'all' else f"der Fakultät {chosen_faculty}"
+        description = f"Ich habe folgende Stellenangebote {fak_text} gefunden:"
 
-        embed = disnake.Embed(title="Stellenangebote der Uni",
-                              description=f"Ich habe folgende Stellenangebote {fak_text} gefunden:")
-
+        pages = []
+        page = []
         for fak, fak_offers in self.joboffers.items():
             if chosen_faculty != 'all' and fak != chosen_faculty:
                 continue
+
             for offer_id, offer_data in fak_offers.items():
                 descr = f"{offer_data['info']}\nDeadline: {offer_data['deadline']}\n{offer_data['link']}"
-                embed.add_field(name=offer_data['title'], value=descr, inline=False)
+                field = {'name': offer_data['title'], 'value': descr, 'inline': False}
+                if len(page) < 5:
+                    page.append(field)
+                else:
+                    pages.append(deepcopy(page))
+                    page = []
+        if len(page) > 0:
+            pages.append(deepcopy(page))
 
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        page_nr = 1
+        embed = self.get_embed(description, pages[page_nr-1], page_nr, len(pages))
+        view = joboffers_view.JobOffersView(self.on_page_skip, pages, page_nr, description)
 
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+
+    def get_embed(self, description, page_content, page_nr, all_pages_nr):
+        embed = disnake.Embed(title="Stellenangebote der Uni",
+                              description=f"Ich habe folgende Stellenangebote {description} gefunden:")
+        for field in page_content:
+            embed.add_field(**field)
+        embed.set_footer(text=f"Seite {page_nr}/{all_pages_nr}")
+        return embed
+
+    async def on_page_skip(self, button: Button, interaction: MessageInteraction, pages, page_nr, embed_description):
+        if button.custom_id == "jobs:next":
+            page_nr += 1
+        if button.custom_id == "jobs:prev":
+            page_nr -= 1
+        embed = self.get_embed(embed_description, pages[page_nr-1], page_nr, len(pages))
+        view = joboffers_view.JobOffersView(self.on_page_skip, pages, page_nr, embed_description)
+        await interaction.response.edit_message(embed=embed, view=view)
 
     async def post_new_jobs(self, jobs):
         fak_text = "aller Fakultäten" if STD_FAK == 'all' else f"der Fakultät {STD_FAK}"
@@ -93,7 +124,6 @@ class Joboffers(commands.Cog):
 
         joboffers_channel = await self.bot.fetch_channel(self.joboffers_channel_id)
         await joboffers_channel.send(embed=embed)
-
 
     async def fetch_joboffers(self):
         sess = aiohttp.ClientSession()
@@ -107,6 +137,7 @@ class Joboffers(commands.Cog):
         # alte Liste sichern zum Abgleich
         old_joboffers = deepcopy(self.joboffers)
 
+        # TODO: remove outdated jobs
         for job in list:
             detail_string = job.text.strip()
             if "Studentische Hilfskraft" in detail_string:
