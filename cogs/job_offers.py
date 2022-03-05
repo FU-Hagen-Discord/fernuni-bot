@@ -136,8 +136,9 @@ class Joboffers(commands.Cog):
 
         # alte Liste sichern zum Abgleich
         old_joboffers = deepcopy(self.joboffers)
+        # Liste leeren um outdated joboffers auszusortieren
+        self.joboffers = {}
 
-        # TODO: remove outdated jobs
         for job in list:
             detail_string = job.text.strip()
             if "Studentische Hilfskraft" in detail_string:
