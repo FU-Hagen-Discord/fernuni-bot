@@ -64,6 +64,7 @@ class Joboffers(commands.Cog):
                             description="Liste Jobangebote der Uni auf")
     async def cmd_jobs(self, interaction: ApplicationCommandInteraction,
                        chosen_faculty: str = commands.Param(default=STD_FAK,
+                                                            name='faculty',
                                                             choices=['mi','rewi','wiwi','ksw','psy','other','all'])):
         await self.fetch_joboffers()
 
@@ -115,9 +116,11 @@ class Joboffers(commands.Cog):
                 deadline = detail_string[detail_string.index('[')+1:detail_string.index(']')]
                 link = job.find('a')['href']
 
-                # Umlaute aufräumen
-                info = info.replace("Ã¤","ä")
-                info = info.replace("Ã¼", "ü")
+                # Sonderzeichen aufräumen
+                to_replace = ["Ã¤", "Ã¼", "Â²", "â€ž", "â€œ"]
+                replace_with = ["ä", "ü", "²", "\"", "\""]
+                for i in range(len(to_replace)):
+                    info = info.replace(to_replace[i], replace_with[i])
 
                 faks = ["other", "wiwi", "mi", "ksw", "psy", "rewi"]
 
