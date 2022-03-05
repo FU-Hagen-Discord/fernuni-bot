@@ -42,13 +42,13 @@ class Joboffers(commands.Cog):
         await self.bot.wait_until_ready()
 
     def save_joboffers(self):
-        joboffers_file = open(self.joboffers_file, mode='w')
-        json.dump(self.joboffers, joboffers_file)
+        with open(self.joboffers_file, mode='w') as joboffers_file:
+            json.dump(self.joboffers, joboffers_file)
 
     def load_joboffers(self):
         try:
-            joboffers_file = open(self.joboffers_file, mode='r')
-            self.joboffers = json.load(joboffers_file)
+            with open(self.joboffers_file, mode='r') as joboffers_file:
+                self.joboffers = json.load(joboffers_file)
         except FileNotFoundError:
             self.joboffers = {}
 
@@ -61,26 +61,19 @@ class Joboffers(commands.Cog):
         brief="Ruft Jobangebote für Studiernde der Fernuni Hagen auf."
     )
     @commands.slash_command(name="jobs", aliases=["offers","stellen","joboffers"],
-                            description="Liste Jobangebote der Uni auf",
-                            options=[disnake.Option(name="faculty",
-                                                    description="Fakultät",
-                                                    choices=[disnake.OptionChoice('mi','mi'),
-                                                             disnake.OptionChoice('rewi','rewi'),
-                                                             disnake.OptionChoice('wiwi','wiwi'),
-                                                             disnake.OptionChoice('ksw','ksw'),
-                                                             disnake.OptionChoice('psy','psy'),
-                                                             disnake.OptionChoice('other','other'),
-                                                             disnake.OptionChoice('all','all')])])
-    async def cmd_jobs(self, interaction: ApplicationCommandInteraction, faculty: str = STD_FAK):
+                            description="Liste Jobangebote der Uni auf")
+    async def cmd_jobs(self, interaction: ApplicationCommandInteraction,
+                       chosen_faculty: str = commands.Param(default=STD_FAK,
+                                                            choices=['mi','rewi','wiwi','ksw','psy','other','all'])):
         await self.fetch_joboffers()
 
-        fak_text = "aller Fakultäten" if faculty == 'all' else f"der Fakultät {faculty}"
+        fak_text = "aller Fakultäten" if chosen_faculty == 'all' else f"der Fakultät {chosen_faculty}"
 
         embed = disnake.Embed(title="Stellenangebote der Uni",
                               description=f"Ich habe folgende Stellenangebote {fak_text} gefunden:")
 
         for fak, fak_offers in self.joboffers.items():
-            if STD_FAK != 'all' and fak != faculty:
+            if chosen_faculty != 'all' and fak != chosen_faculty:
                 continue
             for offer_id, offer_data in fak_offers.items():
                 descr = f"{offer_data['info']}\nDeadline: {offer_data['deadline']}\n{offer_data['link']}"
