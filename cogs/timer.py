@@ -437,74 +437,71 @@ class Timer(commands.Cog):
     async def stats(self, interaction: ApplicationCommandInteraction,
                     period: str = commands.Param(autocomplete=autocomp_stats_choices,
                                                  description="day/week/month/semester")):
-        # {<user_id>:{<day>:{time:<gelernte Zeit an dem Tag in Minuten>,
-        #                    sessions:<Anzahl der Timersessions an dem Tag>}}}
-
         if period == "edit":
             await self.edit_stats(interaction)
+
         else:
-            today = datetime.today().date()
-            today_iso = today.isoformat()
-            if user_stats := self.stats.get(str(interaction.author.id)):
-
-                if period == 'day':
-                    if today_stats := user_stats.get(today_iso):
-                        time = today_stats['time']
-                        sessions = today_stats['sessions']
-                        await interaction.response.send_message(
-                            f"Du hast heute schon **{time} Minute{'n' if time>1 else ''}** in **{sessions} "
-                            f"Session{'s' if sessions>1 else ''}** gelernt. {random.choice(self.session_stat_messages)}",
-                            ephemeral=True)
-                    else:
-                        await interaction.response.send_message(
-                            "Für heute ist keine Statistik von dir vorhanden. Nutze den Timer mit `/timer run` oder "
-                            "gib einen anderen Zeitraum an.",
-                            ephemeral=True)
-
-                elif period == 'week':
-                    weekday = today.weekday()
-                    monday = today - timedelta(days=weekday)
-                    monday_iso = monday.isoformat()
+            if period in ['day', 'week', 'month', 'semester', 'all']:
+                if user_stats := self.stats.get(str(interaction.author.id)):
 
                     sum_learning_time, sum_sessions = 0, 0
-                    for (date, data) in user_stats:
-                        if monday_iso >= date >= today_iso:
-                            sum_learning_time += data['time']
-                            sum_sessions += data['sessions']
+                    today = datetime.today().date()
+                    today_iso = today.isoformat()
+
+                    if period == 'day':
+                        period_text = "heute"
+                        if today_stats := user_stats.get(today_iso):
+                            sum_learning_time = today_stats['time']
+                            sessions = today_stats['sessions']
+
+                    elif period == 'week':
+                        period_text = "diese Woche"
+                        weekday = today.weekday()
+                        monday = today - timedelta(days=weekday)
+                        monday_iso = monday.isoformat()
+
+                        for (date, data) in user_stats:
+                            if monday_iso >= date >= today_iso:
+                                sum_learning_time += data['time']
+                                sum_sessions += data['sessions']
+
+                    elif period == 'month':
+                        period_text = "diesen Monat"
+                        month = today.month
+                        for (date, data) in user_stats:
+                            if datetime.fromisoformat(date).month == month:
+                                sum_learning_time += data['time']
+                                sum_sessions += data['sessions']
+
+                    elif period == 'semester':
+                        period_text = "in diesem Semester"
+                        # Semester von 1.4.-30.9. bzw 1.10.-31.3.
+                        year = today.year
+                        month = today.month
+
+                        if 4 <= month <= 9: #Sommersemester
+                            sem_start = f'{year}-04-01'
+                        else: #Wintersemester
+                            year = year if (10 <= month <= 12) else (year-1)
+                            sem_start = f'{year}-10-01'
+
+                        for (date, data) in user_stats:
+                            if date >= sem_start:
+                                sum_learning_time += data['time']
+                                sum_sessions += data['sessions']
+
+                    #TODO all
 
                     if sum_learning_time > 0 or sum_sessions > 0:
                         await interaction.response.send_message(
-                            f"Du hast diese Woche **{sum_learning_time} Minute{'n' if sum_learning_time > 1 else ''}** "
-                            f"in **{sum_sessions} Session{'s' if sum_sessions > 1 else ''}** gelernt. "
-                            f"{random.choice(self.session_stat_messages)}",
-                            ephemeral=True)
+                            f"Du hast {period_text} schon **{sum_learning_time} Minute{'n' if sum_learning_time > 1 else ''}** in"
+                            f" **{sessions} Session{'s' if sessions > 1 else ''}** gelernt. "
+                            f"{random.choice(self.session_stat_messages)}", ephemeral=True)
                     else:
                         await interaction.response.send_message(
-                            "Für diese Woche ist keine Statistik von dir vorhanden. Nutze den Timer mit `/timer run` "
-                            "oder gib einen anderen Zeitraum an.", ephemeral=True)
+                            f"Für {period_text} ist keine Statistik von dir vorhanden. Nutze den Timer mit `/timer run`"
+                            f" oder gib einen anderen Zeitraum an.", ephemeral=True)
 
-                elif period == 'month':
-                    month = today.month
-                    sum_learning_time, sum_sessions = 0, 0
-                    for (date, data) in user_stats:
-                        if datetime.fromisoformat(date).month == month:
-                            sum_learning_time += data['time']
-                            sum_sessions += data['sessions']
-
-                    if sum_learning_time > 0 or sum_sessions > 0:
-                        await interaction.response.send_message(
-                            f"Du hast diesen Monat **{sum_learning_time} Minute{'n' if sum_learning_time > 1 else ''}**"
-                            f" in **{sum_sessions} Session{'s' if sum_sessions > 1 else ''}** gelernt. "
-                            f"{random.choice(self.session_stat_messages)}",
-                            ephemeral=True)
-                    else:
-                        await interaction.response.send_message(
-                            "Für diesen Monat ist keine Statistik von dir vorhanden. Nutze den Timer mit `/timer run` "
-                            "oder gib einen anderen Zeitraum an.", ephemeral=True)
-
-                elif period == 'semester':
-                    # TODO
-                    pass
                 else:
                     await interaction.response.send_message(
                         "Bitte gib für den Zeitraum day, week, month oder semester an.", ephemeral=True)
