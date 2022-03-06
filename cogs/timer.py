@@ -445,22 +445,45 @@ class Timer(commands.Cog):
         else:
             today = datetime.today().date().isoformat()
             if user_stats := self.stats.get(str(interaction.author.id)):
+
                 if period == 'day':
                     if today_stats := user_stats.get(today):
                         time = today_stats['time']
                         sessions = today_stats['sessions']
                         await interaction.response.send_message(
-                            f"Du hast heute schon {time} Minute{'n' if time>1 else ''} in {sessions} "
-                            f"Session{'s' if sessions>1 else ''} gelernt. {random.choice(self.session_stat_messages)}",
+                            f"Du hast heute schon **{time} Minute{'n' if time>1 else ''}** in **{sessions} "
+                            f"Session{'s' if sessions>1 else ''}** gelernt. {random.choice(self.session_stat_messages)}",
                             ephemeral=True)
                     else:
                         await interaction.response.send_message(
                             "Für heute ist keine Statistik von dir vorhanden. Nutze den Timer mit `/timer run` oder "
                             "gib einen anderen Zeitraum an.",
                             ephemeral=True)
+
                 elif period == 'week':
-                    # TODO
-                    pass
+                    today = datetime.today().date()
+                    today_iso = today.isoformat()
+                    weekday = today.weekday()
+                    monday = today - timedelta(days=weekday)
+                    monday_iso = monday.isoformat()
+
+                    sum_learning_time, sum_sessions = 0, 0
+                    for (date, data) in user_stats:
+                        if monday_iso >= date >= today_iso:
+                            sum_learning_time += data['time']
+                            sum_sessions += data['sessions']
+
+                    if sum_learning_time > 0 or sum_sessions > 0:
+                        await interaction.response.send_message(
+                            f"Du hast diese Woche **{sum_learning_time} Minute{'n' if sum_learning_time > 1 else ''}** "
+                            f"in **{sum_sessions} Session{'s' if sum_sessions > 1 else ''}** gelernt. "
+                            f"{random.choice(self.session_stat_messages)}",
+                            ephemeral=True)
+                    else:
+                        await interaction.response.send_message(
+                            "Für diese Woche ist keine Statistik von dir vorhanden. Nutze den Timer mit `/timer run` "
+                            "oder gib einen anderen Zeitraum an.", ephemeral=True)
+
                 elif period == 'month':
                     # TODO
                     pass
