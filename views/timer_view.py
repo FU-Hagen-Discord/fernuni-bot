@@ -1,6 +1,6 @@
 import disnake
-from disnake import MessageInteraction, SelectOption
-from disnake.ui import Button, View, Modal
+from disnake import MessageInteraction, SelectOption, TextInputStyle
+from disnake.ui import Button, View, Modal, TextInput
 
 VOICY = "timerview:voicy"
 SOUND = "timerview:sound"
@@ -15,8 +15,11 @@ STOP = "timverview:stop"
 RESTART_YES = "timerview:restart_yes"
 RESTART_NO = "timerview:restart_no"
 
-EDITDROPDOWN = "editselectview:edit_dropdown"
-MANUALDROPDOWN = "manualselectview:manual_dropdowm"
+EDITDROPDOWN = "timer:editselectview:edit_dropdown"
+MANUALDROPDOWN = "timer:manualselectview:manual_dropdowm"
+
+TIME = "timer:edit:time"
+SESSIONS = "timer:edit:sessions"
 
 
 class TimerButton(Button):
@@ -115,8 +118,27 @@ class EditSelectView(View):
 
 
 class StatsEditModal(Modal):
-    def __init__(self, callback, components):
-        super().__init__(title="",
-                         custom_id="",
+    def __init__(self, callback, infos):
+
+        time_input = TextInput(label="Gelernte Zeit in Minuten:",
+                               value=f"{infos['time']}",
+                               custom_id=TIME,
+                               style=TextInputStyle.short,
+                               max_length=3)
+
+        session_input = TextInput(label="Anzahl der Sessions:",
+                                   value=f"{infos['sessions']}",
+                                   custom_id=SESSIONS,
+                                   style=TextInputStyle.short,
+                                   max_length=1)
+
+        components = [time_input, session_input]
+
+        super().__init__(title=f"Statistik vom {infos['date']} für {infos['name']}",
+                         custom_id=f"{infos['id']}:{infos['date']}:{infos['name']}",
                          components=components)
         self.callback = callback
+        self.infos = infos
+
+    async def callback(self, interaction: disnake.ModalInteraction):
+        await self.callback(interaction=interaction)

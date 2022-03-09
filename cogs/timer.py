@@ -548,24 +548,36 @@ class Timer(commands.Cog):
         date = select.values[0]
         stats = self.stats.get(user_id).get(date)
 
-        time_input = TextInput(label="Gelernte Zeit in Minuten:",
-                               placeholder=f"{stats['time']}",
-                               custom_id="timer:edit:time",
-                               style=TextInputStyle.short,
-                               max_length=3)
+        modal = timer_view.StatsEditModal(callback=self.on_stats_edit_modal_submit,
+                                          infos={'name': user_name, 'date': date, 'id': user_id, 'time': stats['time'],
+                                                 'sessions': stats['sessions']})
 
-        sessions_input = TextInput(label="Anzahl der Sessions:",
-                                   placeholder=f"{stats['sessions']}",
-                                   custom_id="timer:edit:sessions",
-                                   style=TextInputStyle.short,
-                                   max_length=1)
+        await interaction.response.send_modal(modal=modal)
 
-        await interaction.response.send_modal(
-            title=f"Ändere die Statistik vom {date} für {user_name}",
-            custom_id="timer:edit:modal",
-            components=[time_input, sessions_input],
-        )
-        #await interaction.response.edit_message(content=f"{stats['time']}, {stats['sessions']}")
+    async def on_stats_edit_modal_submit(self, interaction: disnake.ModalInteraction):
+
+        data = interaction.data.custom_id.split(':')
+        user_id, date, user_name = data[0], data[1], data[2]
+
+        new_time = interaction.text_values.get(timer_view.TIME)
+        new_sessions = interaction.text_values.get(timer_view.SESSIONS)
+
+        try:
+            new_time = int(new_time)
+            new_sessions = int(new_sessions)
+        except ValueError:
+            await interaction.response.send_message("Fehler: Für die Eingabe sind **nur Zahlen** erlaubt.",
+                                                    ephemeral=True)
+        else:
+            if user_stats := self.stats.get(user_id):
+                if date_stats := user_stats.get(date):
+                    date_stats['time'] = int(new_time)
+                    date_stats['sessions'] = int(new_sessions)
+            self.save_stats()
+
+            await interaction.response.send_message(f"Statistik für **{user_name}** vom **{date}** erfolgreich geändert.\n"
+                                                    f"Neue Zeit: **{new_time}**\n"
+                                                    f"Neue Anzahl Sessions: **{new_sessions}**", ephemeral=True)
 
     async def switch_phase(self, msg_id):
         if timer := self.running_timers.get(msg_id):
