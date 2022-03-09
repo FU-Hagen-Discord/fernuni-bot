@@ -7,9 +7,9 @@ from copy import deepcopy
 from datetime import datetime, timedelta
 
 import disnake
-from disnake import MessageInteraction, ApplicationCommandInteraction
+from disnake import MessageInteraction, ApplicationCommandInteraction, TextInputStyle
 from disnake.ext import commands, tasks
-from disnake.ui import Select
+from disnake.ui import Select, TextInput
 
 from views import timer_view
 
@@ -42,6 +42,7 @@ from views import timer_view
   
 """
 
+# TODO: weekly leaderboard
 
 class Timer(commands.Cog):
 
@@ -376,10 +377,11 @@ class Timer(commands.Cog):
             rounds = session_stats['rounds']
             pronoun = "Ihr habt" if len(registered) > 1 else "Du hast"
             if working_time == 25 and break_time == 5:
-                end_info_start = f"{pronoun} {rounds} Pomodor{'i' if rounds > 1 else 'o'} geschafft.\n"
+                end_info_start = f"{pronoun} **{rounds} Pomodor{'i' if rounds > 1 else 'o'}** geschafft.\n"
             else:
                 minutes = int(time.time() - session_stats['start'])//60
-                end_info_start = f"{pronoun} {minutes} Minuten in {rounds} Runde{'n' if rounds > 1 else ''} gelernt.\n"
+                end_info_start = f"{pronoun} **{minutes} Minute{'n' if minutes!=1 else ''}** in **{rounds} " \
+                                 f"Runde{'n' if rounds > 1 else ''}** gelernt.\n"
             end_info_end = f"Diese Timer-Session ging{stats_info}in die Statistik ein."
             embed.add_field(name=end_title, value=end_info_start + end_info_end, inline=False)
 
@@ -430,20 +432,20 @@ class Timer(commands.Cog):
         self.save_running_timers()
 
     async def autocomp_stats_choices(inter: ApplicationCommandInteraction, user_input: str):
-        stats_choices = ["day", "week", "month", "semester"]
+        stats_choices = ["day", "week", "month", "semester", "all"]
         return [choice for choice in stats_choices if user_input.lower() in choice]
 
     @timer.sub_command(description="Lass dir deine Statistik zur Timernutzung ausgeben.")
     async def stats(self, interaction: ApplicationCommandInteraction,
                     period: str = commands.Param(autocomplete=autocomp_stats_choices,
-                                                 description="day/week/month/semester")):
+                                                 description="day/week/month/semester/all")):
         if period == "edit":
             await self.edit_stats(interaction)
 
         else:
             if period in ['day', 'week', 'month', 'semester', 'all']:
                 if user_stats := self.stats.get(str(interaction.author.id)):
-
+                    period_text = ""
                     sum_learning_time, sum_sessions = 0, 0
                     today = datetime.today().date()
                     today_iso = today.isoformat()
@@ -452,7 +454,7 @@ class Timer(commands.Cog):
                         period_text = "heute"
                         if today_stats := user_stats.get(today_iso):
                             sum_learning_time = today_stats['time']
-                            sessions = today_stats['sessions']
+                            sum_sessions = today_stats['sessions']
 
                     elif period == 'week':
                         period_text = "diese Woche"
@@ -460,7 +462,7 @@ class Timer(commands.Cog):
                         monday = today - timedelta(days=weekday)
                         monday_iso = monday.isoformat()
 
-                        for (date, data) in user_stats:
+                        for (date, data) in user_stats.items():
                             if monday_iso >= date >= today_iso:
                                 sum_learning_time += data['time']
                                 sum_sessions += data['sessions']
@@ -468,7 +470,7 @@ class Timer(commands.Cog):
                     elif period == 'month':
                         period_text = "diesen Monat"
                         month = today.month
-                        for (date, data) in user_stats:
+                        for (date, data) in user_stats.items():
                             if datetime.fromisoformat(date).month == month:
                                 sum_learning_time += data['time']
                                 sum_sessions += data['sessions']
@@ -485,36 +487,85 @@ class Timer(commands.Cog):
                             year = year if (10 <= month <= 12) else (year-1)
                             sem_start = f'{year}-10-01'
 
-                        for (date, data) in user_stats:
+                        for (date, data) in user_stats.items():
                             if date >= sem_start:
                                 sum_learning_time += data['time']
                                 sum_sessions += data['sessions']
 
-                    #TODO all
+                    elif period == 'all':
+                        first_session = today_iso
+                        for (date, data) in user_stats.items():
+                            if date < first_session:
+                                first_session = date
+                            sum_learning_time += data['time']
+                            sum_sessions += data['sessions']
+                        first_session_date = datetime.fromisoformat(first_session).strftime("%d.%m.%y")
+                        period_text = f"seit dem {first_session_date}"
 
                     if sum_learning_time > 0 or sum_sessions > 0:
                         await interaction.response.send_message(
                             f"Du hast {period_text} schon **{sum_learning_time} Minute{'n' if sum_learning_time > 1 else ''}** in"
-                            f" **{sessions} Session{'s' if sessions > 1 else ''}** gelernt. "
+                            f" **{sum_sessions} Session{'s' if sum_sessions > 1 else ''}** gelernt. "
                             f"{random.choice(self.session_stat_messages)}", ephemeral=True)
                     else:
                         await interaction.response.send_message(
                             f"Für {period_text} ist keine Statistik von dir vorhanden. Nutze den Timer mit `/timer run`"
                             f" oder gib einen anderen Zeitraum an.", ephemeral=True)
-
                 else:
-                    await interaction.response.send_message(
-                        "Bitte gib für den Zeitraum day, week, month oder semester an.", ephemeral=True)
+                    await interaction.response.send_message("Von dir sind noch keine Einträge in der Statistik.\n"
+                                                            "Benutze den Timer mit dem Kommando `/timer run` zum Lernen"
+                                                            " und lass dir dann hier deine Erfolge anzeigen.",
+                                                            ephemeral=True)
             else:
-                await interaction.response.send_message("Von dir sind noch keine Einträge in der Statistik.\n"
-                                                        "Benutze den Timer mit dem Kommando `/timer run` zum Lernen "
-                                                        "und lass dir dann hier deine Erfolge anzeigen.",
-                                                        ephemeral=True)
+                await interaction.response.send_message(
+                    "Bitte gib für den Zeitraum `day`, `week`, `month`, `semester` oder `all` an.", ephemeral=True)
 
-    @disnake.ext.commands.has_role(int(os.getenv('DISCORD_MOD_ROLE')))
     async def edit_stats(self, interaction: ApplicationCommandInteraction):
-        # TODO
-        pass
+        author_roles = [role.id for role in interaction.author.roles]
+        if int(os.getenv('DISCORD_MOD_ROLE')) not in author_roles:
+            await interaction.response.send_message("Glückwunsch, du hast die geheime Statistik-Manipulations-Funktion "
+                                                    "entdeckt. Zu deinem Pech ist sie nur von Mods nutzbar. Muss an deiner"
+                                                    "Statistik etwas verändert werden, wende dich bitte an eine "
+                                                    "Moderatorin.", ephemeral=True)
+        else:
+            user_id_list = [int(user_id) for user_id in self.stats.keys()]
+            user_name_list = [self.bot.get_user(user_id).display_name for user_id in user_id_list]
+            view = timer_view.EditSelectView(self.on_edit_user_select, user_id_list, user_name_list)
+            await interaction.response.send_message("Wähle hier die Userin aus, deren Statistik du bearbeiten willst.",
+                                                    view=view, ephemeral=True)
+
+    async def on_edit_user_select(self, select: Select, interaction: MessageInteraction):
+        user_id = str(select.values[0])
+        user_name = self.bot.get_user(int(user_id)).display_name
+        dates = [date for date in self.stats.get(user_id).keys()]
+        view = timer_view.EditSelectView(self.on_edit_date_select, dates, dates, further_info=user_id)
+        await interaction.response.edit_message(content=f"Ändere die Statistik von **{user_name}**:\n\n"
+                                                f"Wähle hier das Datum aus, dessen Statistik du bearbeiten willst.",
+                                                view=view)
+
+    async def on_edit_date_select(self, select: Select, interaction: MessageInteraction, user_id):
+        user_name = self.bot.get_user(int(user_id)).display_name
+        date = select.values[0]
+        stats = self.stats.get(user_id).get(date)
+
+        time_input = TextInput(label="Gelernte Zeit in Minuten:",
+                               placeholder=f"{stats['time']}",
+                               custom_id="timer:edit:time",
+                               style=TextInputStyle.short,
+                               max_length=3)
+
+        sessions_input = TextInput(label="Anzahl der Sessions:",
+                                   placeholder=f"{stats['sessions']}",
+                                   custom_id="timer:edit:sessions",
+                                   style=TextInputStyle.short,
+                                   max_length=1)
+
+        await interaction.response.send_modal(
+            title=f"Ändere die Statistik vom {date} für {user_name}",
+            custom_id="timer:edit:modal",
+            components=[time_input, sessions_input],
+        )
+        #await interaction.response.edit_message(content=f"{stats['time']}, {stats['sessions']}")
 
     async def switch_phase(self, msg_id):
         if timer := self.running_timers.get(msg_id):
@@ -635,5 +686,5 @@ class Timer(commands.Cog):
 
     @timer.error
     async def timer_error(self, ctx, error):
-        await ctx.send("Das habe ich nicht verstanden. Die Timer-Syntax ist:\n"
-                       "`/timer <learning-time?> <break-time?> <name?>`\n")
+        await ctx.send("Das habe ich nicht verstanden. Benutze `/timer run` um einen Timer zu starten oder"
+                       "`/timer stats` um dir deine Nutzungsstatistik ausgeben zu lassen.")
