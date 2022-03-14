@@ -7,9 +7,9 @@ from copy import deepcopy
 from datetime import datetime, timedelta
 
 import disnake
-from disnake import MessageInteraction, ApplicationCommandInteraction, TextInputStyle
+from disnake import MessageInteraction, ApplicationCommandInteraction
 from disnake.ext import commands, tasks
-from disnake.ui import Select, TextInput
+from disnake.ui import Select
 
 from views import timer_view
 
@@ -42,7 +42,8 @@ from views import timer_view
   
 """
 
-# TODO: weekly leaderboard
+# TODO: - weekly leaderboard
+
 
 class Timer(commands.Cog):
 
@@ -60,6 +61,10 @@ class Timer(commands.Cog):
         self.load_running_timers()
         self.load_stats()
         self.run_timer.start()
+
+    # #################################################
+    # ----- load and save -----------------------------
+    # #################################################
 
     def load_running_timers(self):
         try:
@@ -85,11 +90,56 @@ class Timer(commands.Cog):
         with open(self.stats_file_path, mode='w') as stats_file:
             json.dump(self.stats, stats_file)
 
-    def get_view(self, disabled=False, voicy=False):
-        view = timer_view.TimerView(callback=self.on_button_click, voicy=voicy)
-        if disabled:
-            view.disable()
-        return view
+    # #################################################
+    # ----- slashcommand timer run --------------------
+    # #################################################
+
+    @commands.slash_command()
+    async def timer(self, interaction: ApplicationCommandInteraction):
+        return
+
+    @timer.sub_command(description="Erstelle deine persönliche  Eieruhr")
+    async def run(self, interaction: ApplicationCommandInteraction,
+                  working_time: int = commands.Param(default=25,
+                                                     description="Länge der Lernphasen in Minuten (default: 25)"),
+                  break_time: int = commands.Param(default=5,
+                                                   description="Länge der Pausenphasen in Minuten (default: 5)"),
+                  name: str = commands.Param(default=None, description="Name/Titel des Timers"),
+                  rounds: int = commands.Param(default=0,
+                                               description="Anzahl der geplanten Lernphasen (default: 0 = manuell beenden)")):
+
+        name = name if name else random.choice(self.default_names)
+        end_of_phase = datetime.timestamp(datetime.now() + timedelta(minutes=working_time))
+        status = "Arbeiten"
+        registered = [str(interaction.author.id)]
+        voicy = False
+        sound = 'standard'
+        into_global_stats = True
+        session_stats = {'start': time.time(), 'rounds': 1}
+        planned_rounds = rounds
+
+        embed = self.create_embed(name, status, working_time, break_time, end_of_phase, registered, voicy, sound,
+                                  into_global_stats, session_stats, planned_rounds)
+        await interaction.response.send_message(embed=embed, view=self.get_view(voicy=voicy))
+        message = await interaction.original_message()
+
+        self.running_timers[str(message.id)] = {'name': name,
+                                                'status': status,
+                                                'working_time': working_time,
+                                                'break_time': break_time,
+                                                'end_of_phase': end_of_phase,
+                                                'registered': registered,
+                                                'channel': interaction.channel_id,
+                                                'voicy': voicy,
+                                                'sound': sound,
+                                                'into_global_stats': into_global_stats,
+                                                'session_stats': session_stats,
+                                                'planned_rounds': planned_rounds}
+        self.save_running_timers()
+
+    # #################################################
+    # ----- click handler for timer run ---------------
+    # #################################################
 
     async def on_button_click(self, interaction: MessageInteraction):
         custom_id = interaction.data.custom_id
@@ -197,34 +247,6 @@ class Timer(commands.Cog):
                                                         ephemeral=True)
         else:
             await interaction.response.send_message("Etwas ist schiefgelaufen...", ephemeral=True)
-
-    async def stop_timer(self, msg_id):
-        if timer := self.running_timers.get(msg_id):
-            if timer['into_global_stats']:
-                self.add_to_stats(timer['session_stats'], timer['registered'])
-            registered = timer['registered']
-            mentions = self.get_mentions(msg_id)
-            timer['status'] = "Beendet"
-            timer['registered'] = []
-
-            if new_msg_id := await self.edit_message(msg_id, mentions=mentions):
-                if timer['voicy']:
-                    await self.make_sound(registered, 'applause.mp3')
-                self.running_timers.pop(new_msg_id)
-                self.save_running_timers()
-
-    def add_to_stats(self, session_stats, user_ids):
-        today = datetime.today().date().isoformat()
-        for user_id in user_ids:
-            if not self.stats.get(user_id):
-                self.stats[user_id] = {}
-            user_stats = self.stats.get(user_id)
-            if not user_stats.get(today):
-                user_stats[today] = {'time': 0, 'sessions': 0}
-            user_stats_today = user_stats.get(today)
-            user_stats_today['time'] += int((time.time() - session_stats['start'])/60)
-            user_stats_today['sessions'] += 1
-        self.save_stats()
 
     async def on_voicy(self, interaction: MessageInteraction):
         msg_id = str(interaction.message.id)
@@ -342,6 +364,16 @@ class Timer(commands.Cog):
 
         await interaction.response.edit_message(content=content)
 
+    # #################################################
+    # ----- help functions for timer run --------------
+    # #################################################
+
+    def get_view(self, disabled=False, voicy=False):
+        view = timer_view.TimerView(callback=self.on_button_click, voicy=voicy)
+        if disabled:
+            view.disable()
+        return view
+
     def create_embed(self, name, status, working_time, break_time, end_of_phase, registered, voicy, sound, stats, session_stats, planned_rounds):
         color = disnake.Colour.green() if status == "Arbeiten" else 0xFFC63A if status == "Pause" else disnake.Colour.red()
 
@@ -390,194 +422,6 @@ class Timer(commands.Cog):
         embed.set_footer(text=f"Runde {round}/{rounds}")
 
         return embed
-
-    @commands.slash_command()
-    async def timer(self, interaction: ApplicationCommandInteraction):
-        return
-
-    @timer.sub_command(description="Erstelle deine persönliche  Eieruhr")
-    async def run(self, interaction: ApplicationCommandInteraction,
-                        working_time: int = commands.Param(default=25, description="Länge der Lernphasen in Minuten (default: 25)"),
-                        break_time: int = commands.Param(default=5, description="Länge der Pausenphasen in Minuten (default: 5)"),
-                        name: str = commands.Param(default=None, description="Name/Titel des Timers"),
-                        rounds: int = commands.Param(default=0, description="Anzahl der geplanten Lernphasen (default: 0 = manuell beenden)")):
-
-        name = name if name else random.choice(self.default_names)
-        end_of_phase = datetime.timestamp(datetime.now() + timedelta(minutes=working_time))
-        status = "Arbeiten"
-        registered = [str(interaction.author.id)]
-        voicy = False
-        sound = 'standard'
-        into_global_stats = True
-        session_stats = {'start': time.time(), 'rounds': 1}
-        planned_rounds = rounds
-
-        embed = self.create_embed(name, status, working_time, break_time, end_of_phase, registered, voicy, sound,
-                                  into_global_stats, session_stats, planned_rounds)
-        await interaction.response.send_message(embed=embed, view=self.get_view(voicy=voicy))
-        message = await interaction.original_message()
-
-        self.running_timers[str(message.id)] = {'name': name,
-                                                'status': status,
-                                                'working_time': working_time,
-                                                'break_time': break_time,
-                                                'end_of_phase': end_of_phase,
-                                                'registered': registered,
-                                                'channel': interaction.channel_id,
-                                                'voicy': voicy,
-                                                'sound': sound,
-                                                'into_global_stats': into_global_stats,
-                                                'session_stats': session_stats,
-                                                'planned_rounds': planned_rounds}
-        self.save_running_timers()
-
-    async def autocomp_stats_choices(inter: ApplicationCommandInteraction, user_input: str):
-        stats_choices = ["day", "week", "month", "semester", "all"]
-        return [choice for choice in stats_choices if user_input.lower() in choice]
-
-    @timer.sub_command(description="Lass dir deine Statistik zur Timernutzung ausgeben.")
-    async def stats(self, interaction: ApplicationCommandInteraction,
-                    period: str = commands.Param(autocomplete=autocomp_stats_choices,
-                                                 description="day/week/month/semester/all")):
-        if period == "edit":
-            await self.edit_stats(interaction)
-
-        else:
-            if period in ['day', 'week', 'month', 'semester', 'all']:
-                if user_stats := self.stats.get(str(interaction.author.id)):
-                    period_text = ""
-                    sum_learning_time, sum_sessions = 0, 0
-                    today = datetime.today().date()
-                    today_iso = today.isoformat()
-
-                    if period == 'day':
-                        period_text = "heute"
-                        if today_stats := user_stats.get(today_iso):
-                            sum_learning_time = today_stats['time']
-                            sum_sessions = today_stats['sessions']
-
-                    elif period == 'week':
-                        period_text = "diese Woche"
-                        weekday = today.weekday()
-                        monday = today - timedelta(days=weekday)
-                        monday_iso = monday.isoformat()
-
-                        for (date, data) in user_stats.items():
-                            if monday_iso >= date >= today_iso:
-                                sum_learning_time += data['time']
-                                sum_sessions += data['sessions']
-
-                    elif period == 'month':
-                        period_text = "diesen Monat"
-                        month = today.month
-                        for (date, data) in user_stats.items():
-                            if datetime.fromisoformat(date).month == month:
-                                sum_learning_time += data['time']
-                                sum_sessions += data['sessions']
-
-                    elif period == 'semester':
-                        period_text = "in diesem Semester"
-                        # Semester von 1.4.-30.9. bzw 1.10.-31.3.
-                        year = today.year
-                        month = today.month
-
-                        if 4 <= month <= 9: #Sommersemester
-                            sem_start = f'{year}-04-01'
-                        else: #Wintersemester
-                            year = year if (10 <= month <= 12) else (year-1)
-                            sem_start = f'{year}-10-01'
-
-                        for (date, data) in user_stats.items():
-                            if date >= sem_start:
-                                sum_learning_time += data['time']
-                                sum_sessions += data['sessions']
-
-                    elif period == 'all':
-                        first_session = today_iso
-                        for (date, data) in user_stats.items():
-                            if date < first_session:
-                                first_session = date
-                            sum_learning_time += data['time']
-                            sum_sessions += data['sessions']
-                        first_session_date = datetime.fromisoformat(first_session).strftime("%d.%m.%y")
-                        period_text = f"seit dem {first_session_date}"
-
-                    if sum_learning_time > 0 or sum_sessions > 0:
-                        await interaction.response.send_message(
-                            f"Du hast {period_text} schon **{sum_learning_time} Minute{'n' if sum_learning_time > 1 else ''}** in"
-                            f" **{sum_sessions} Session{'s' if sum_sessions > 1 else ''}** gelernt. "
-                            f"{random.choice(self.session_stat_messages)}", ephemeral=True)
-                    else:
-                        await interaction.response.send_message(
-                            f"Für {period_text} ist keine Statistik von dir vorhanden. Nutze den Timer mit `/timer run`"
-                            f" oder gib einen anderen Zeitraum an.", ephemeral=True)
-                else:
-                    await interaction.response.send_message("Von dir sind noch keine Einträge in der Statistik.\n"
-                                                            "Benutze den Timer mit dem Kommando `/timer run` zum Lernen"
-                                                            " und lass dir dann hier deine Erfolge anzeigen.",
-                                                            ephemeral=True)
-            else:
-                await interaction.response.send_message(
-                    "Bitte gib für den Zeitraum `day`, `week`, `month`, `semester` oder `all` an.", ephemeral=True)
-
-    async def edit_stats(self, interaction: ApplicationCommandInteraction):
-        author_roles = [role.id for role in interaction.author.roles]
-        if int(os.getenv('DISCORD_MOD_ROLE')) not in author_roles:
-            await interaction.response.send_message("Glückwunsch, du hast die geheime Statistik-Manipulations-Funktion "
-                                                    "entdeckt. Zu deinem Pech ist sie nur von Mods nutzbar. Muss an deiner"
-                                                    "Statistik etwas verändert werden, wende dich bitte an eine "
-                                                    "Moderatorin.", ephemeral=True)
-        else:
-            user_id_list = [int(user_id) for user_id in self.stats.keys()]
-            user_name_list = [self.bot.get_user(user_id).display_name for user_id in user_id_list]
-            view = timer_view.EditSelectView(self.on_edit_user_select, user_id_list, user_name_list)
-            await interaction.response.send_message("Wähle hier die Userin aus, deren Statistik du bearbeiten willst.",
-                                                    view=view, ephemeral=True)
-
-    async def on_edit_user_select(self, select: Select, interaction: MessageInteraction):
-        user_id = str(select.values[0])
-        user_name = self.bot.get_user(int(user_id)).display_name
-        dates = [date for date in self.stats.get(user_id).keys()]
-        view = timer_view.EditSelectView(self.on_edit_date_select, dates, dates, further_info=user_id)
-        await interaction.response.edit_message(content=f"Ändere die Statistik von **{user_name}**:\n\n"
-                                                f"Wähle hier das Datum aus, dessen Statistik du bearbeiten willst.",
-                                                view=view)
-
-    async def on_edit_date_select(self, select: Select, interaction: MessageInteraction, user_id):
-        user_name = self.bot.get_user(int(user_id)).display_name
-        date = select.values[0]
-        stats = self.stats.get(user_id).get(date)
-
-        modal = timer_view.StatsEditModal(callback=self.on_stats_edit_modal_submit,
-                                          infos={'name': user_name, 'date': date, 'id': user_id, 'time': stats['time'],
-                                                 'sessions': stats['sessions']})
-
-        await interaction.response.send_modal(modal=modal)
-
-    async def on_stats_edit_modal_submit(self, interaction: disnake.ModalInteraction):
-
-        data = interaction.data.custom_id.split(':')
-        user_id, date, user_name = data[0], data[1], data[2]
-
-        new_time = interaction.text_values.get(timer_view.TIME)
-        new_sessions = interaction.text_values.get(timer_view.SESSIONS)
-
-        try:
-            new_time = int(new_time)
-            new_sessions = int(new_sessions)
-        except ValueError:
-            await interaction.response.send_message("Fehler: Für die Eingabe sind **nur Zahlen** erlaubt.",
-                                                    ephemeral=True)
-        else:
-            if user_stats := self.stats.get(user_id):
-                if date_stats := user_stats.get(date):
-                    date_stats['time'] = int(new_time)
-                    date_stats['sessions'] = int(new_sessions)
-            self.save_stats()
-
-            await interaction.response.send_message(f"Statistik für **{user_name}** vom **{date}** erfolgreich geändert.\n"
-                                                    f"Neue Zeit: **{new_time}**\n"
-                                                    f"Neue Anzahl Sessions: **{new_sessions}**", ephemeral=True)
 
     async def switch_phase(self, msg_id):
         if timer := self.running_timers.get(msg_id):
@@ -676,6 +520,193 @@ class Timer(commands.Cog):
                         await vc.disconnect()
                 break
 
+    async def stop_timer(self, msg_id):
+        if timer := self.running_timers.get(msg_id):
+            if timer['into_global_stats']:
+                self.add_to_stats(timer['session_stats'], timer['registered'])
+            registered = timer['registered']
+            mentions = self.get_mentions(msg_id)
+            timer['status'] = "Beendet"
+            timer['registered'] = []
+
+            if new_msg_id := await self.edit_message(msg_id, mentions=mentions):
+                if timer['voicy']:
+                    await self.make_sound(registered, 'applause.mp3')
+                self.running_timers.pop(new_msg_id)
+                self.save_running_timers()
+
+    def add_to_stats(self, session_stats, user_ids):
+        today = datetime.today().date().isoformat()
+        for user_id in user_ids:
+            if not self.stats.get(user_id):
+                self.stats[user_id] = {}
+            user_stats = self.stats.get(user_id)
+            if not user_stats.get(today):
+                user_stats[today] = {'time': 0, 'sessions': 0}
+            user_stats_today = user_stats.get(today)
+            user_stats_today['time'] += int((time.time() - session_stats['start'])/60)
+            user_stats_today['sessions'] += 1
+        self.save_stats()
+
+    # #################################################
+    # ----- slashcommand timer stats ------------------
+    # #################################################
+
+    @timer.sub_command(description="Lass dir deine Statistik zur Timernutzung ausgeben.")
+    async def stats(self, interaction: ApplicationCommandInteraction,
+                    period: str = commands.Param(description="day/week/month/semester/all")):
+        if period == "edit":
+            await self.edit_stats(interaction)
+
+        else:
+            if period in ['day', 'week', 'month', 'semester', 'all']:
+                if user_stats := self.stats.get(str(interaction.author.id)):
+                    period_text = ""
+                    sum_learning_time, sum_sessions = 0, 0
+                    today = datetime.today().date()
+                    today_iso = today.isoformat()
+
+                    if period == 'day':
+                        period_text = "heute"
+                        if today_stats := user_stats.get(today_iso):
+                            sum_learning_time = today_stats['time']
+                            sum_sessions = today_stats['sessions']
+
+                    elif period == 'week':
+                        period_text = "diese Woche"
+                        weekday = today.weekday()
+                        monday = today - timedelta(days=weekday)
+                        monday_iso = monday.isoformat()
+
+                        for (date, data) in user_stats.items():
+                            if monday_iso >= date >= today_iso:
+                                sum_learning_time += data['time']
+                                sum_sessions += data['sessions']
+
+                    elif period == 'month':
+                        period_text = "diesen Monat"
+                        month = today.month
+                        for (date, data) in user_stats.items():
+                            if datetime.fromisoformat(date).month == month:
+                                sum_learning_time += data['time']
+                                sum_sessions += data['sessions']
+
+                    elif period == 'semester':
+                        period_text = "in diesem Semester"
+                        # Semester von 1.4.-30.9. bzw 1.10.-31.3.
+                        year = today.year
+                        month = today.month
+
+                        if 4 <= month <= 9: #Sommersemester
+                            sem_start = f'{year}-04-01'
+                        else: #Wintersemester
+                            year = year if (10 <= month <= 12) else (year-1)
+                            sem_start = f'{year}-10-01'
+
+                        for (date, data) in user_stats.items():
+                            if date >= sem_start:
+                                sum_learning_time += data['time']
+                                sum_sessions += data['sessions']
+
+                    elif period == 'all':
+                        first_session = today_iso
+                        for (date, data) in user_stats.items():
+                            if date < first_session:
+                                first_session = date
+                            sum_learning_time += data['time']
+                            sum_sessions += data['sessions']
+                        first_session_date = datetime.fromisoformat(first_session).strftime("%d.%m.%y")
+                        period_text = f"seit dem {first_session_date}"
+
+                    if sum_learning_time > 0 or sum_sessions > 0:
+                        await interaction.response.send_message(
+                            f"Du hast {period_text} schon **{sum_learning_time} Minute{'n' if sum_learning_time > 1 else ''}** in"
+                            f" **{sum_sessions} Session{'s' if sum_sessions > 1 else ''}** gelernt. "
+                            f"{random.choice(self.session_stat_messages)}", ephemeral=True)
+                    else:
+                        await interaction.response.send_message(
+                            f"Für {period_text} ist keine Statistik von dir vorhanden. Nutze den Timer mit `/timer run`"
+                            f" oder gib einen anderen Zeitraum an.", ephemeral=True)
+                else:
+                    await interaction.response.send_message("Von dir sind noch keine Einträge in der Statistik.\n"
+                                                            "Benutze den Timer mit dem Kommando `/timer run` zum Lernen"
+                                                            " und lass dir dann hier deine Erfolge anzeigen.",
+                                                            ephemeral=True)
+            else:
+                await interaction.response.send_message(
+                    "Bitte gib für den Zeitraum `day`, `week`, `month`, `semester` oder `all` an.", ephemeral=True)
+
+    @stats.autocomplete("period")
+    async def autocomplete_stats_choices(self, interaction: ApplicationCommandInteraction, user_input: str):
+        stats_choices = ["day", "week", "month", "semester", "all"]
+        return [choice for choice in stats_choices if user_input.lower() in choice]
+
+    async def edit_stats(self, interaction: ApplicationCommandInteraction):
+        author_roles = [role.id for role in interaction.author.roles]
+        if int(os.getenv('DISCORD_MOD_ROLE')) not in author_roles:
+            await interaction.response.send_message("Glückwunsch, du hast die geheime Statistik-Manipulations-Funktion "
+                                                    "entdeckt. Zu deinem Pech ist sie nur von Mods nutzbar. Muss an "
+                                                    "deiner Statistik etwas geschraubt werden, wende dich bitte an eine"
+                                                    " Moderatorin.", ephemeral=True)
+        else:
+            user_id_list = [int(user_id) for user_id in self.stats.keys()]
+            user_name_list = [self.bot.get_user(user_id).display_name for user_id in user_id_list]
+            view = timer_view.EditSelectView(self.on_edit_user_select, user_id_list, user_name_list)
+            await interaction.response.send_message("Wähle hier die Userin aus, deren Statistik du bearbeiten willst.",
+                                                    view=view, ephemeral=True)
+
+    # #################################################
+    # ----- handler for editing stats -----------------
+    # #################################################
+
+    async def on_edit_user_select(self, select: Select, interaction: MessageInteraction):
+        user_id = str(select.values[0])
+        user_name = self.bot.get_user(int(user_id)).display_name
+        dates = [date for date in self.stats.get(user_id).keys()]
+        view = timer_view.EditSelectView(self.on_edit_date_select, dates, dates, further_info=user_id)
+        await interaction.response.edit_message(content=f"Ändere die Statistik von **{user_name}**:\n\n"
+                                                f"Wähle hier das Datum aus, dessen Statistik du bearbeiten willst.",
+                                                view=view)
+
+    async def on_edit_date_select(self, select: Select, interaction: MessageInteraction, user_id):
+        user_name = self.bot.get_user(int(user_id)).display_name
+        date = select.values[0]
+        stats = self.stats.get(user_id).get(date)
+
+        modal = timer_view.StatsEditModal(callback=self.on_stats_edit_modal_submit,
+                                          infos={'name': user_name, 'date': date, 'id': user_id, 'time': stats['time'],
+                                                 'sessions': stats['sessions']})
+
+        await interaction.response.send_modal(modal=modal)
+
+    async def on_stats_edit_modal_submit(self, interaction: disnake.ModalInteraction):
+        data = interaction.data.custom_id.split(':')
+        user_id, date, user_name = data[0], data[1], data[2]
+
+        new_time = interaction.text_values.get(timer_view.TIME)
+        new_sessions = interaction.text_values.get(timer_view.SESSIONS)
+
+        try:
+            new_time = int(new_time)
+            new_sessions = int(new_sessions)
+        except ValueError:
+            await interaction.response.send_message("Fehler: Für die Eingabe sind **nur Zahlen** erlaubt.",
+                                                    ephemeral=True)
+        else:
+            if user_stats := self.stats.get(user_id):
+                if date_stats := user_stats.get(date):
+                    date_stats['time'] = int(new_time)
+                    date_stats['sessions'] = int(new_sessions)
+            self.save_stats()
+
+            await interaction.response.send_message(f"Statistik für **{user_name}** vom **{date}** erfolgreich geändert.\n"
+                                                    f"Neue Zeit: **{new_time}**\n"
+                                                    f"Neue Anzahl Sessions: **{new_sessions}**", ephemeral=True)
+
+    # #################################################
+    # ----- loops and error handling ------------------
+    # #################################################
+
     @tasks.loop(minutes=1)
     async def run_timer(self):
         timers_copy = deepcopy(self.running_timers)
@@ -699,4 +730,6 @@ class Timer(commands.Cog):
     @timer.error
     async def timer_error(self, ctx, error):
         await ctx.send("Das habe ich nicht verstanden. Benutze `/timer run` um einen Timer zu starten oder"
-                       "`/timer stats` um dir deine Nutzungsstatistik ausgeben zu lassen.")
+                       "`/timer stats` um dir deine Nutzungsstatistik ausgeben zu lassen.\n"
+                       "Wenn du hier einen Fehler vermutest, schicke mir eine Direktnachricht, dann kümmern sich die "
+                       "Mods drum.")
