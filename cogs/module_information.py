@@ -95,7 +95,7 @@ class ModuleInformation(commands.Cog):
             for course_of_studies in self.data:
                 shorts.append(f"`{course_of_studies['short']}`")
             await ctx.channel.send(
-                f"Fehler! Wähle entweder eine Studiengangs-Rolle aus oder gebe ein Studiengangskürzel"
+                f"Fehler! Wähle entweder eine Studiengangs-Rolle aus oder gebe ein Studiengangskürzel "
                 f"nach dem Kommando an.\nMögliche Kürzel: {', '.join(shorts)}"
             )
             return None
