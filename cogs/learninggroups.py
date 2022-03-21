@@ -419,11 +419,14 @@ class LearningGroups(commands.Cog):
             users[mid] = True
             user = await self.bot.fetch_user(mid)
             if user and send_message:
-                await utils.send_dm(user, f"Du wurdest in die Lerngruppe <#{channel.id}> aufgenommen. " 
-                                          "Viel Spass beim gemeinsamen Lernen!\n"
-                                          "Dieser Link führt dich direkt zum Lerngruppen-Channel. " 
-                                          "Diese Nachricht kannst du bei Bedarf in unserer Unterhaltung " 
-                                          "über Rechtsklick anpinnen.")
+                try:
+                    await utils.send_dm(user, f"Du wurdest in die Lerngruppe <#{channel.id}> aufgenommen. " 
+                                              "Viel Spass beim gemeinsamen Lernen!\n"
+                                              "Dieser Link führt dich direkt zum Lerngruppen-Channel. " 
+                                              "Diese Nachricht kannst du bei Bedarf in unserer Unterhaltung " 
+                                              "über Rechtsklick anpinnen.")
+                except:
+                    pass
 
         group_config["users"] = users
 
