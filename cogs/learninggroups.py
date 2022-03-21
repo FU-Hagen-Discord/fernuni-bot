@@ -578,13 +578,23 @@ class LearningGroups(commands.Cog):
             "name": "Ein frei wählbarer Text ohne Leerzeichen.",
             "semester": "Das Semester, für welches diese Lerngruppe erstellt werden soll. sose oder wise gefolgt "
             "von der zweistelligen Jahreszahl (z. B. sose22).",
-            "status": "Gibt an ob die Lerngruppe für weitere Lernwillige geöffnet ist (open) oder nicht (closed)."
+            "status": "Gibt an ob die Lerngruppe für weitere Lernwillige geöffnet ist (open) oder nicht (closed) oder ob es sich um eine private Lerngruppe handelt (private)."
         }
     )
     @cmd_lg.command(name="request", aliases=["r", "req"])
     async def cmd_request_group(self, ctx, arg_course, arg_name, arg_semester, arg_state):
 
-        arg_state = re.sub(r"[^a-z]", "", arg_state.lower())
+        arg_state = re.sub(r"[^a-z0-9]", "", arg_state.lower())
+        arg_semester = re.sub(r"[^a-z0-9]", "", arg_semester.lower())
+
+        if re.match(r"(wise)|(sose)[0-9]+", arg_state) and re.match(r"(open)|(closed*)|(private)", arg_semester):
+            tmp = arg_state
+            arg_state = arg_semester
+            arg_semester = tmp
+
+        arg_semester = re.sub(r"[^wiseo0-9]", "", arg_semester)
+
+        arg_state = re.sub(r"[^a-z]", "", arg_state)
 
         state = self.arg_state_to_group_state(arg_state)
 
@@ -597,8 +607,7 @@ class LearningGroups(commands.Cog):
             arg_name.lower().replace(" ", "-")
         )
 
-        arg_semester = arg_semester.lower()
-        arg_semester = re.sub(r"[^wiseo0-9]", "", arg_semester)
+
 
 
         if len(arg_semester) == 8:
