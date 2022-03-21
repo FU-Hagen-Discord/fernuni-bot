@@ -583,13 +583,24 @@ class LearningGroups(commands.Cog):
     )
     @cmd_lg.command(name="request", aliases=["r", "req"])
     async def cmd_request_group(self, ctx, arg_course, arg_name, arg_semester, arg_state):
+
+        arg_state = re.sub(r"[^a-z]", "", arg_state.lower())
+
         state = self.arg_state_to_group_state(arg_state)
+
+        arg_course = re.sub(r"[^0-9]", "", arg_course)
+        arg_course = re.sub(r"^0+", "", arg_course)
+
         arg_name = re.sub(
             r"[^A-Za-zäöüß0-9-]",
             "",
             arg_name.lower().replace(" ", "-")
         )
+
         arg_semester = arg_semester.lower()
+        arg_semester = re.sub(r"[^wiseo0-9]", "", arg_semester)
+
+
         if len(arg_semester) == 8:
             arg_semester = f"{arg_semester[0:4]}{arg_semester[-2:]}"
         channel_config = {"owner_id": ctx.author.id, "course": arg_course, "name": arg_name, "semester": arg_semester,
