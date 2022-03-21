@@ -925,7 +925,7 @@ class LearningGroups(commands.Cog):
             channel=channel,
             title="Jemand möchte deiner Lerngruppe beitreten!",
             description=f"<@!{ctx.author.id}> möchte gerne der Lerngruppe **#{channel.name}** beitreten.",
-            message=f"Anfrage von <@!{ctx.author.id}>",
+            message=f"<@!{group_config['owner_id']}>, du wirst gebraucht. Anfrage von <@!{ctx.author.id}>:",
             custom_prefix="learninggroups:join"
         )
         await utils.send_dm(ctx.author, f"Deine Anfrage wurde an **#{channel.name}** gesendet. "
@@ -999,8 +999,8 @@ class LearningGroups(commands.Cog):
 
         if self.is_group_owner(channel, member) or self.is_mod(member):
             if confirmed:
-                if message.mentions and len(message.mentions) == 1:
-                    await self.add_member_to_group(channel, message.mentions[0])
+                if message.mentions and len(message.mentions) == 2:
+                    await self.add_member_to_group(channel, message.mentions[1])
                     await self.update_permissions(channel)
 
                 else:
