@@ -257,8 +257,10 @@ class LearningGroups(commands.Cog):
         category = await self.bot.fetch_channel(self.categories[GroupState.ARCHIVED])
         await self.move_channel(channel, category)
         await channel.edit(name=f"archiv-${channel.name[1:]}")
-        await self.remove_group(channel)
         await self.update_permissions(channel)
+        await self.remove_group(channel)
+        await self.update_statusmessage()
+
 
     async def set_channel_state(self, channel, state: GroupState = None):
         channel_config = self.channels[str(channel.id)]
