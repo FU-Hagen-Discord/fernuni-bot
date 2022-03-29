@@ -116,14 +116,20 @@ class Joboffers(commands.Cog):
 
     async def post_new_jobs(self, jobs):
         fak_text = "aller Fakultäten" if STD_FAK == 'all' else f"der Fakultät {STD_FAK}"
+        joboffers_channel = await self.bot.fetch_channel(self.joboffers_channel_id)
+
         embed = disnake.Embed(title="Neue Stellenangebote der Uni",
                               description=f"Ich habe folgende neue Stellenangebote {fak_text} gefunden:")
+        i = 0
         for job in jobs:
+            i += 1
             descr = f"{job['info']}\nDeadline: {job['deadline']}\n{job['link']}"
             embed.add_field(name=job['title'], value=descr, inline=False)
-
-        joboffers_channel = await self.bot.fetch_channel(self.joboffers_channel_id)
-        await joboffers_channel.send(embed=embed)
+            if i % 5 == 0:
+                await joboffers_channel.send(embed=embed)
+                embed = disnake.Embed(title="Neue Stellenangebote der Uni ... Fortsetzung")
+        if i % 5 != 0:
+            await joboffers_channel.send(embed=embed)
 
     async def fetch_joboffers(self):
         sess = aiohttp.ClientSession()
