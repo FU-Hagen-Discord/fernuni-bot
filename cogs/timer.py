@@ -42,6 +42,7 @@ from views import timer_view
   
 """
 
+LEADERBOARD_DAYTIME = {'weekday': 0, 'hour': 6} # Montag 6 Uhr
 
 class Timer(commands.Cog):
 
@@ -50,6 +51,7 @@ class Timer(commands.Cog):
         self.guild_id = int(os.getenv('DISCORD_GUILD'))
         self.timer_file_path = os.getenv("DISCORD_TIMER_FILE")
         self.stats_file_path = os.getenv("DISCORD_TIMER_STATS_FILE")
+        self.timer_leaderboard_channel_id = os.getenv("DISCORD_TIMER_LEADERBOARD_CHANNEL")
         self.default_names = ["Rapunzel", "Aschenputtel", "Schneewittchen", "Frau Holle", "Schneeweißchen und Rosenrot",
                               "Gestiefelter Kater", "Bremer Stadtmusikanten"]
         self.session_stat_messages = ["Fantastisch!", "Glückwunsch!", "Gut gemacht!", "Super!", "Spitze!", "Toll!",
@@ -59,6 +61,7 @@ class Timer(commands.Cog):
         self.load_running_timers()
         self.load_stats()
         self.run_timer.start()
+        self.weekly_leaderboard_loop.start()
 
     # #################################################
     # ----- load and save -----------------------------
@@ -363,7 +366,7 @@ class Timer(commands.Cog):
         await interaction.response.edit_message(content=content)
 
     # #################################################
-    # ----- help functions for timer run --------------
+    # ----- helper functions for timer run ------------
     # #################################################
 
     def get_view(self, disabled=False, voicy=False):
@@ -704,24 +707,44 @@ class Timer(commands.Cog):
     # #################################################
     # ----- weekly stats leaderboard ------------------
     # #################################################
-    # TODO: - weekly leaderboard
 
-    async def calc_weekly_leaderboard(self):
-        '''
-                        for (date, data) in user_stats.items():
-                            if monday_iso >= date >= today_iso:
-                                sum_learning_time += data['time']
-                                sum_sessions += data['sessions']'''
-
+    def calc_weekly_leaderboard(self):
         today = datetime.today().date()
         today_iso = today.isoformat()
         seven_days_ago = today - timedelta(days=7)
         seven_days_ago_iso = seven_days_ago.isoformat()
 
+        weekly_stats = {}
+
         for user_id, user_stats in self.stats.items():
             sum_learning_time = 0
-            pass
-        pass
+            for (date, data) in user_stats.items():
+                if seven_days_ago_iso >= date >= today_iso:
+                    sum_learning_time += data['time']
+            weekly_stats[user_id] = sum_learning_time
+
+        return weekly_stats
+
+    async def post_weekly_leaderboard(self):
+        weekly_stats = self.calc_weekly_leaderboard()
+        weekly_stats_sorted = dict(sorted(weekly_stats.items(), key=lambda item: item[1], reverse=True))
+
+        embed = disnake.Embed(title="Wöchentliches Lern-Leaderboard",
+                              description="Wer hat in der letzten Woche am am längsten gelernt?")
+
+        # TODO insert list
+        embed.add_field(name="Position", value="1\n2\n3")
+        embed.add_field(name="Name", value="...\n...\n...")
+        embed.add_field(name="Zeit", value="...\n...\n...")
+
+        embed.add_field(name="Mitmachen:",
+                        value="Willst du deine Lernerfolge auch hier teilen? Dann nutze den Timer mit dem "
+                              "Kommando `/timer run`. Um dir deine persönliche Statistik ausgeben zu lassen,"
+                              "nutze das Kommando `/timer stats`",
+                        inline=False)
+
+        timer_leaderboard_channel = await self.bot.fetch_channel(int(self.timer_leaderboard_channel_id))
+        await timer_leaderboard_channel.send("", embed=embed)
 
     # #################################################
     # ----- loops and error handling ------------------
@@ -746,6 +769,15 @@ class Timer(commands.Cog):
     @run_timer.before_loop
     async def before_timer(self):
         await sleep(60)
+
+    @tasks.loop(seconds=20) # TODO edit time to hours=7*24
+    async def weekly_leaderboard_loop(self):
+        await self.post_weekly_leaderboard()
+
+    @weekly_leaderboard_loop.before_loop
+    async def before_weekly_leaderboard_loop(self):
+        # TODO check if monday between 6 and 7, if not: sleep
+        await sleep(20)
 
     @timer.error
     async def timer_error(self, ctx, error):
