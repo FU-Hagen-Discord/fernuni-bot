@@ -42,8 +42,6 @@ from views import timer_view
   
 """
 
-# TODO: - weekly leaderboard
-
 
 class Timer(commands.Cog):
 
@@ -702,6 +700,28 @@ class Timer(commands.Cog):
             await interaction.response.send_message(f"Statistik für **{user_name}** vom **{date}** erfolgreich geändert.\n"
                                                     f"Neue Zeit: **{new_time}**\n"
                                                     f"Neue Anzahl Sessions: **{new_sessions}**", ephemeral=True)
+
+    # #################################################
+    # ----- weekly stats leaderboard ------------------
+    # #################################################
+    # TODO: - weekly leaderboard
+
+    async def calc_weekly_leaderboard(self):
+        '''
+                        for (date, data) in user_stats.items():
+                            if monday_iso >= date >= today_iso:
+                                sum_learning_time += data['time']
+                                sum_sessions += data['sessions']'''
+
+        today = datetime.today().date()
+        today_iso = today.isoformat()
+        seven_days_ago = today - timedelta(days=7)
+        seven_days_ago_iso = seven_days_ago.isoformat()
+
+        for user_id, user_stats in self.stats.items():
+            sum_learning_time = 0
+            pass
+        pass
 
     # #################################################
     # ----- loops and error handling ------------------
