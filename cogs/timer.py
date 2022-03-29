@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import random
@@ -42,7 +43,8 @@ from views import timer_view
   
 """
 
-LEADERBOARD_DAYTIME = {'weekday': 0, 'hour': 6} # Montag 6 Uhr
+LEADERBOARD_DAYTIME = {'weekday': 0, 'hour': 6}     # Montag 6 Uhr
+
 
 class Timer(commands.Cog):
 
@@ -51,7 +53,6 @@ class Timer(commands.Cog):
         self.guild_id = int(os.getenv('DISCORD_GUILD'))
         self.timer_file_path = os.getenv("DISCORD_TIMER_FILE")
         self.stats_file_path = os.getenv("DISCORD_TIMER_STATS_FILE")
-        self.timer_leaderboard_channel_id = os.getenv("DISCORD_TIMER_LEADERBOARD_CHANNEL")
         self.default_names = ["Rapunzel", "Aschenputtel", "Schneewittchen", "Frau Holle", "Schneeweißchen und Rosenrot",
                               "Gestiefelter Kater", "Bremer Stadtmusikanten"]
         self.session_stat_messages = ["Fantastisch!", "Glückwunsch!", "Gut gemacht!", "Super!", "Spitze!", "Toll!",
@@ -61,7 +62,9 @@ class Timer(commands.Cog):
         self.load_running_timers()
         self.load_stats()
         self.run_timer.start()
-        self.weekly_leaderboard_loop.start()
+        if os.getenv("DISCORD_TIMER_LEADERBOARD") == "yes":
+            self.timer_leaderboard_channel_id = os.getenv("DISCORD_TIMER_LEADERBOARD_CHANNEL")
+            self.weekly_leaderboard_loop.start()
 
     # #################################################
     # ----- load and save -----------------------------
@@ -719,10 +722,10 @@ class Timer(commands.Cog):
         for user_id, user_stats in self.stats.items():
             sum_learning_time = 0
             for (date, data) in user_stats.items():
-                if seven_days_ago_iso >= date >= today_iso:
+                if seven_days_ago_iso <= date <= today_iso:
                     sum_learning_time += data['time']
-            weekly_stats[user_id] = sum_learning_time
-
+            if sum_learning_time > 0:
+                weekly_stats[user_id] = sum_learning_time
         return weekly_stats
 
     async def post_weekly_leaderboard(self):
@@ -732,14 +735,25 @@ class Timer(commands.Cog):
         embed = disnake.Embed(title="Wöchentliches Lern-Leaderboard",
                               description="Wer hat in der letzten Woche am am längsten gelernt?")
 
-        # TODO insert list
-        embed.add_field(name="Position", value="1\n2\n3")
-        embed.add_field(name="Name", value="...\n...\n...")
-        embed.add_field(name="Zeit", value="...\n...\n...")
+        name_content = ""
+        time_content = ""
+        rang_content = ""
+        i = 1
+        for user_id, time in weekly_stats_sorted.items():
+            user = self.bot.get_user(int(user_id)).mention
+            name_content += f"{user}\n"
+            time_content += f"{time} min\n"
+            rang_content += f"{i}\n"
+            i += 1
+            if i > 10:
+                break
 
+        embed.add_field(name="Rang", value=rang_content)
+        embed.add_field(name="Name", value=name_content)
+        embed.add_field(name="Zeit", value=time_content)
         embed.add_field(name="Mitmachen:",
                         value="Willst du deine Lernerfolge auch hier teilen? Dann nutze den Timer mit dem "
-                              "Kommando `/timer run`. Um dir deine persönliche Statistik ausgeben zu lassen,"
+                              "Kommando `/timer run`. Um dir deine persönliche Statistik ausgeben zu lassen, "
                               "nutze das Kommando `/timer stats`",
                         inline=False)
 
@@ -768,16 +782,24 @@ class Timer(commands.Cog):
 
     @run_timer.before_loop
     async def before_timer(self):
-        await sleep(60)
+        await asyncio.sleep(60)
 
-    @tasks.loop(seconds=20) # TODO edit time to hours=7*24
+    @tasks.loop(hours=7*24)
     async def weekly_leaderboard_loop(self):
         await self.post_weekly_leaderboard()
 
     @weekly_leaderboard_loop.before_loop
     async def before_weekly_leaderboard_loop(self):
-        # TODO check if monday between 6 and 7, if not: sleep
-        await sleep(20)
+        await self.bot.wait_until_ready()
+        today = datetime.today()
+        days_to_wait = (LEADERBOARD_DAYTIME["weekday"] - today.weekday()) % 7
+        hours_to_wait = LEADERBOARD_DAYTIME["hour"] - today.hour
+
+        sum_wait = (days_to_wait*24 + hours_to_wait) * 3600
+        if sum_wait < 0:
+            sum_wait = (7 * 24 + hours_to_wait) * 3600
+        print(f"TIMER_LEADERBOARD: schlafe {sum_wait} Sekunden")
+        await asyncio.sleep(sum_wait)   # schlafe bis nächsten Tag 6 Uhr
 
     @timer.error
     async def timer_error(self, ctx, error):
