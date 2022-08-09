@@ -695,7 +695,7 @@ class LearningGroups(commands.Cog):
         command_group="lg",
         category="learninggroups",
         syntax="!lg open",
-        brief="Öffnet den Lerngruppen-Kanal wenn du die Organisatorin dafür bist. ",
+        brief="Öffnet den Lerngruppen-Kanal wenn du die Organisatorin bist. ",
         description=("Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. "
                      "Verschiebt den Lerngruppen-Kanal in die Kategorie für offene Kanäle und ändert das Icon. "
                      "Diese Aktion kann nur von der Organisatorin der Lerngruppe ausgeführt werden. ")
@@ -709,7 +709,7 @@ class LearningGroups(commands.Cog):
         command_group="lg",
         category="learninggroups",
         syntax="!lg close",
-        brief="Schließt den Lerngruppen-Kanal wenn du die Organisatorin dafür bist. ",
+        brief="Schließt den Lerngruppen-Kanal wenn du die Organisatorin bist. ",
         description=("Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. "
                      "Stellt die Lerngruppe auf geschlossen. Dies ist rein symbolisch und zeigt an, "
                      "dass keine neuen Mitglieder mehr aufgenommen werden. "
@@ -724,7 +724,7 @@ class LearningGroups(commands.Cog):
         command_group="lg",
         category="learninggroups",
         syntax="!lg private",
-        brief="Macht aus deiner Lerngruppe eine private Lerngruppe wenn du die Organisatorin dafür bist. ",
+        brief="Macht aus deiner Lerngruppe eine private Lerngruppe wenn du die Organisatorin bist. ",
         description=("Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. "
                      "Stellt die Lerngruppe auf privat. Es haben nur noch Mitglieder "
                      "der Lerngruppe zugriff auf den Kanal. (siehe `!lg members`)"
@@ -806,7 +806,7 @@ class LearningGroups(commands.Cog):
                 await self.save_groups()
                 await self.update_permissions(ctx.channel)
                 await ctx.channel.send(
-                    f"Glückwunsch {new_owner.mention}! Du bist jetzt die Organisatorin für diese Lerngruppe.")
+                    f"Glückwunsch {new_owner.mention}! Du bist jetzt die Organisatorin dieser Lerngruppe.")
 
     @help(
         command_group="lg",
