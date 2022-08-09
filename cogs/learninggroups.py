@@ -331,9 +331,9 @@ class LearningGroups(commands.Cog):
                            "und jeder kann darin schreiben. Eine private Lerngruppe ist unsichtbar und auf eine "
                            "Gruppe an Kommilitoninnen beschränkt."
                            "```"
-                           "Besitzerinfunktionen:\n"
+                           "Funktionen für Gruppenorganisatorinnen:\n"
                            "!lg addmember <@newmember>: Fügt ein Mitglied zur Lerngruppe hinzu.\n"                           
-                           "!lg owner <@newowner>: Ändert die Besitzerin der Lerngruppe auf @newowner.\n"
+                           "!lg owner <@newowner>: Ändert die Organisatorin der Lerngruppe auf @newowner.\n"
                            "!lg open: Öffnet eine Lerngruppe.\n"
                            "!lg close: Schließt eine Lerngruppe.\n"
                            "!lg private: Stellt die Lerngruppe auf privat.\n"
@@ -343,7 +343,7 @@ class LearningGroups(commands.Cog):
                            "\nKommandos für alle:\n"
                            "!lg id: Zeigt die ID der Lerngruppe an mit der andere Kommilitoninnen beitreten können.\n"
                            "!lg members: Zeigt die Mitglieder der Lerngruppe an.\n"
-                           "!lg owner: Zeigt die Besitzerin der Lerngruppe.\n"
+                           "!lg owner: Zeigt die Organisatorin der Lerngruppe an.\n"
                            "!lg leave: Du verlässt die Lerngruppe.\n"
                            "!lg join: Anfrage stellen in die Lerngruppe aufgenommen zu werden.\n"
                            "\nMit dem nachfolgenden Kommando kann eine Kommilitonin darum "
@@ -520,7 +520,7 @@ class LearningGroups(commands.Cog):
             "name...": "Ein frei wählbarer Text (darf Leerzeichen enthalten).",
         },
         description="Kann auch zum Bearbeiten einer Überschrift genutzt werden. Bei bereits existierender "
-                    "Kursnummer wird die Überschrift abgeändert",
+                    "Kursnummer wird die Überschrift abgeändert.",
         mod=True
     )
     @cmd_lg.command(name="header")
@@ -547,7 +547,7 @@ class LearningGroups(commands.Cog):
             "semester": ("Das Semester, für welches diese Lerngruppe erstellt werden soll."
                          "sose oder wise gefolgt von der zweistelligen Jahreszahl (z. B. sose22)."),
             "status": "Gibt an ob die Lerngruppe für weitere Lernwillige geöffnet ist (open) oder nicht (closed).",
-            "@usermention": "Die so erwähnte Benutzerin wird als Besitzerin für die Lerngruppe gesetzt."
+            "@usermention": "Die so erwähnte Benutzerin wird als Organisatorin der Lerngruppe eingesetzt."
         },
         mod=True
     )
@@ -572,7 +572,7 @@ class LearningGroups(commands.Cog):
         brief="Stellt eine Anfrage für einen neuen Lerngruppen-Kanal.",
         example="!lg request 1142 mathegenies sose22 closed",
         description=("Moderatorinnen können diese Anfrage bestätigen, dann wird die Gruppe eingerichtet. "
-                     "Die Besitzerin der Gruppe ist die Benutzerin die die Anfrage eingestellt hat."),
+                     "Die Organisatorin der Gruppe ist die Benutzerin die die Anfrage eingestellt hat."),
         parameters={
             "coursenumber": "Nummer des Kurses, wie von der FernUni angegeben (ohne führende Nullen z. B. 1142).",
             "name": "Ein frei wählbarer Text ohne Leerzeichen.",
@@ -638,7 +638,7 @@ class LearningGroups(commands.Cog):
         description=("Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. "
                      "Die Lerngruppe wird in der Übersicht der Lerngruppen gelistet, so können Kommilitoninnen noch "
                      "Anfragen stellen, um in die Lerngruppe aufgenommen zu werden."
-                     "Diese Aktion kann nur von der Besitzerin der Lerngruppe ausgeführt werden. ")
+                     "Diese Aktion kann nur von der Organisatorin der Lerngruppe ausgeführt werden. ")
     )
     @cmd_lg.command(name="show")
     async def cmd_show(self, ctx):
@@ -661,7 +661,7 @@ class LearningGroups(commands.Cog):
         brief="Versteckt einen privaten Lerngruppenkanal. ",
         description=("Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. "
                      "Die Lerngruppe wird nicht mehr in der Liste der Lerngruppen aufgeführt. "
-                     "Diese Aktion kann nur von der Besitzerin der Lerngruppe ausgeführt werden. ")
+                     "Diese Aktion kann nur von der Organisatorin der Lerngruppe ausgeführt werden. ")
     )
     @cmd_lg.command(name="hide")
     async def cmd_hide(self, ctx):
@@ -695,10 +695,10 @@ class LearningGroups(commands.Cog):
         command_group="lg",
         category="learninggroups",
         syntax="!lg open",
-        brief="Öffnet den Lerngruppen-Kanal wenn du die Besitzerin bist. ",
+        brief="Öffnet den Lerngruppen-Kanal wenn du die Organisatorin dafür bist. ",
         description=("Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. "
                      "Verschiebt den Lerngruppen-Kanal in die Kategorie für offene Kanäle und ändert das Icon. "
-                     "Diese Aktion kann nur von der Besitzerin der Lerngruppe ausgeführt werden. ")
+                     "Diese Aktion kann nur von der Organisatorin der Lerngruppe ausgeführt werden. ")
     )
     @cmd_lg.command(name="open", aliases=["opened", "offen"])
     async def cmd_open(self, ctx):
@@ -709,11 +709,11 @@ class LearningGroups(commands.Cog):
         command_group="lg",
         category="learninggroups",
         syntax="!lg close",
-        brief="Schließt den Lerngruppen-Kanal wenn du die Besitzerin bist. ",
+        brief="Schließt den Lerngruppen-Kanal wenn du die Organisatorin dafür bist. ",
         description=("Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. "
                      "Stellt die Lerngruppe auf geschlossen. Dies ist rein symbolisch und zeigt an, "
                      "dass keine neuen Mitglieder mehr aufgenommen werden. "
-                     "Diese Aktion kann nur von der Besitzerin der Lerngruppe ausgeführt werden. ")
+                     "Diese Aktion kann nur von der Organisatorin der Lerngruppe ausgeführt werden. ")
     )
     @cmd_lg.command(name="close", aliases=["closed", "geschlossen"])
     async def cmd_close(self, ctx):
@@ -724,11 +724,11 @@ class LearningGroups(commands.Cog):
         command_group="lg",
         category="learninggroups",
         syntax="!lg private",
-        brief="Macht aus deiner Lerngruppe eine private Lerngruppe wenn du die Besitzerin bist. ",
+        brief="Macht aus deiner Lerngruppe eine private Lerngruppe wenn du die Organisatorin dafür bist. ",
         description=("Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. "
                      "Stellt die Lerngruppe auf privat. Es haben nur noch Mitglieder "
                      "der Lerngruppe zugriff auf den Kanal. (siehe `!lg members`)"
-                     "Diese Aktion kann nur von der Besitzerin der Lerngruppe ausgeführt werden. ")
+                     "Diese Aktion kann nur von der Organisatorin der Lerngruppe ausgeführt werden. ")
     )
     @cmd_lg.command(name="private", aliases=["privat"])
     async def cmd_private(self, ctx):
@@ -742,7 +742,7 @@ class LearningGroups(commands.Cog):
         command_group="lg",
         category="learninggroups",
         syntax="!lg rename <name>",
-        brief="Ändert den Namen des Lerngruppen-Kanals, in dem das Komando ausgeführt wird.",
+        brief="Ändert den Namen des Lerngruppen-Kanals, in dem das Kommando ausgeführt wird.",
         example="!lg rename matheluschen",
         description="Aus #1142-matheprofis-sose22 wird nach dem Aufruf des Beispiels #1142-matheluschen-sose22.",
         parameters={
@@ -759,7 +759,7 @@ class LearningGroups(commands.Cog):
         command_group="lg",
         syntax="!lg archive",
         category="learninggroups",
-        brief="Archiviert den Lerngruppen-Kanal",
+        brief="Archiviert den Lerngruppen-Kanal.",
         description="Verschiebt den Lerngruppen-Kanal, in welchem dieses Kommando ausgeführt wird, ins Archiv.",
         mod=True
     )
@@ -773,10 +773,10 @@ class LearningGroups(commands.Cog):
         category="learninggroups",
         syntax="!lg owner <@usermention>",
         example="!owner @someuser",
-        brief="Setzt die Besitzerin eines Lerngruppen-Kanals",
+        brief="Setzt die Organisatorin eines Lerngruppen-Kanals.",
         description="Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. ",
         parameters={
-            "@usermention": "Die neue Besitzerin der Lerngruppe."
+            "@usermention": "Die neue Organisatorin der Lerngruppe."
         }
     )
     @cmd_lg.command(name="owner")
@@ -794,7 +794,7 @@ class LearningGroups(commands.Cog):
 
         if not new_owner:
                 user = await self.bot.fetch_user(owner_id)
-                await ctx.channel.send(f"Besitzerin: @{user.name}#{user.discriminator}")
+                await ctx.channel.send(f"Organisatorin: @{user.name}#{user.discriminator}")
 
         elif isinstance(group_config, dict):
             owner = await self.bot.fetch_user(owner_id)
@@ -806,7 +806,7 @@ class LearningGroups(commands.Cog):
                 await self.save_groups()
                 await self.update_permissions(ctx.channel)
                 await ctx.channel.send(
-                    f"Glückwunsch {new_owner.mention}! Du bist jetzt die Besitzerin dieser Lerngruppe.")
+                    f"Glückwunsch {new_owner.mention}! Du bist jetzt die Organisatorin für diese Lerngruppe.")
 
     @help(
         command_group="lg",
@@ -878,7 +878,7 @@ class LearningGroups(commands.Cog):
             user = await self.bot.fetch_user(user_id)
             names.append("@" + user.name + "#" + user.discriminator)
 
-        await ctx.channel.send(f"Besitzerin: **@{owner.name}#{owner.discriminator}**\nMitglieder: " +
+        await ctx.channel.send(f"Organisatorin: **@{owner.name}#{owner.discriminator}**\nMitglieder: " +
                                (f"{', '.join(names)}" if len(names) > 0 else "Keine"))
 
     @help(
@@ -901,7 +901,7 @@ class LearningGroups(commands.Cog):
         command_group="lg",
         category="learninggroups",
         syntax="!lg join <lg-id>",
-        brief="Fragt bei der Besitzerin einer Lerngruppe um Aufnahme.",
+        brief="Fragt bei der Organisatorin einer Lerngruppe um Aufnahme an.",
         parameters={
             "id": "Die ID zur Lerngruppe."
         }
@@ -929,7 +929,7 @@ class LearningGroups(commands.Cog):
             custom_prefix="learninggroups:join"
         )
         await utils.send_dm(ctx.author, f"Deine Anfrage wurde an **#{channel.name}** gesendet. "
-                                        "Sobald die Besitzerin der Lerngruppe darüber "
+                                        "Sobald die Organisatorin der Lerngruppe darüber "
                                         "entschieden hat bekommst du Bescheid.")
 
     @help(
@@ -963,7 +963,7 @@ class LearningGroups(commands.Cog):
             return
 
         if group_config["owner_id"] == ctx.author.id:
-            await ctx.channel.send("Du kannst nicht aus deiner eigenen Lerngruppe flüchten. Übertrage erst den Besitz.")
+            await ctx.channel.send("Du kannst nicht aus deiner eigenen Lerngruppe flüchten. Gib erst die Verantwortung ab.")
             return
 
         await self.remove_member_from_group(ctx.channel, ctx.author)
