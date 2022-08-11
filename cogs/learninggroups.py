@@ -349,7 +349,7 @@ class LearningGroups(commands.Cog):
                            "\nMit dem nachfolgenden Kommando kann eine Kommilitonin darum "
                            "bitten in die Lerngruppe aufgenommen zu werden wenn die Gruppe privat ist.\n"
                            f"!lg join {channel.id}"
-                            "\n(Manche Kommandos werden Discord eingeschränkt und können nur einmal alle 5 Minuten ausgeführt werden.)"
+                            "\n(Manche Kommandos werden von Discord eingeschränkt und können nur einmal alle 5 Minuten ausgeführt werden.)"
                            "```"
                            )
         self.groups["groups"][str(channel.id)] = {
