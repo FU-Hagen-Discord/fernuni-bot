@@ -15,11 +15,14 @@ DATE_TIME_FMT = os.getenv("DISCORD_DATE_TIME_FORMAT")
 async def send_dm(user, message, embed=None):
     """ Send DM to a user/member """
 
-    if type(user) is disnake.User or type(user) is disnake.Member:
-        if user.dm_channel is None:
-            await user.create_dm()
+    try:
+        if type(user) is disnake.User or type(user) is disnake.Member:
+            if user.dm_channel is None:
+                await user.create_dm()
 
-        return await user.dm_channel.send(message, embed=embed)
+            return await user.dm_channel.send(message, embed=embed)
+    except:
+        print(f"Cannot send DM to {user} with text: {message}")
 
 
 def is_mod(ctx):

@@ -56,6 +56,7 @@ class Boty(commands.Bot):
         self.add_cog(calmdown.Calmdown(self))
         self.add_cog(github.Github(self))
         self.add_cog(timer.Timer(self))
+        # self.add_cog(job_offers.Joboffers(self))
 
 
 bot = Boty()
