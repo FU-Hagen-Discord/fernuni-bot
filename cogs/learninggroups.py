@@ -15,9 +15,10 @@ import utils
 from cogs.help import help, handle_error, help_category
 
 """
-  Environment Variablen:
+  Umgebungsvariablen:
   DISCORD_LEARNINGGROUPS_OPEN - Kategorie-ID der offenen Lerngruppen
-  DISCORD_LEARNINGGROUPS_CLOSE - Kategorie-ID der privaten Lerngruppen
+  DISCORD_LEARNINGGROUPS_CLOSE - Kategorie-ID der geschlossenen Lerngruppen
+  DISCORD_LEARNINGGROUPS_PRIVATE - Kategorie-ID der privaten Lerngruppen
   DISCORD_LEARNINGGROUPS_ARCHIVE - Kategorie-ID der archivierten Lerngruppen
   DISCORD_LEARNINGGROUPS_REQUEST - ID des Kanals, in dem Anfragen, die über den Bot gestellt wurden, eingetragen werden
   DISCORD_LEARNINGGROUPS_INFO - ID des Kanals, in dem die Lerngruppen-Informationen gepostet/aktualisert werden
@@ -651,7 +652,7 @@ class LearningGroups(commands.Cog):
                 elif channel_config.get("state") == GroupState.OPEN:
                     await ctx.channel.send("Nichts zu tun. Offene Lerngruppen werden sowieso in der Liste angezeigt.")
                 elif channel_config.get("state") == GroupState.CLOSED:
-                    await ctx.channel.send("Möchtest du die Gruppen öffnen? Versuch‘s mit `!lg open`")
+                    await ctx.channel.send("Möchtest du die Gruppen öffnen? Versuch's mit `!lg open`")
 
 
     @help(
