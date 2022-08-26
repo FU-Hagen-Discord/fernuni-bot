@@ -23,7 +23,7 @@ from cogs.help import help, handle_error, help_category
   DISCORD_LEARNINGGROUPS_INFO - ID des Kanals, in dem die Lerngruppen-Informationen gepostet/aktualisert werden
   DISCORD_LEARNINGGROUPS_FILE - Name der Datei mit Verwaltungsdaten der Lerngruppen (minimaler Inhalt: {"requested": {},"groups": {}})
   DISCORD_LEARNINGGROUPS_COURSE_FILE - Name der Datei welche die Kursnamen für die Lerngruppen-Informationen enthält (minimaler Inhalt: {})
-  DISCORD_MOD_ROLE - ID der Moderatorin, die erweiterte Lerngruppen-Aktionen ausführen darf
+  DISCORD_MOD_ROLE - ID der Moderations-Rolle, die erweiterte Lerngruppen-Aktionen ausführen darf
 """
 
 LG_OPEN_SYMBOL = f'🌲'
@@ -331,7 +331,7 @@ class LearningGroups(commands.Cog):
                            "und jeder kann darin schreiben. Eine private Lerngruppe ist unsichtbar und auf eine "
                            "Gruppe an Kommilitoninnen beschränkt."
                            "```"
-                           "Funktionen für Gruppenorganisatorinnen:\n"
+                           "Funktionen für Lerngruppenorganisatorinnen:\n"
                            "!lg addmember <@newmember>: Fügt ein Mitglied zur Lerngruppe hinzu.\n"                           
                            "!lg organizer <@neworganizer>: Ändert die Organisatorin der Lerngruppe auf @neworganizer.\n"
                            "!lg open: Öffnet eine Lerngruppe.\n"
@@ -637,7 +637,7 @@ class LearningGroups(commands.Cog):
         brief="Zeigt einen privaten Lerngruppenkanal trotzdem in der Liste an.",
         description=("Muss im betreffenden Lerngruppenkanal ausgeführt werden. "
                      "Die Lerngruppe wird in der Übersicht der Lerngruppen aufgeführt, so dass Kommilitoninnen noch "
-                     "anfragen können in die Lerngruppe aufgenommen zu werden."
+                     "anfragen können, in die Lerngruppe aufgenommen zu werden."
                      "Diese Aktion kann nur von der Organisatorin der Lerngruppe ausgeführt werden. ")
     )
     @cmd_lg.command(name="show")
@@ -772,7 +772,7 @@ class LearningGroups(commands.Cog):
         command_group="lg",
         category="learninggroups",
         syntax="!lg organizer <@usermention>",
-        example="!organizer @someuser",
+        example="!lg organizer @someuser",
         brief="Bestimmt die Organisatorin eines Lerngruppenkanals.",
         description="Muss im betreffenden Lerngruppenkanal ausgeführt werden. ",
         parameters={
