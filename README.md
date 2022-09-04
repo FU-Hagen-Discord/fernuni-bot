@@ -27,7 +27,7 @@ Zu dem Zeitpunkt kann Boty:
 
 * [Lerngruppenverwaltung](https://github.com/FU-Hagen-Discord/fernuni-bot/tree/master/cogs/learninggroups.py)
   * Anfragen/ Erstellen/ Umbenennen/ Löschen
-  * Ownership -> Toggle: 🛑vollzählig/ 🌲offen für neue Mitglieder
+  * Organisatorenrolle -> Lerngruppenstatus als öffentlich sichtbar und 🌲offen für neue Mitglieder oder 🛑vollzählig, oder als unsichtbare 🚪private Gruppe festlegen.
 
 * [Kalenderfunktion](https://github.com/FU-Hagen-Discord/fernuni-bot/tree/master/cogs/appointments.py)
 
