@@ -2,24 +2,20 @@ import json
 import os
 
 import disnake
+import emoji
 from disnake.ext import commands
 
 import utils
-from cogs.help import help, handle_error, help_category
 
 
-@help_category("updater", "Updater", "Diese Kommandos werden zum Updaten von Nachrichten benutzt, die Boty automatisch erzeugt.")
-@help_category("info", "Informationen", "Kleine Helferlein, um schnell an Informationen zu kommen.")
 class Roles(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.roles_file = os.getenv("DISCORD_ROLES_FILE")
         self.channel_id = int(os.getenv("DISCORD_ROLLEN_CHANNEL", "0"))
-        self.degree_program_message_id = int(os.getenv("DISCORD_DEGREE_PROGRAM_MSG", "0"))
-        self.color_message_id = int(os.getenv("DISCORD_COLOR_MSG", "0"))
-        self.special_message_id = int(os.getenv("DISCORD_SPECIAL_MSG", "0"))
         self.assignable_roles = {}
         self.load_roles()
+        self.register_views()
 
     def load_roles(self):
         """ Loads all assignable roles from ROLES_FILE """
@@ -27,202 +23,100 @@ class Roles(commands.Cog):
         roles_file = open(self.roles_file, mode='r')
         self.assignable_roles = json.load(roles_file)
 
-    def get_degree_program_emojis(self):
-        """ Creates a dict for degree program role emojis """
+    def register_views(self):
+        """ Register view for each category at view manager """
 
-        tmp_emojis = {}
-        emojis = {}
-        degree_program_assignable = self.assignable_roles[0]
+        for role_category, roles in self.assignable_roles.items():
+            prefix = f"assign_{role_category}"
+            self.bot.view_manager.register(prefix, self.on_button_clicked)
 
-        # start with getting all emojis that are used in those roles as a dict
-        for emoji in self.bot.emojis:
-            if emoji.name in degree_program_assignable:
-                tmp_emojis[emoji.name] = emoji
+    def get_stat_roles(self):
+        """ Get all roles that should be part of the stats Command """
 
-        # bring them in desired order
-        for key in degree_program_assignable.keys():
-            emojis[key] = tmp_emojis.get(key)
+        stat_roles = []
+        for category in self.assignable_roles.values():
+            if category["in_stats"]:
+                for role in category["roles"].values():
+                    stat_roles.append(role["name"])
 
-        return emojis
+        return stat_roles
 
-    def get_color_emojis(self):
-        """ Creates a dict for color role emojis """
+    async def on_button_clicked(self, button: disnake.ui.Button, interaction: disnake.MessageInteraction, value=None):
+        """
+        Add or Remove Roles, when Button is clicked. Role gets added, if the user clicking the button doesn't have
+        the role already assigned, and removed, if the role is already assigned
+        """
 
-        emojis = {}
-        color_assignable = self.assignable_roles[1]
+        guild_roles = {str(role.id): role for role in interaction.guild.roles}
+        role = guild_roles.get(value)
 
-        # start with getting all emojis that are used in those roles as a dict
-        for emoji in self.bot.emojis:
-            if emoji.name in color_assignable:
-                emojis[emoji.name] = emoji
+        if role in interaction.author.roles:
+            await interaction.author.remove_roles(role)
+            await interaction.send(f"Rolle \"{role.name}\" erfolgreich entfernt", ephemeral=True)
+        else:
+            await interaction.author.add_roles(role)
+            await interaction.send(f"Rolle \"{role.name}\" erfolgreich hinzugefügt", ephemeral=True)
 
-        return emojis
+    @commands.slash_command(name="update-roles", description="Update Self-Assignable Roles")
+    @commands.default_member_permissions(moderate_members=True)
+    async def cmd_update_roles(self, interaction: disnake.ApplicationCommandInteraction):
+        """ Update all role assignment messages in role assignment channel """
+        await interaction.response.defer()
 
-    def get_special_emojis(self):
-        """ Creates a dict for special role emojis """
+        channel = await interaction.guild.fetch_channel(self.channel_id)
+        await channel.purge()
+        for role_category, roles in self.assignable_roles.items():
+            prefix = f"assign_{role_category}"
+            fields = []
+            buttons = []
+            value = f""
+            guild_roles = {role.name: role for role in interaction.guild.roles}
 
-        return self.assignable_roles[2]
+            for key, role in roles.get("roles").items():
+                role_emoji = role.get('emoji') if role.get(
+                    'emoji') in emoji.UNICODE_EMOJI_ALIAS_ENGLISH else f"<{role.get('emoji')}>"
+                value += f"{role_emoji} : {role.get('name')}\n"
+                buttons.append({"emoji": role_emoji, "custom_id": f"{prefix}_{key}",
+                                "value": f"{str(guild_roles.get(role.get('name')).id)}"})
 
-    def get_key(self, role):
-        """ Get the key for a given role. This role is used for adding or removing a role from a user. """
+            if roles.get("list_roles"):
+                fields.append({"name": "Rollen", "value": value, "inline": False})
 
-        for key, role_name in self.assignable_roles[0].items():
-            if role_name == role.name:
-                return key
+            await self.bot.view_manager.dialog(
+                channel=channel,
+                title=f"Vergabe von {roles.get('name')}",
+                description="Durch klicken auf den entsprechenden Button kannst du dir die damit "
+                            "assoziierte Rolle zuweisen, bzw. entfernen.",
+                message="",
+                fields=fields,
+                callback_key=prefix,
+                buttons=buttons
+            )
 
-    @help(
-        category="info",
-        brief="Gibt die Mitgliederstatistik aus."
-    )
-    @commands.command(name="stats")
-    async def cmd_stats(self, ctx):
-        """ Sends stats in Chat. """
+    @commands.slash_command(name="stats", description="Rollen Statistik abrufen")
+    async def cmd_stats(self, interaction: disnake.ApplicationCommandInteraction, show: bool = False):
+        """
+        Send role statistics into chat, by default as ephemeral
 
-        guild = ctx.guild
+        Parameters
+        ----------
+        show: Sichtbar für alle?
+        """
+
+        guild = interaction.guild
         members = await guild.fetch_members().flatten()
-        answer = f''
+        guild_roles = {role.name: role for role in interaction.guild.roles}
+        stat_roles = self.get_stat_roles()
         embed = disnake.Embed(title="Statistiken",
-                              description=f'Wir haben aktuell {len(members)} Mitglieder auf diesem Server, verteilt auf folgende Rollen:')
+                              description=f'Wir haben aktuell {len(members)} Mitglieder auf diesem Server, '
+                                          f'verteilt auf folgende Rollen:')
 
-        for role in guild.roles:
-            if not self.get_key(role):
-                continue
+        for role_name in stat_roles:
+            role = guild_roles[role_name]
             role_members = role.members
-            if len(role_members) > 0 and not role.name.startswith("Farbe"):
-                embed.add_field(name=role.name, value=f'{len(role_members)} Mitglieder', inline=False)
+            num_members = len(role_members)
+            if num_members > 0:
+                embed.add_field(name=role.name,
+                                value=f'{num_members} {"Mitglieder" if num_members > 1 else "Mitglied"}', inline=False)
 
-        no_role = 0
-        for member in members:
-            # ToDo Search for study roles only!
-            if len(member.roles) == 1:
-                no_role += 1
-
-        embed.add_field(name="\u200B", value="\u200b", inline=False)
-        embed.add_field(name="Mitglieder ohne Rolle", value=str(no_role), inline=False)
-
-        await ctx.channel.send(answer, embed=embed)
-
-    @help(
-        category="updater",
-        brief="Aktualisiert die Vergabe-Nachricht von Studiengangs-Rollen.",
-        mod=True
-    )
-    @commands.command("update-degree-program")
-    @commands.check(utils.is_mod)
-    async def cmd_update_degree_program(self, ctx):
-        channel = await self.bot.fetch_channel(self.channel_id)
-        message = await channel.fetch_message(self.degree_program_message_id)
-        degree_program_emojis = self.get_degree_program_emojis()
-
-        embed = disnake.Embed(title="Vergabe von Studiengangs-Rollen",
-                              description="Durch klicken auf die entsprechende Reaktion kannst du dir die damit assoziierte Rolle zuweisen, oder entfernen. Dies funktioniert so, dass ein Klick auf die Reaktion die aktuelle Zuordnung dieser Rolle ändert. Das bedeutet, wenn du die Rolle, die mit <:St:763126549327118366> assoziiert ist, schon hast, aber die Reaktion noch nicht ausgewählt hast, dann wird dir bei einem Klick auf die Reaktion diese Rolle wieder weggenommen. ")
-
-        value = f""
-        for key, emoji in degree_program_emojis.items():
-            if emoji:
-                value += f"<:{key}:{emoji.id}> : {self.assignable_roles[0].get(key)}\n"
-
-        embed.add_field(name="Rollen",
-                        value=value,
-                        inline=False)
-
-        await message.edit(content="", embed=embed)
-        await message.clear_reactions()
-
-        for emoji in degree_program_emojis.values():
-            if emoji:
-                await message.add_reaction(emoji)
-
-    @help(
-        category="updater",
-        brief="Aktualisiert die Vergabe-Nachricht von Farb-Rollen.",
-        mod=True
-    )
-    @commands.command("update-color")
-    @commands.check(utils.is_mod)
-    async def cmd_update_color(self, ctx):
-        channel = await self.bot.fetch_channel(self.channel_id)
-        message = await channel.fetch_message(self.color_message_id)
-        color_emojis = self.get_color_emojis()
-
-        embed = disnake.Embed(title="Vergabe von Farb-Rollen",
-                              description="Durch klicken auf die entsprechende Reaktion kannst du dir die damit assoziierte Rolle zuweisen, oder entfernen. Dies funktioniert so, dass ein Klick auf die Reaktion die aktuelle Zuordnung dieser Rolle ändert. Das bedeutet, wenn du die Rolle, die mit <:FarbeGruen:771451407916204052> assoziiert ist, schon hast, aber die Reaktion noch nicht ausgewählt hast, dann wird dir bei einem Klick auf die Reaktion diese Rolle wieder weggenommen. ")
-
-        await message.edit(content="", embed=embed)
-        await message.clear_reactions()
-
-        for emoji in color_emojis.values():
-            if emoji:
-                await message.add_reaction(emoji)
-
-    @help(
-        category="updater",
-        brief="Aktualisiert die Vergabe-Nachricht von Spezial-Rollen.",
-        mod=True
-    )
-    @commands.command("update-special")
-    @commands.check(utils.is_mod)
-    async def cmd_update_special(self, ctx):
-        channel = await self.bot.fetch_channel(self.channel_id)
-        message = await channel.fetch_message(self.special_message_id)
-        special_emojis = self.get_special_emojis()
-
-        embed = disnake.Embed(title="Vergabe von Spezial-Rollen",
-                              description="Durch klicken auf die entsprechende Reaktion kannst du dir die damit assoziierte Rolle zuweisen, oder entfernen. Dies funktioniert so, dass ein Klick auf die Reaktion die aktuelle Zuordnung dieser Rolle ändert. Das bedeutet, wenn du die Rolle, die mit :exclamation: assoziiert ist, schon hast, aber die Reaktion noch nicht ausgewählt hast, dann wird dir bei einem Klick auf die Reaktion diese Rolle wieder weggenommen. ")
-
-        value = f""
-        for emoji, role in special_emojis.items():
-            value += f"{emoji} : {role}\n"
-
-        embed.add_field(name="Rollen",
-                        value=value,
-                        inline=False)
-
-        await message.edit(content="", embed=embed)
-        await message.clear_reactions()
-
-        for emoji in special_emojis.keys():
-            await message.add_reaction(emoji)
-
-    @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):
-        if payload.user_id == self.bot.user.id or payload.message_id not in [self.degree_program_message_id,
-                                                                             self.color_message_id,
-                                                                             self.special_message_id]:
-            return
-
-        if payload.emoji.name not in self.assignable_roles[0] and payload.emoji.name not in self.assignable_roles[
-            1] and payload.emoji.name not in self.assignable_roles[2]:
-            return
-
-        role_name = ""
-        guild = await self.bot.fetch_guild(payload.guild_id)
-        member = await guild.fetch_member(payload.user_id)
-        channel = await self.bot.fetch_channel(payload.channel_id)
-        message = await channel.fetch_message(payload.message_id)
-        roles = member.roles
-
-        await message.remove_reaction(payload.emoji, member)
-
-        if payload.emoji.name in self.assignable_roles[0]:
-            role_name = self.assignable_roles[0].get(payload.emoji.name)
-        elif payload.emoji.name in self.assignable_roles[1]:
-            role_name = self.assignable_roles[1].get(payload.emoji.name)
-        else:
-            role_name = self.assignable_roles[2].get(payload.emoji.name)
-
-        for role in roles:
-            if role.name == role_name:
-                await member.remove_roles(role)
-                await utils.send_dm(member, f"Rolle \"{role.name}\" erfolgreich entfernt")
-                break
-        else:
-            guild_roles = guild.roles
-
-            for role in guild_roles:
-                if role.name == role_name:
-                    await member.add_roles(role)
-                    await utils.send_dm(member, f"Rolle \"{role.name}\" erfolgreich hinzugefügt")
-
-    async def cog_command_error(self, ctx, error):
-        await handle_error(ctx, error)
+        await interaction.send(embed=embed, ephemeral=not show)
