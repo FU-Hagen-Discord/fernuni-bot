@@ -5,8 +5,6 @@ import disnake
 import emoji
 from disnake.ext import commands
 
-import utils
-
 
 class Roles(commands.Cog):
     def __init__(self, bot):
@@ -61,7 +59,7 @@ class Roles(commands.Cog):
     @commands.default_member_permissions(moderate_members=True)
     async def cmd_update_roles(self, interaction: disnake.ApplicationCommandInteraction):
         """ Update all role assignment messages in role assignment channel """
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
 
         channel = await interaction.guild.fetch_channel(self.channel_id)
         await channel.purge()
@@ -92,6 +90,8 @@ class Roles(commands.Cog):
                 callback_key=prefix,
                 buttons=buttons
             )
+
+        await interaction.edit_original_message("Rollen erfolgreich aktualisiert.")
 
     @commands.slash_command(name="stats", description="Rollen Statistik abrufen")
     async def cmd_stats(self, interaction: disnake.ApplicationCommandInteraction, show: bool = False):
