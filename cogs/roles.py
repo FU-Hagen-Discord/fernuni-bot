@@ -52,18 +52,16 @@ class Roles(commands.Cog):
 
         if role in interaction.author.roles:
             await interaction.author.remove_roles(role)
-            await utils.send_dm(interaction.author, f"Rolle \"{role.name}\" erfolgreich entfernt")
+            await interaction.send(f"Rolle \"{role.name}\" erfolgreich entfernt", ephemeral=True)
         else:
             await interaction.author.add_roles(role)
-            await utils.send_dm(interaction.author, f"Rolle \"{role.name}\" erfolgreich hinzugefügt")
-
-        await interaction.response.defer()
+            await interaction.send(f"Rolle \"{role.name}\" erfolgreich hinzugefügt", ephemeral=True)
 
     @commands.slash_command(name="update-roles", description="Update Self-Assignable Roles")
     @commands.default_member_permissions(moderate_members=True)
     async def cmd_update_roles(self, interaction: disnake.ApplicationCommandInteraction):
         """ Update all role assignment messages in role assignment channel """
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
 
         channel = await interaction.guild.fetch_channel(self.channel_id)
         await channel.purge()
@@ -95,6 +93,8 @@ class Roles(commands.Cog):
                 buttons=buttons
             )
 
+        await interaction.edit_original_message("Rollen erfolgreich aktualisiert.")
+
     @commands.slash_command(name="stats", description="Rollen Statistik abrufen")
     async def cmd_stats(self, interaction: disnake.ApplicationCommandInteraction, show: bool = False):
         """
@@ -116,7 +116,9 @@ class Roles(commands.Cog):
         for role_name in stat_roles:
             role = guild_roles[role_name]
             role_members = role.members
-            if len(role_members) > 0:
-                embed.add_field(name=role.name, value=f'{len(role_members)} Mitglieder', inline=False)
+            num_members = len(role_members)
+            if num_members > 0:
+                embed.add_field(name=role.name,
+                                value=f'{num_members} {"Mitglieder" if num_members > 1 else "Mitglied"}', inline=False)
 
         await interaction.send(embed=embed, ephemeral=not show)
