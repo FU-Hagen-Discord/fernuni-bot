@@ -103,6 +103,8 @@ class Roles(commands.Cog):
         show: Sichtbar für alle?
         """
 
+        await interaction.response.defer(ephemeral=not show)
+
         guild = interaction.guild
         members = await guild.fetch_members().flatten()
         guild_roles = {role.name: role for role in interaction.guild.roles}
@@ -119,4 +121,4 @@ class Roles(commands.Cog):
                 embed.add_field(name=role.name,
                                 value=f'{num_members} {"Mitglieder" if num_members > 1 else "Mitglied"}', inline=False)
 
-        await interaction.send(embed=embed, ephemeral=not show)
+        await interaction.edit_original_message(embed=embed)
