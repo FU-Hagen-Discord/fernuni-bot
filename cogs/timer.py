@@ -171,7 +171,8 @@ class Timer(commands.Cog):
 
         return embed
 
-    @commands.slash_command(name="timer", description="Erstelle deine persönliche  Eieruhr")
+    @commands.slash_command(name="timer", description="Erstelle deine persönliche  Eieruhr",
+                            guild_ids=[int(os.getenv('DISCORD_GUILD'))])
     async def cmd_timer(self, interaction: ApplicationCommandInteraction, working_time: int = 25,
                         break_time: int = 5,
                         name: str = None):
