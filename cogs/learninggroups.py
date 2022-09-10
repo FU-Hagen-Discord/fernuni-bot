@@ -49,7 +49,7 @@ class LearningGroups(commands.Cog):
         self.bot = bot
         # ratelimit 2 in 10 minutes (305 * 2 = 610 = 10 minutes and 10 seconds)
         self.rename_ratelimit = 305
-        self.msg_max_len = 2000
+        self.msg_max_len = 1900
 
         self.categories = {
             GroupState.OPEN: os.getenv('DISCORD_LEARNINGGROUPS_OPEN'),
