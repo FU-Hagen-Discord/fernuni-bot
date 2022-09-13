@@ -21,7 +21,7 @@ CATEGORY_LERNGRUPPEN = int(os.getenv("DISCORD_CATEGORY_LERNGRUPPEN"))
 PIN_EMOJI = "📌"
 
 intents = Intents.all()
-extensions = ["appointments", "change_log", "christmas", "elm_street", "emoji_hunt", "github"]
+extensions = ["appointments", "change_log", "christmas", "elm_street", "emoji_hunt", "github", "roles"]
 
 
 class Boty(commands.Bot):

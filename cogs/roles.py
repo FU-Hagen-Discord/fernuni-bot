@@ -40,7 +40,7 @@ class Roles(commands.Cog):
 
         return stat_roles
 
-    async def on_button_clicked(self, button: discord.ui.Button, interaction: discord.MessageInteraction, value=None):
+    async def on_button_clicked(self, button: discord.ui.Button, interaction: Interaction, value=None):
         """
         Add or Remove Roles, when Button is clicked. Role gets added, if the user clicking the button doesn't have
         the role already assigned, and removed, if the role is already assigned
@@ -51,10 +51,10 @@ class Roles(commands.Cog):
 
         if role in interaction.user.roles:
             await interaction.user.remove_roles(role)
-            await interaction.send(f"Rolle \"{role.name}\" erfolgreich entfernt", ephemeral=True)
+            await interaction.response.send_message(f"Rolle \"{role.name}\" erfolgreich entfernt", ephemeral=True)
         else:
             await interaction.user.add_roles(role)
-            await interaction.send(f"Rolle \"{role.name}\" erfolgreich hinzugefügt", ephemeral=True)
+            await interaction.response.send_message(f"Rolle \"{role.name}\" erfolgreich hinzugefügt", ephemeral=True)
 
     @app_commands.command(name="update-roles", description="Update Self-Assignable Roles")
     @app_commands.guild_only()
@@ -121,3 +121,8 @@ class Roles(commands.Cog):
                                 value=f'{num_members} {"Mitglieder" if num_members > 1 else "Mitglied"}', inline=False)
 
         await interaction.followup.send(embed=embed, ephemeral=not show)
+
+
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(Roles(bot))
+
