@@ -1,6 +1,6 @@
 import os
 
-from disnake.ext import commands
+from discord.ext import commands
 
 import utils
 from cogs.components.poll.poll import Poll

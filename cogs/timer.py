@@ -5,10 +5,11 @@ from asyncio import sleep
 from copy import deepcopy
 from datetime import datetime, timedelta
 
-import disnake
-from disnake import MessageInteraction, ApplicationCommandInteraction
-from disnake.ext import commands, tasks
-from disnake.ui import Button
+import discord
+from discord import MessageInteraction
+from discord.ext import commands, tasks
+#from .interactions import ApplicationCommandInteraction
+from discord.ui import Button
 
 from views import timer_view
 
@@ -148,7 +149,7 @@ class Timer(commands.Cog):
             await interaction.response.send_message("Etwas ist schiefgelaufen...", ephemeral=True)
 
     def create_embed(self, name, status, working_time, break_time, remaining, registered):
-        color = disnake.Colour.green() if status == "Arbeiten" else 0xFFC63A if status == "Pause" else disnake.Colour.red()
+        color = discord.Colour.green() if status == "Arbeiten" else 0xFFC63A if status == "Pause" else discord.Colour.red()
         descr = f"👍 beim Timer anmelden\n\n" \
                 f"👎 beim Timer abmelden\n\n" \
                 f"⏩ Phase überspringen\n\n" \
@@ -161,7 +162,7 @@ class Timer(commands.Cog):
         user_list = [self.bot.get_user(int(user_id)) for user_id in registered]
         angemeldet_value = ", ".join([user.mention for user in user_list])
 
-        embed = disnake.Embed(title=name,
+        embed = discord.Embed(title=name,
                               description=f'Jetzt: {status}',
                               color=color)
         embed.add_field(name="Bedienung:", value=descr, inline=False)
@@ -171,8 +172,8 @@ class Timer(commands.Cog):
 
         return embed
 
-    @commands.slash_command(name="timer", description="Erstelle deine persönliche  Eieruhr")
-    async def cmd_timer(self, interaction: ApplicationCommandInteraction, working_time: int = 25,
+    @commands.hybrid_command(name="timer", description="Erstelle deine persönliche Eieruhr")
+    async def cmd_timer(self, interaction, working_time: int = 25,
                         break_time: int = 5,
                         name: str = None):
         name = name if name else random.choice(self.default_names)
@@ -248,7 +249,7 @@ class Timer(commands.Cog):
                 else:
                     await msg.edit(embed=embed, view=self.get_view())
                 return str(msg.id)
-            except disnake.errors.NotFound:
+            except discord.errors.NotFound:
                 self.running_timers.pop(msg_id)
                 self.save()
                 return None
@@ -269,9 +270,9 @@ class Timer(commands.Cog):
                 if channel:  # If user is in a channel
                     try:
                         voice_client = await channel.connect()
-                        voice_client.play(disnake.FFmpegPCMAudio(f'cogs/sounds/{filename}'))
+                        voice_client.play(discord.FFmpegPCMAudio(f'cogs/sounds/{filename}'))
                         await sleep(3)
-                    except disnake.errors.ClientException as e:
+                    except discord.errors.ClientException as e:
                         print(e)
                     for vc in self.bot.voice_clients:
                         await vc.disconnect()

@@ -3,8 +3,8 @@ import json
 import os
 import re
 
-import disnake
-from disnake.ext import commands, tasks
+import discord
+from discord.ext import commands, tasks
 
 import utils
 from cogs.help import help
@@ -46,7 +46,7 @@ class Calmdown(commands.Cog):
             if inform_user:
                 await utils.send_dm(user, f"Die Calmdown-Rolle wurde nun wieder entfernt.")
             await user.remove_roles(role)
-        except disnake.errors.NotFound:
+        except discord.errors.NotFound:
             pass
 
         if self.silenced_users.get(str(user_id)):
@@ -77,7 +77,7 @@ class Calmdown(commands.Cog):
     )
     @commands.command(name="calmdown", aliases=["auszeit", "mute"])
     @commands.check(utils.is_mod)
-    async def cmd_calmdown(self, ctx, user: disnake.Member, duration):
+    async def cmd_calmdown(self, ctx, user: discord.Member, duration):
         if re.match(r"^[0-9]+$", duration):
             duration = f"{duration}m"
         if not utils.is_valid_time(duration):

@@ -1,6 +1,6 @@
-import disnake
-from disnake import MessageInteraction, ButtonStyle
-from disnake.ui import Button, View
+import discord
+from discord import MessageInteraction, ButtonStyle
+from discord.ui import Button, View
 
 NEXT = "jobs:next"
 PREV = "jobs:prev"
@@ -18,11 +18,11 @@ class JobOffersView(View):
         if actual_page_nr == len(self.list_of_pages):
             self.disable_next()
 
-    @disnake.ui.button(emoji="⬅", custom_id=PREV)
+    @discord.ui.button(emoji="⬅", custom_id=PREV)
     async def btn_prev(self, button: Button, interaction: MessageInteraction):
         await self.callback(button, interaction, self.list_of_pages, self.actual_page_nr, self.embed_description)
 
-    @disnake.ui.button(emoji="➡", custom_id=NEXT)
+    @discord.ui.button(emoji="➡", custom_id=NEXT)
     async def btn_next(self, button: Button, interaction: MessageInteraction):
         await self.callback(button, interaction, self.list_of_pages, self.actual_page_nr, self.embed_description)
 

@@ -3,7 +3,7 @@ import os
 
 from aiohttp import ClientSession
 from bs4 import BeautifulSoup
-from disnake.ext import commands, tasks
+from discord.ext import commands, tasks
 
 
 class News(commands.Cog):

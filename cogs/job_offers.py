@@ -4,10 +4,10 @@ from copy import deepcopy
 
 import aiohttp
 from bs4 import BeautifulSoup
-import disnake
-from disnake import ApplicationCommandInteraction, MessageInteraction
-from disnake.ext import commands, tasks
-from disnake.ui import View, Button
+import discord
+from discord import ApplicationCommandInteraction, MessageInteraction
+from discord.ext import commands, tasks
+from discord.ui import View, Button
 
 from cogs.help import help
 from views import joboffers_view
@@ -98,7 +98,7 @@ class Joboffers(commands.Cog):
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
     def get_embed(self, description, page_content, page_nr, all_pages_nr):
-        embed = disnake.Embed(title="Stellenangebote der Uni",
+        embed = discord.Embed(title="Stellenangebote der Uni",
                               description=f"Ich habe folgende Stellenangebote {description} gefunden:")
         for field in page_content:
             embed.add_field(**field)
@@ -118,7 +118,7 @@ class Joboffers(commands.Cog):
         fak_text = "aller Fakultäten" if STD_FAK == 'all' else f"der Fakultät {STD_FAK}"
         joboffers_channel = await self.bot.fetch_channel(self.joboffers_channel_id)
 
-        embed = disnake.Embed(title="Neue Stellenangebote der Uni",
+        embed = discord.Embed(title="Neue Stellenangebote der Uni",
                               description=f"Ich habe folgende neue Stellenangebote {fak_text} gefunden:")
         i = 0
         for job in jobs:
@@ -127,7 +127,7 @@ class Joboffers(commands.Cog):
             embed.add_field(name=job['title'], value=descr, inline=False)
             if i % 5 == 0:
                 await joboffers_channel.send(embed=embed)
-                embed = disnake.Embed(title="Neue Stellenangebote der Uni ... Fortsetzung")
+                embed = discord.Embed(title="Neue Stellenangebote der Uni ... Fortsetzung")
         if i % 5 != 0:
             await joboffers_channel.send(embed=embed)
 

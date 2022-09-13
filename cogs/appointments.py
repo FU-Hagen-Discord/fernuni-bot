@@ -1,15 +1,16 @@
 import asyncio
-import datetime
+from datetime import datetime, timedelta
 import io
 import json
 import os
 import uuid
-
-import disnake
-from disnake.ext import tasks, commands
-
 import utils
-from cogs.help import help, handle_error, help_category
+
+from typing import NewType, Union
+from discord import app_commands, errors, Embed, File, Interaction, VoiceChannel, StageChannel, TextChannel, ForumChannel, CategoryChannel, Thread, PartialMessageable
+from discord.ext import tasks, commands
+
+Channel = NewType('Channel', Union[VoiceChannel, StageChannel, TextChannel, ForumChannel, CategoryChannel, Thread, PartialMessageable, None])
 
 
 def get_ics_file(title, date_time, reminder, recurring):
@@ -35,7 +36,7 @@ def get_ics_file(title, date_time, reminder, recurring):
                   f"END:STANDARD\n" \
                   f"END:VTIMEZONE\n" \
                   f"BEGIN:VEVENT\n" \
-                  f"DTSTAMP:{datetime.datetime.now().strftime(fmt)}00Z\n" \
+                  f"DTSTAMP:{datetime.now().strftime(fmt)}00Z\n" \
                   f"UID:{uuid.uuid4()}\n" \
                   f"SUMMARY:{title}\n"
     appointment += f"RRULE:FREQ=DAILY;INTERVAL={recurring}\n" if recurring else f""
@@ -53,9 +54,8 @@ def get_ics_file(title, date_time, reminder, recurring):
     return ics_file
 
 
-@help_category("appointments", "Appointments", "Mit Appointments kannst du Termine zu einem Kanal hinzufügen. "
-                                               "Sehr praktisches Feature zum Organisieren von Lerngruppen.")
-class Appointments(commands.Cog):
+@app_commands.guild_only()
+class Appointments(commands.GroupCog, name="appointments", description="Verwaltet Termine in Kanälen"):
     def __init__(self, bot):
         self.bot = bot
         self.fmt = os.getenv("DISCORD_DATE_TIME_FORMAT")
@@ -65,8 +65,6 @@ class Appointments(commands.Cog):
         self.load_appointments()
 
     def load_appointments(self):
-        """ Loads all appointments from APPOINTMENTS_FILE """
-
         appointments_file = open(self.app_file, mode='r')
         self.appointments = json.load(appointments_file)
 
@@ -77,9 +75,9 @@ class Appointments(commands.Cog):
         for channel_id, channel_appointments in self.appointments.items():
             channel = None
             for message_id, appointment in channel_appointments.items():
-                now = datetime.datetime.now()
-                date_time = datetime.datetime.strptime(appointment["date_time"], self.fmt)
-                remind_at = date_time - datetime.timedelta(minutes=appointment["reminder"])
+                now = datetime.now()
+                date_time = datetime.strptime(appointment["date_time"], self.fmt)
+                remind_at = date_time - timedelta(minutes=appointment["reminder"])
 
                 if now >= remind_at:
                     try:
@@ -109,7 +107,7 @@ class Appointments(commands.Cog):
 
                         if str(message.id) in delete:
                             await message.delete()
-                    except disnake.errors.NotFound:
+                    except errors.NotFound:
                         delete.append(message_id)
 
             if len(delete) > 0:
@@ -119,8 +117,8 @@ class Appointments(commands.Cog):
                         if channel_appointment.get("recurring"):
                             recurring = channel_appointment["recurring"]
                             date_time_str = channel_appointment["date_time"]
-                            date_time = datetime.datetime.strptime(date_time_str, self.fmt)
-                            new_date_time = date_time + datetime.timedelta(days=recurring)
+                            date_time = datetime.strptime(date_time_str, self.fmt)
+                            new_date_time = date_time + timedelta(days=recurring)
                             new_date_time_str = new_date_time.strftime(self.fmt)
                             splitted_new_date_time_str = new_date_time_str.split(" ")
                             reminder = channel_appointment.get("original_reminder")
@@ -128,7 +126,7 @@ class Appointments(commands.Cog):
                             await self.add_appointment(channel, channel_appointment["author_id"],
                                                        splitted_new_date_time_str[0],
                                                        splitted_new_date_time_str[1],
-                                                       str(reminder),
+                                                       reminder,
                                                        channel_appointment["title"],
                                                        channel_appointment["recurring"])
                         channel_appointments.pop(key)
@@ -136,40 +134,36 @@ class Appointments(commands.Cog):
 
     @timer.before_loop
     async def before_timer(self):
-        await asyncio.sleep(60 - datetime.datetime.now().second)
+        await asyncio.sleep(60 - datetime.now().second)
 
-    @help(
-        category="appointments",
-        brief="Fügt eine neue Erinnerung zu einem Kanal hinzu.",
-        example="!add-appointment 20.12.2021 10:00 0 \"Toller Event\" 7",
-        parameters={
-            "date": "Datum des Termins im Format DD.MM.YYYY (z. B. 22.10.2022).",
-            "time": "Uhrzeit des Termins im Format hh:mm (z. B. 10:00).",
-            "reminder": "Anzahl an Minuten die vor dem Termin erinnert werden soll.",
-            "title": "der Titel des Termins (in Anführungszeichen).",
-            "recurring": "*(optional)* Interval für die Terminwiederholung in Tagen"
-        }
-    )
-    @commands.command(name="add-appointment")
-    async def cmd_add_appointment(self, ctx, date, time, reminder, title, recurring: int = None):
-        await self.add_appointment(ctx.channel, ctx.author.id, date, time, reminder, title, recurring)
+    @app_commands.command(name="add", description="Fügt dem Kanal einen neunen Termin hinzu.")
+    @app_commands.describe(date="Tag des Termins (z. B. 22.10.2022).", time="Uhrzeit des Termins (z. B. 10:00).",
+                           reminder="Wie viele Minuten bevor der Termin startet, soll eine Erinnerung verschickt werden?",
+                           title="Titel des Termins",
+                           recurring="In welchem Intervall (in Tagen) soll der Termin wiederholt werden?")
+    async def cmd_add_appointment(self, interaction: Interaction, date: str, time: str, reminder: int, title: str,
+                                  recurring: int = None):
 
-    async def add_appointment(self, channel, author_id, date, time, reminder, title, recurring: int = None):
-        """ Add appointment to a channel """
+        await interaction.response.defer(ephemeral=True)
+        await self.add_appointment(interaction.channel, interaction.user.id, date, time, reminder, title, recurring)
+        await interaction.followup.send("Termin erfolgreich erstellt!", ephemeral=True)
 
+    # /appointments add date:31.08.2022 time:20:00 reminder:60 title:Test
+    async def add_appointment(self, channel: Channel, author_id: int, date: str, time: str, reminder: int, title: str,
+                              recurring: int = None) -> None:
         try:
-            date_time = datetime.datetime.strptime(f"{date} {time}", self.fmt)
+            date_time = datetime.strptime(f"{date} {time}", self.fmt)
         except ValueError:
             await channel.send("Fehler! Ungültiges Datums und/oder Zeit Format!")
             return
 
-        if not utils.is_valid_time(reminder):
-            await channel.send("Fehler! Benachrichtigung in ungültigem Format!")
-            return
-        else:
-            reminder = utils.to_minutes(reminder)
+        #if not utils.is_valid_time(reminder):
+        #    await channel.send("Fehler! Benachrichtigung in ungültigem Format!")
+        #    return
+        #else:
+        #    reminder = utils.to_minutes(reminder)
 
-        embed = disnake.Embed(title="Neuer Termin hinzugefügt!",
+        embed = Embed(title="Neuer Termin hinzugefügt!",
                               description=f"Wenn du eine Benachrichtigung zum Beginn des Termins"
                                           f"{f', sowie {reminder} Minuten vorher, ' if reminder > 0 else f''} "
                                           f"erhalten möchtest, reagiere mit :thumbsup: auf diese Nachricht.",
@@ -182,7 +176,7 @@ class Appointments(commands.Cog):
         if recurring:
             embed.add_field(name="Wiederholung", value=f"Alle {recurring} Tage", inline=False)
 
-        message = await channel.send(embed=embed, file=disnake.File(get_ics_file(title, date_time, reminder, recurring),
+        message = await channel.send(embed=embed, file=File(get_ics_file(title, date_time, reminder, recurring),
                                                                     filename=f"{title}.ics"))
         await message.add_reaction("👍")
         await message.add_reaction("🗑️")
@@ -196,25 +190,21 @@ class Appointments(commands.Cog):
 
         self.save_appointments()
 
-    @help(
-        category="appointments",
-        brief="Zeigt alle Termine des momentanen Kanals an."
-    )
-    @commands.command(name="appointments")
-    async def cmd_appointments(self, ctx):
-        """ List (and link) all Appointments in the current channel """
+    @app_commands.command(name="list", description="Listet alle Termine dieses Channels auf")
+    async def cmd_appointments(self, interaction: Interaction):
+        await interaction.response.defer(ephemeral=False)
 
-        if str(ctx.channel.id) in self.appointments:
-            channel_appointments = self.appointments.get(str(ctx.channel.id))
+        if str(interaction.channel.id) in self.appointments:
+            channel_appointments = self.appointments.get(str(interaction.channel.id))
             answer = f'Termine dieses Channels:\n'
             delete = []
 
             for message_id, appointment in channel_appointments.items():
                 try:
-                    message = await ctx.channel.fetch_message(int(message_id))
+                    message = await interaction.channel.fetch_message(int(message_id))
                     answer += f'{appointment["date_time"]}: {appointment["title"]} => ' \
                               f'{message.jump_url}\n'
-                except disnake.errors.NotFound:
+                except errors.NotFound:
                     delete.append(message_id)
 
             if len(delete) > 0:
@@ -222,9 +212,9 @@ class Appointments(commands.Cog):
                     channel_appointments.pop(key)
                 self.save_appointments()
 
-            await ctx.channel.send(answer)
+            await interaction.followup.send(answer, ephemeral=False)
         else:
-            await ctx.send("Für diesen Channel existieren derzeit keine Termine")
+            await interaction.followup.send("Für diesen Kanal existieren derzeit keine Termine.", ephemeral=True)
 
     def save_appointments(self):
         appointments_file = open(self.app_file, mode='w')
@@ -254,5 +244,6 @@ class Appointments(commands.Cog):
             if len(message.embeds) > 0 and message.embeds[0].title == "Neuer Termin hinzugefügt!":
                 await self.handle_reactions(payload)
 
-    async def cog_command_error(self, ctx, error):
-        await handle_error(ctx, error)
+
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(Appointments(bot))

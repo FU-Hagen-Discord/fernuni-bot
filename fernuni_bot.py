@@ -1,17 +1,18 @@
+import asyncio
 import os
 
-import disnake
-from disnake.ext import commands
+import discord
+from discord import Intents, Game, app_commands, Interaction
+from discord.ext import commands
 from dotenv import load_dotenv
+from typing import List
 
-from cogs import appointments, calmdown, github, help, learninggroups, links, timer, \
-    news, polls, roles, support, text_commands, voice, welcome, xkcd, module_information
 from view_manager import ViewManager
 
 # .env file is necessary in the same directory, that contains several strings.
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
-GUILD = int(os.getenv('DISCORD_GUILD'))
+GUILD_ID = int(os.getenv('DISCORD_GUILD'))
 ACTIVITY = os.getenv('DISCORD_ACTIVITY')
 OWNER = int(os.getenv('DISCORD_OWNER'))
 ROLES_FILE = os.getenv('DISCORD_ROLES_FILE')
@@ -19,47 +20,47 @@ HELP_FILE = os.getenv('DISCORD_HELP_FILE')
 CATEGORY_LERNGRUPPEN = int(os.getenv("DISCORD_CATEGORY_LERNGRUPPEN"))
 PIN_EMOJI = "📌"
 
+intents = Intents.all()
+extensions = ["appointments", "change_log", "christmas", "elm_street", "emoji_hunt", "github"]
+
 
 class Boty(commands.Bot):
-    def __init__(self):
-        super().__init__(command_prefix='!', help_command=None, activity=disnake.Game(ACTIVITY), owner_id=OWNER,
-                         intents=disnake.Intents.all())
-        self.view_manager = ViewManager(self)
-        self.add_cogs()
-        self.persistent_views_added = False
-        # self.add_cog(elm_street.ElmStreet(self))
+    def __init__(self, *args, initial_extensions: List[str], **kwargs):
+        super().__init__(*args, **kwargs)
+        self.is_prod = os.getenv("DISCORD_PROD") == "True"
+        self.initial_extensions: List[str] = initial_extensions
+        self.view_manager: ViewManager = ViewManager(self)
+        self.persistent_views_added: bool = False
 
-    def is_prod(self):
-        return os.getenv("DISCORD_PROD") == "True"
+    async def setup_hook(self) -> None:
+        for extension in self.initial_extensions:
+            await self.load_extension(f"cogs.{extension}")
+            print(f"➕ Module {extension}")
+        await self.sync_slash_commands_for_guild(GUILD_ID)
+
+    async def sync_slash_commands_for_guild(self, guild_id):
+        guild = discord.Object(id=guild_id)
+        self.tree.copy_global_to(guild=guild)
+        await self.tree.sync(guild=guild)
 
     async def on_ready(self):
         self.view_manager.on_ready()
         if not self.persistent_views_added:
             if timer_cog := self.get_cog("Timer"):
                 self.add_view(timer_cog.get_view())
-        print("Client started!")
+        print("✅ Client started!")
 
-    def add_cogs(self):
-        self.add_cog(appointments.Appointments(self))
-        self.add_cog(text_commands.TextCommands(self))
-        self.add_cog(polls.Polls(self))
-        self.add_cog(roles.Roles(self))
-        self.add_cog(welcome.Welcome(self))
-        self.add_cog(support.Support(self))
-        self.add_cog(news.News(self))
-        self.add_cog(links.Links(self))
-        self.add_cog(voice.Voice(self))
-        self.add_cog(learninggroups.LearningGroups(self))
-        self.add_cog(module_information.ModuleInformation(self))
-        self.add_cog(xkcd.Xkcd(self))
-        self.add_cog(help.Help(self))
-        self.add_cog(calmdown.Calmdown(self))
-        self.add_cog(github.Github(self))
-        self.add_cog(timer.Timer(self))
-        # self.add_cog(job_offers.Joboffers(self))
+    @app_commands.command(name="sync")
+    @app_commands.guild_only()
+    async def cmd_sync(self, interaction: Interaction):
+        await interaction.response.defer(ephemeral=True)
+        await self.sync_slash_commands_for_guild(GUILD_ID)
+        await interaction.followup.send("Synchronisiert!")
 
 
-bot = Boty()
+
+bot = Boty(command_prefix='!', help_command=None, activity=Game(ACTIVITY), owner_id=OWNER, intents=intents,
+           initial_extensions=extensions)
 
 
 # bot.add_cog(ChangeLogCog(bot))
@@ -130,4 +131,8 @@ async def on_voice_state_update(member, before, after):
         await category.create_voice_channel(f"Lerngruppen-Voicy-{len(voice_channels) + 1}", bitrate=256000)
 
 
-bot.run(TOKEN)
+async def main():
+    await bot.start(TOKEN)
+
+
+asyncio.run(main())

@@ -1,9 +1,10 @@
 import json
 import os
 
-import disnake
+import discord
 import emoji
-from disnake.ext import commands
+from discord import app_commands, Interaction
+from discord.ext import commands
 
 import utils
 
@@ -41,7 +42,7 @@ class Roles(commands.Cog):
 
         return stat_roles
 
-    async def on_button_clicked(self, button: disnake.ui.Button, interaction: disnake.MessageInteraction, value=None):
+    async def on_button_clicked(self, button: discord.ui.Button, interaction: discord.MessageInteraction, value=None):
         """
         Add or Remove Roles, when Button is clicked. Role gets added, if the user clicking the button doesn't have
         the role already assigned, and removed, if the role is already assigned
@@ -57,12 +58,11 @@ class Roles(commands.Cog):
             await interaction.author.add_roles(role)
             await interaction.send(f"Rolle \"{role.name}\" erfolgreich hinzugefügt", ephemeral=True)
 
-    @commands.slash_command(name="update-roles", description="Update Self-Assignable Roles")
-    @commands.default_member_permissions(moderate_members=True)
-    async def cmd_update_roles(self, interaction: disnake.ApplicationCommandInteraction):
+    @app_commands.command(name="update-roles", description="Update Self-Assignable Roles")
+    @app_commands.guild_only()
+    async def cmd_update_roles(self, interaction: Interaction) -> None:
         """ Update all role assignment messages in role assignment channel """
-        await interaction.response.defer()
-
+        await interaction.response.defer(ephemeral=True)
         channel = await interaction.guild.fetch_channel(self.channel_id)
         await channel.purge()
         for role_category, roles in self.assignable_roles.items():
@@ -92,22 +92,25 @@ class Roles(commands.Cog):
                 callback_key=prefix,
                 buttons=buttons
             )
+        await interaction.followup.send(content="Erledigt.", ephemeral=True)
 
-    @commands.slash_command(name="stats", description="Rollen Statistik abrufen")
-    async def cmd_stats(self, interaction: disnake.ApplicationCommandInteraction, show: bool = False):
+    @app_commands.command(name="stats", description="Rollen Statistik abrufen")
+    async def cmd_stats(self, interaction: Interaction, show: bool = False):
         """
         Send role statistics into chat, by default as ephemeral
 
         Parameters
         ----------
-        show: Sichtbar für alle?
+        :param interaction: Discord Interaction
+        :param show: Sichtbar für alle?
         """
 
+        await interaction.response.defer(ephemeral=True)
         guild = interaction.guild
-        members = await guild.fetch_members().flatten()
+        members = [member async for member in guild.fetch_members()]
         guild_roles = {role.name: role for role in interaction.guild.roles}
         stat_roles = self.get_stat_roles()
-        embed = disnake.Embed(title="Statistiken",
+        embed = discord.Embed(title="Statistiken",
                               description=f'Wir haben aktuell {len(members)} Mitglieder auf diesem Server, '
                                           f'verteilt auf folgende Rollen:')
 
@@ -119,4 +122,4 @@ class Roles(commands.Cog):
                 embed.add_field(name=role.name,
                                 value=f'{num_members} {"Mitglieder" if num_members > 1 else "Mitglied"}', inline=False)
 
-        await interaction.send(embed=embed, ephemeral=not show)
+        await interaction.followup.send(embed=embed, ephemeral=not show)

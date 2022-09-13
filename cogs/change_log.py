@@ -1,4 +1,4 @@
-from disnake.ext import commands
+from discord.ext import commands
 
 import os
 
@@ -25,3 +25,7 @@ class ChangeLog(commands.Cog):
         channel = await self.bot.fetch_channel(self.channel_id)
         await channel.send(f"Message deleted by <@!{message.author.id}>  in <#{message.channel.id}>:")
         await channel.send(message.content)
+
+
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(ChangeLog(bot))

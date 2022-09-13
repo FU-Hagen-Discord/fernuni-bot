@@ -1,8 +1,8 @@
-import disnake
-from disnake import ButtonStyle
+import discord
+from discord import ButtonStyle
 
 
-class DialogView(disnake.ui.View):
+class DialogView(discord.ui.View):
 
     def __init__(self, buttons=None, callback=None):
         super().__init__(timeout=None)
@@ -11,7 +11,7 @@ class DialogView(disnake.ui.View):
             self.add_button(button_config)
 
     def add_button(self, config):
-        button = disnake.ui.Button(
+        button = discord.ui.Button(
             style=config.get("style", ButtonStyle.grey),
             label=config.get("label", None),
             disabled=config.get("disabled", False),

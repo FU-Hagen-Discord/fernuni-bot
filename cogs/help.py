@@ -1,8 +1,8 @@
-from disnake.ext import commands
+from discord.ext import commands
 import inspect
 import utils
 import re
-import disnake
+import discord
 import collections
 
 data = {"category": {"__none__": {"title": "Sonstiges", "description": "Die Kategorie für die Kategorielosen."}}, "command": {}}
@@ -156,7 +156,7 @@ class Help(commands.Cog):
                 text += f"**{command['syntax']}**\n"
                 text += f"{command['brief']}\n\n" if command['brief'] else "\n"
                 if (len(helptext) + len(text) > 2048):
-                    embed = disnake.Embed(title=title,
+                    embed = discord.Embed(title=title,
                                           description=helptext,
                                           color=19607)
                     await utils.send_dm(ctx.author, "", embed=embed)
@@ -166,7 +166,7 @@ class Help(commands.Cog):
                 helptext += text
                 text = ""
 
-        embed = disnake.Embed(title=title,
+        embed = discord.Embed(title=title,
                               description=helptext,
                               color=19607)
         await utils.send_dm(ctx.author, "", embed=embed)
@@ -189,7 +189,7 @@ class Help(commands.Cog):
             text += f"`{param}` - {desc}\n"
         text += f"**Beispiel:**\n `{command['example']}`\n" if command['example'] else ""
         text += f"\n{command['description']}\n" if command['description'] else ""
-        embed = disnake.Embed(title=title,
+        embed = discord.Embed(title=title,
                               description=text,
                               color=19607)
         text += "==========================\n"
@@ -225,7 +225,7 @@ class Help(commands.Cog):
                 text += f"\n{command['description']}\n" if command['description'] else ""
                 text += "=====================================================\n"
                 if (len(helptext) + len(text) > 2048):
-                    embed = disnake.Embed(title=title,
+                    embed = discord.Embed(title=title,
                                           description=helptext,
                                           color=19607)
                     await utils.send_dm(ctx.author, "", embed=embed)
@@ -235,7 +235,7 @@ class Help(commands.Cog):
                 helptext += text
                 text = ""
 
-        embed = disnake.Embed(title=title,
+        embed = discord.Embed(title=title,
                               description=helptext,
                               color=19607)
         await utils.send_dm(ctx.author, "", embed=embed)

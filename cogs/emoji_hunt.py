@@ -1,7 +1,8 @@
 import json
 import random
-import disnake
-from disnake.ext import commands, tasks
+from discord import app_commands, Embed
+from discord.app_commands import Choice
+from discord.ext import commands, tasks
 from cogs.help import handle_error
 
 
@@ -54,36 +55,38 @@ class EmojiHunt(commands.Cog):
     
         self.save_data()
 
-    @commands.command(name="leaderboard")
-    async def cmd_leaderboard(self, ctx, all=None):
+    @app_commands.command(name="leaderboard")
+    @app_commands.choices(show=[Choice(name='10', value=10), Choice(name='all', value=0)])
+    async def cmd_leaderboard(self, interaction, show: int = 10):
+        await interaction.response.defer()
         leaderboard = self.data["leaderboard"]
-        embed = disnake.Embed(title="Emojijagd Leaderboard", description="Wer hat am meisten Emojis gefunden?")
+        embed = Embed(title="Emojijagd Leaderboard", description="Wer hat am meisten Emojis gefunden?")
         embed.set_thumbnail(url="https://external-preview.redd.it/vFsRraBXc5hfUGRWtPPF-NG5maHEPRWTIqamB24whF8.jpg?width=960&crop=smart&auto=webp&s=24d42c9b4f5239a4c3cac79e704b7129c9e2e4d3")
 
         places = scores = "\u200b"
         place = 0
-        max = 0 if all == "all" else 10
+        max_entries = show
         ready = False
         for key, value in sorted(leaderboard.items(), key=lambda item: item[1], reverse=True):
             try:
                 place += 1
 
-                if 0 < max < place:
+                if 0 < max_entries < place:
                     if ready:
                         break
-                    elif str(ctx.author.id) != key:
+                    elif str(interaction.user.id) != key:
                         continue
                 places += f"{place}: <@!{key}>\n"
                 scores += f"{value:,}\n".replace(",", ".")
 
-                if str(ctx.author.id) == key:
+                if str(interaction.user.id) == key:
                     ready = True
             except:
                 pass
 
         embed.add_field(name=f"Jägerin", value=places)
         embed.add_field(name=f"Emojis", value=scores)
-        await ctx.send("", embed=embed)
+        await interaction.followup.send(embed=embed)
 
     @tasks.loop(seconds=1)
     async def reaction_timer(self):
@@ -105,3 +108,8 @@ class EmojiHunt(commands.Cog):
 
     async def cog_command_error(self, ctx, error):
         await handle_error(ctx, error)
+
+
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(EmojiHunt(bot))
+
