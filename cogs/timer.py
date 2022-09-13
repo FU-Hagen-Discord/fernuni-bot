@@ -172,8 +172,9 @@ class Timer(commands.Cog):
 
         return embed
 
-    @commands.hybrid_command(name="timer", description="Erstelle deine persönliche Eieruhr")
-    async def cmd_timer(self, interaction, working_time: int = 25,
+    @commands.slash_command(name="timer", description="Erstelle deine persönliche  Eieruhr",
+                            guild_ids=[int(os.getenv('DISCORD_GUILD'))])
+    async def cmd_timer(self, interaction: ApplicationCommandInteraction, working_time: int = 25,
                         break_time: int = 5,
                         name: str = None):
         name = name if name else random.choice(self.default_names)
@@ -249,7 +250,7 @@ class Timer(commands.Cog):
                 else:
                     await msg.edit(embed=embed, view=self.get_view())
                 return str(msg.id)
-            except discord.errors.NotFound:
+            except disnake.errors.NotFound:
                 self.running_timers.pop(msg_id)
                 self.save()
                 return None
@@ -270,9 +271,9 @@ class Timer(commands.Cog):
                 if channel:  # If user is in a channel
                     try:
                         voice_client = await channel.connect()
-                        voice_client.play(discord.FFmpegPCMAudio(f'cogs/sounds/{filename}'))
+                        voice_client.play(disnake.FFmpegPCMAudio(f'cogs/sounds/{filename}'))
                         await sleep(3)
-                    except discord.errors.ClientException as e:
+                    except disnake.errors.ClientException as e:
                         print(e)
                     for vc in self.bot.voice_clients:
                         await vc.disconnect()

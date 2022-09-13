@@ -6,8 +6,6 @@ import emoji
 from discord import app_commands, Interaction
 from discord.ext import commands
 
-import utils
-
 
 class Roles(commands.Cog):
     def __init__(self, bot):
@@ -51,11 +49,11 @@ class Roles(commands.Cog):
         guild_roles = {str(role.id): role for role in interaction.guild.roles}
         role = guild_roles.get(value)
 
-        if role in interaction.author.roles:
-            await interaction.author.remove_roles(role)
+        if role in interaction.user.roles:
+            await interaction.user.remove_roles(role)
             await interaction.send(f"Rolle \"{role.name}\" erfolgreich entfernt", ephemeral=True)
         else:
-            await interaction.author.add_roles(role)
+            await interaction.user.add_roles(role)
             await interaction.send(f"Rolle \"{role.name}\" erfolgreich hinzugefügt", ephemeral=True)
 
     @app_commands.command(name="update-roles", description="Update Self-Assignable Roles")

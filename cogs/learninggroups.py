@@ -15,15 +15,16 @@ import utils
 from cogs.help import help, handle_error, help_category
 
 """
-  Environment Variablen:
-  DISCORD_LEARNINGGROUPS_OPEN - ID der Kategorie für offene Lerngruppen
-  DISCORD_LEARNINGGROUPS_CLOSE - ID der Kategorie für private Lerngruppen
-  DISCORD_LEARNINGGROUPS_ARCHIVE - ID der Kategorie für archivierte Lerngruppen
-  DISCORD_LEARNINGGROUPS_REQUEST - ID des Channels in welchem Requests vom Bot eingestellt werden
-  DISCORD_LEARNINGGROUPS_INFO - ID des Channels in welchem die Lerngruppen-Informationen gepostet/aktualisert werden
+  Umgebungsvariablen:
+  DISCORD_LEARNINGGROUPS_OPEN - Kategorie-ID der offenen Lerngruppen
+  DISCORD_LEARNINGGROUPS_CLOSE - Kategorie-ID der geschlossenen Lerngruppen
+  DISCORD_LEARNINGGROUPS_PRIVATE - Kategorie-ID der privaten Lerngruppen
+  DISCORD_LEARNINGGROUPS_ARCHIVE - Kategorie-ID der archivierten Lerngruppen
+  DISCORD_LEARNINGGROUPS_REQUEST - ID des Kanals, in dem Anfragen, die über den Bot gestellt wurden, eingetragen werden
+  DISCORD_LEARNINGGROUPS_INFO - ID des Kanals, in dem die Lerngruppen-Informationen gepostet/aktualisert werden
   DISCORD_LEARNINGGROUPS_FILE - Name der Datei mit Verwaltungsdaten der Lerngruppen (minimaler Inhalt: {"requested": {},"groups": {}})
-  DISCORD_LEARNINGGROUPS_COURSE_FILE - Name der Datei welche die Kursnamen für die Lerngruppen-Informationen enthält (minimalter Inhalt: {})
-  DISCORD_MOD_ROLE - ID der Moderator Rolle von der erweiterte Lerngruppen-Actionen ausgeführt werden dürfen
+  DISCORD_LEARNINGGROUPS_COURSE_FILE - Name der Datei welche die Kursnamen für die Lerngruppen-Informationen enthält (minimaler Inhalt: {})
+  DISCORD_MOD_ROLE - ID der Moderations-Rolle, die erweiterte Lerngruppen-Aktionen ausführen darf
 """
 
 LG_OPEN_SYMBOL = f'🌲'
@@ -41,14 +42,14 @@ class GroupState(Enum):
 
 
 @help_category("learninggroups", "Lerngruppen",
-               "Mit dem Lerngruppen-Feature kannst du Lerngruppen-Kanäle beantragen und verwalten.",
-               "Hier kannst du Lerngruppen-Kanäle anlegen, beantragen und verwalten.")
+               "Mit dem Lerngruppen-Feature kannst du Lerngruppenkanäle beantragen und verwalten.",
+               "Hier kannst du Lerngruppenkanäle anlegen, beantragen und verwalten.")
 class LearningGroups(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         # ratelimit 2 in 10 minutes (305 * 2 = 610 = 10 minutes and 10 seconds)
         self.rename_ratelimit = 305
-        self.msg_max_len = 2000
+        self.msg_max_len = 1900
 
         self.categories = {
             GroupState.OPEN: os.getenv('DISCORD_LEARNINGGROUPS_OPEN'),
@@ -68,9 +69,9 @@ class LearningGroups(commands.Cog):
         self.support_channel = os.getenv('DISCORD_SUPPORT_CHANNEL')
         self.mod_role = os.getenv("DISCORD_MOD_ROLE")
         self.guild_id = os.getenv("DISCORD_GUILD")
-        self.groups = {}  # owner and learninggroup-member ids
+        self.groups = {}  # organizer and learninggroup-member ids
         self.channels = {}  # complete channel configs
-        self.header = {}  # headlines for statusmessage
+        self.header = {}  # headlines for status message
         self.load_groups()
         self.load_header()
 
@@ -132,13 +133,13 @@ class LearningGroups(commands.Cog):
             return GroupState.PRIVATE
         return None
 
-    def is_request_owner(self, request, member):
-        return request["owner_id"] == member.id
+    def is_request_organizer(self, request, member):
+        return request["organizer_id"] == member.id
 
-    def is_group_owner(self, channel, member):
+    def is_group_organizer(self, channel, member):
         channel_config = self.groups["groups"].get(str(channel.id))
         if channel_config:
-            return channel_config["owner_id"] == member.id
+            return channel_config["organizer_id"] == member.id
         return False
 
     def is_mod(self, member):
@@ -177,7 +178,7 @@ class LearningGroups(commands.Cog):
         seconds = channel_config["last_rename"] + self.rename_ratelimit - now
         if seconds > 0:
             channel = await self.bot.fetch_channel(int(channel_config["channel_id"]))
-            await channel.send(f"Discord limitiert die Aufrufe für manche Funktionen, daher kannst du diese Aktion erst wieder in {seconds} Sekunden ausführen.")
+            await channel.send(f"Discord schränkt die Anzahl der Aufrufe für manche Funktionen ein, daher kannst du diese Aktion erst wieder in {seconds} Sekunden ausführen.")
         return seconds > 0
 
     async def category_of_channel(self, state: GroupState):
@@ -233,7 +234,7 @@ class LearningGroups(commands.Cog):
             if lg_channel['is_listed'] and lg_channel['state'] == GroupState.PRIVATE:
                 group_config = self.groups["groups"].get(lg_channel['channel_id'])
                 if group_config:
-                    user = await self.bot.fetch_user(group_config['owner_id'])
+                    user = await self.bot.fetch_user(group_config['organizer_id'])
                     if user:
                         course_msg += f" **@{user.name}#{user.discriminator}**"
                 course_msg +=  f"\n       **↳** `!lg join {groupchannel.id}`"
@@ -244,7 +245,7 @@ class LearningGroups(commands.Cog):
         if len(no_headers) > 0:
             support_channel = await self.bot.fetch_channel(int(self.support_channel))
             if support_channel:
-                await support_channel.send(f"Es fehlen noch Überschriften für folgende Kurse in der Lerngruppenübersicht: **{', '.join(no_headers)}**")
+                await support_channel.send(f"In der Lerngruppenübersicht fehlen noch Überschriften für die folgenden Kurse: **{', '.join(no_headers)}**")
         info_message_ids.append(message.id)
         self.groups["messageids"] = info_message_ids
         await self.save_groups()
@@ -270,7 +271,7 @@ class LearningGroups(commands.Cog):
         if state is not None:
             old_state = channel_config["state"]
             if old_state == state:
-                return False  # prevent api requests when nothing changed
+                return False  # prevent api requests when nothing has changed
             channel_config["state"] = state
             await self.alter_channel(channel, channel_config)
             return True
@@ -282,7 +283,7 @@ class LearningGroups(commands.Cog):
         if channel_config["state"] in [GroupState.CLOSED, GroupState.PRIVATE]:
             was_listed = channel_config["is_listed"]
             if was_listed == is_listed:
-                return False  # prevent api requests when nothing changed
+                return False  # prevent api requests when nothing has changed
             channel_config["is_listed"] = is_listed
             await self.alter_channel(channel, channel_config)
             return True
@@ -324,16 +325,16 @@ class LearningGroups(commands.Cog):
         full_channel_name = self.full_channel_name(requested_channel_config)
         channel = await category.create_text_channel(full_channel_name)
         await self.move_channel(channel, category, False)
-        user = await self.bot.fetch_user(requested_channel_config["owner_id"])
+        user = await self.bot.fetch_user(requested_channel_config["organizer_id"])
 
         await channel.send(f":wave: <@!{user.id}>, hier ist deine neue Lerngruppe.\n"
                            "Es gibt offene und private Lerngruppen. Eine offene Lerngruppe ist für jeden sichtbar "
                            "und jeder kann darin schreiben. Eine private Lerngruppe ist unsichtbar und auf eine "
                            "Gruppe an Kommilitoninnen beschränkt."
                            "```"
-                           "Besitzerinfunktionen:\n"
+                           "Funktionen für Lerngruppenorganisatorinnen:\n"
                            "!lg addmember <@newmember>: Fügt ein Mitglied zur Lerngruppe hinzu.\n"                           
-                           "!lg owner <@newowner>: Ändert die Besitzerin der Lerngruppe auf @newowner.\n"
+                           "!lg organizer <@neworganizer>: Ändert die Organisatorin der Lerngruppe auf @neworganizer.\n"
                            "!lg open: Öffnet eine Lerngruppe.\n"
                            "!lg close: Schließt eine Lerngruppe.\n"
                            "!lg private: Stellt die Lerngruppe auf privat.\n"
@@ -343,17 +344,17 @@ class LearningGroups(commands.Cog):
                            "\nKommandos für alle:\n"
                            "!lg id: Zeigt die ID der Lerngruppe an mit der andere Kommilitoninnen beitreten können.\n"
                            "!lg members: Zeigt die Mitglieder der Lerngruppe an.\n"
-                           "!lg owner: Zeigt die Besitzerin der Lerngruppe.\n"
+                           "!lg organizer: Zeigt die Organisatorin der Lerngruppe an.\n"
                            "!lg leave: Du verlässt die Lerngruppe.\n"
-                           "!lg join: Anfrage stellen in die Lerngruppe aufgenommen zu werden.\n"
+                           "!lg join: Anfrage, um der Lerngruppe beizutreten.\n"
                            "\nMit dem nachfolgenden Kommando kann eine Kommilitonin darum "
-                           "bitten in die Lerngruppe aufgenommen zu werden wenn diese bereits privat ist.\n"
+                           "bitten in die Lerngruppe aufgenommen zu werden wenn die Gruppe privat ist.\n"
                            f"!lg join {channel.id}"
-                            "\n(manche Kommandos sind von Discord limitiert und können nur einmal alle 5 Minuten ausgeführt werden)"
+                            "\n(Manche Kommandos werden von Discord eingeschränkt und können nur einmal alle 5 Minuten ausgeführt werden.)"
                            "```"
                            )
         self.groups["groups"][str(channel.id)] = {
-            "owner_id": requested_channel_config["owner_id"],
+            "organizer_id": requested_channel_config["organizer_id"],
             "last_rename": int(time.time())
         }
 
@@ -422,9 +423,9 @@ class LearningGroups(commands.Cog):
                 try:
                     await utils.send_dm(user, f"Du wurdest in die Lerngruppe <#{channel.id}> aufgenommen. " 
                                               "Viel Spass beim gemeinsamen Lernen!\n"
-                                              "Dieser Link führt dich direkt zum Lerngruppen-Channel. " 
-                                              "Diese Nachricht kannst du bei Bedarf in unserer Unterhaltung " 
-                                              "über Rechtsklick anpinnen.")
+                                              "Dieser Link führt dich direkt zum Lerngruppenkanal. " 
+                                              "Diese Nachricht kannst du in unserer Unterhaltung mit Rechtsklick anpinnen, " 
+                                              "wenn du möchtest.")
                 except:
                     pass
 
@@ -445,7 +446,7 @@ class LearningGroups(commands.Cog):
         if users.pop(mid, None):
             user = await self.bot.fetch_user(mid)
             if user and send_message:
-                await utils.send_dm(user, f"Du wurdest aus der Lerngruppe {channel.name} entfernt")
+                await utils.send_dm(user, f"Du wurdest aus der Lerngruppe {channel.name} entfernt.")
 
         await self.save_groups()
 
@@ -471,11 +472,11 @@ class LearningGroups(commands.Cog):
         if not group_config:
             return overwrites
 
-        owner = self.bot.get_user(group_config["owner_id"])
-        if not owner:
+        organizer = self.bot.get_user(group_config["organizer_id"])
+        if not organizer:
             return overwrites
 
-        overwrites[owner] = disnake.PermissionOverwrite(read_messages=True)
+        overwrites[organizer] = disnake.PermissionOverwrite(read_messages=True)
         users = group_config.get("users")
         if not users:
             return overwrites
@@ -494,12 +495,12 @@ class LearningGroups(commands.Cog):
     @commands.group(name="lg", aliases=["learninggroup", "lerngruppe"], pass_context=True)
     async def cmd_lg(self, ctx):
         if not ctx.invoked_subcommand:
-            await ctx.channel.send("Gib `!help lg` ein um eine Übersicht über die Lerngruppen-Kommandos zu erhalten.")
+            await ctx.channel.send("Gib `!help lg` ein, um eine Übersicht über die Lerngruppen-Kommandos zu erhalten.")
 
     @help(
         command_group="lg",
         category="learninggroups",
-        brief="Updated die Lerngruppenliste",
+        brief="Aktualisiert die Lerngruppenliste",
         mod=True
     )
     @cmd_lg.command(name="update")
@@ -513,14 +514,14 @@ class LearningGroups(commands.Cog):
         category="learninggroups",
         syntax="!lg header <coursenumber> <name...>",
         brief="Fügt einen Kurs als neue Überschrift in Botys Lerngruppen-Liste (Kanal #lerngruppen) hinzu. "
-              "Darf Leerzeichen enthalten, Anführungszeichen sind nicht erforderlich.",
+              "Der Name darf Leerzeichen enthalten, Anführungszeichen sind nicht erforderlich.",
         example="!lg header 1141 Mathematische Grundlagen",
         parameters={
             "coursenumber": "Nummer des Kurses wie von der Fernuni angegeben (ohne führende Nullen z. B. 1142).",
             "name...": "Ein frei wählbarer Text (darf Leerzeichen enthalten).",
         },
-        description="Kann auch zum Bearbeiten einer Überschrift genutzt werden. Bei bereits existierender "
-                    "Kursnummer wird die Überschrift abgeändert",
+        description="Kann auch zum Bearbeiten einer Überschrift genutzt werden. Existiert die Kursnummer bereits, "
+                    "wird die Überschrift geändert.",
         mod=True
     )
     @cmd_lg.command(name="header")
@@ -540,22 +541,22 @@ class LearningGroups(commands.Cog):
         category="learninggroups",
         syntax="!lg add <coursenumber> <name> <semester> <status> <@usermention>",
         example="!lg add 1142 mathegenies sose22 closed @someuser",
-        brief="Fügt einen Lerngruppen-Kanal hinzu. Der Name darf keine Leerzeichen enthalten.",
+        brief="Fügt einen Lerngruppenkanal hinzu. Der Name darf keine Leerzeichen enthalten.",
         parameters={
             "coursenumber": "Nummer des Kurses wie von der Fernuni angegeben (ohne führende Nullen z. B. 1142).",
             "name": "Ein frei wählbarer Text ohne Leerzeichen. Bindestriche sind zulässig.",
             "semester": ("Das Semester, für welches diese Lerngruppe erstellt werden soll."
                          "sose oder wise gefolgt von der zweistelligen Jahreszahl (z. B. sose22)."),
             "status": "Gibt an ob die Lerngruppe für weitere Lernwillige geöffnet ist (open) oder nicht (closed).",
-            "@usermention": "Die so erwähnte Benutzerin wird als Besitzerin für die Lerngruppe gesetzt."
+            "@usermention": "Die so erwähnte Benutzerin wird als Organisatorin der Lerngruppe eingesetzt."
         },
         mod=True
     )
     @cmd_lg.command(name="add")
     @commands.check(utils.is_mod)
-    async def cmd_add_group(self, ctx, arg_course, arg_name, arg_semester, arg_state, arg_owner: disnake.Member):
+    async def cmd_add_group(self, ctx, arg_course, arg_name, arg_semester, arg_state, arg_organizer: disnake.Member):
         state = self.arg_state_to_group_state(arg_state)
-        channel_config = {"owner_id": arg_owner.id, "course": arg_course, "name": arg_name, "semester": arg_semester,
+        channel_config = {"organizer_id": arg_organizer.id, "course": arg_course, "name": arg_name, "semester": arg_semester,
                           "state": state, "is_listed": False}
 
         if not await self.is_channel_config_valid(ctx, channel_config, ctx.command.name):
@@ -569,10 +570,10 @@ class LearningGroups(commands.Cog):
         command_group="lg",
         category="learninggroups",
         syntax="!lg request <coursenumber> <name> <semester> <status>",
-        brief="Stellt eine Anfrage für einen neuen Lerngruppen-Kanal.",
+        brief="Stellt eine Anfrage für einen neuen Lerngruppenkanal.",
         example="!lg request 1142 mathegenies sose22 closed",
         description=("Moderatorinnen können diese Anfrage bestätigen, dann wird die Gruppe eingerichtet. "
-                     "Die Besitzerin der Gruppe ist die Benutzerin die die Anfrage eingestellt hat."),
+                     "Die Organisatorin der Gruppe ist die Benutzerin, die die Anfrage gestellt hat."),
         parameters={
             "coursenumber": "Nummer des Kurses, wie von der FernUni angegeben (ohne führende Nullen z. B. 1142).",
             "name": "Ein frei wählbarer Text ohne Leerzeichen.",
@@ -612,7 +613,7 @@ class LearningGroups(commands.Cog):
 
         if len(arg_semester) == 8:
             arg_semester = f"{arg_semester[0:4]}{arg_semester[-2:]}"
-        channel_config = {"owner_id": ctx.author.id, "course": arg_course, "name": arg_name, "semester": arg_semester,
+        channel_config = {"organizer_id": ctx.author.id, "course": arg_course, "name": arg_name, "semester": arg_semester,
                           "state": state, "is_listed": False}
 
         if not await self.is_channel_config_valid(ctx, channel_config, ctx.command.name):
@@ -635,14 +636,14 @@ class LearningGroups(commands.Cog):
         category="learninggroups",
         syntax="!lg show",
         brief="Zeigt einen privaten Lerngruppenkanal trotzdem in der Liste an.",
-        description=("Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. "
-                     "Die Lerngruppe wird in der Übersicht der Lerngruppen gelistet, so können Kommilitoninnen noch "
-                     "Anfragen stellen, um in die Lerngruppe aufgenommen zu werden."
-                     "Diese Aktion kann nur von der Besitzerin der Lerngruppe ausgeführt werden. ")
+        description=("Muss im betreffenden Lerngruppenkanal ausgeführt werden. "
+                     "Die Lerngruppe wird in der Übersicht der Lerngruppen aufgeführt, so dass Kommilitoninnen noch "
+                     "anfragen können, in die Lerngruppe aufgenommen zu werden."
+                     "Diese Aktion kann nur von der Organisatorin der Lerngruppe ausgeführt werden. ")
     )
     @cmd_lg.command(name="show")
     async def cmd_show(self, ctx):
-        if self.is_group_owner(ctx.channel, ctx.author) or utils.is_mod(ctx):
+        if self.is_group_organizer(ctx.channel, ctx.author) or utils.is_mod(ctx):
             channel_config = self.channels[str(ctx.channel.id)]
             if channel_config:
                 if channel_config.get("state") == GroupState.PRIVATE:
@@ -651,7 +652,7 @@ class LearningGroups(commands.Cog):
                 elif channel_config.get("state") == GroupState.OPEN:
                     await ctx.channel.send("Nichts zu tun. Offene Lerngruppen werden sowieso in der Liste angezeigt.")
                 elif channel_config.get("state") == GroupState.CLOSED:
-                    await ctx.channel.send("Möchtest du die Gruppen öffnen? Versuch‘s mit `!lg open`")
+                    await ctx.channel.send("Möchtest du die Gruppen öffnen? Versuch's mit `!lg open`")
 
 
     @help(
@@ -659,13 +660,13 @@ class LearningGroups(commands.Cog):
         category="learninggroups",
         syntax="!lg hide",
         brief="Versteckt einen privaten Lerngruppenkanal. ",
-        description=("Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. "
-                     "Die Lerngruppe wird nicht mehr in der Liste der Lerngruppen aufgeführt. "
-                     "Diese Aktion kann nur von der Besitzerin der Lerngruppe ausgeführt werden. ")
+        description=("Muss im betreffenden Lerngruppenkanal ausgeführt werden. "
+                     "Die Lerngruppe wird nicht mehr in der Liste der Lerngruppen angezeigt. "
+                     "Diese Aktion kann nur von der Organisatorin der Lerngruppe ausgeführt werden. ")
     )
     @cmd_lg.command(name="hide")
     async def cmd_hide(self, ctx):
-        if self.is_group_owner(ctx.channel, ctx.author) or utils.is_mod(ctx):
+        if self.is_group_organizer(ctx.channel, ctx.author) or utils.is_mod(ctx):
             channel_config = self.channels[str(ctx.channel.id)]
             if channel_config:
                 if channel_config.get("state") == GroupState.PRIVATE:
@@ -675,8 +676,8 @@ class LearningGroups(commands.Cog):
 
                 elif channel_config.get("state") == GroupState.OPEN:
                     await ctx.channel.send("Offene Lerngruppen können nicht aus der Lerngruppenliste entfernt werden. " 
-                                           "Führe `!lg close` aus um die Lerngruppe zu schließen, "
-                                           "oder `!lg private` um diese auf "
+                                           "Führe `!lg close` aus, um die Lerngruppe zu schließen, "
+                                           "oder `!lg private`, um diese auf "
                                            "privat zu schalten.")
                 elif channel_config.get("state") == GroupState.CLOSED:
                     await ctx.channel.send("Wenn diese Gruppe privat werden soll, ist das Kommando das du brauchst: `!lg private`")
@@ -695,44 +696,44 @@ class LearningGroups(commands.Cog):
         command_group="lg",
         category="learninggroups",
         syntax="!lg open",
-        brief="Öffnet den Lerngruppen-Kanal wenn du die Besitzerin bist. ",
-        description=("Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. "
-                     "Verschiebt den Lerngruppen-Kanal in die Kategorie für offene Kanäle und ändert das Icon. "
-                     "Diese Aktion kann nur von der Besitzerin der Lerngruppe ausgeführt werden. ")
+        brief="Öffnet den Lerngruppenkanal, wenn du die Organisatorin bist. ",
+        description=("Muss im betreffenden Lerngruppenkanal ausgeführt werden. "
+                     "Verschiebt den Lerngruppenkanal in die Kategorie für offene Kanäle und ändert das Icon. "
+                     "Diese Aktion kann nur von der Organisatorin der Lerngruppe ausgeführt werden. ")
     )
     @cmd_lg.command(name="open", aliases=["opened", "offen"])
     async def cmd_open(self, ctx):
-        if self.is_group_owner(ctx.channel, ctx.author) or utils.is_mod(ctx):
+        if self.is_group_organizer(ctx.channel, ctx.author) or utils.is_mod(ctx):
             await self.set_channel_state(ctx.channel, state=GroupState.OPEN)
 
     @help(
         command_group="lg",
         category="learninggroups",
         syntax="!lg close",
-        brief="Schließt den Lerngruppen-Kanal wenn du die Besitzerin bist. ",
-        description=("Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. "
+        brief="Schließt den Lerngruppenkanal, wenn du die Organisatorin bist. ",
+        description=("Muss im betreffenden Lerngruppenkanal ausgeführt werden. "
                      "Stellt die Lerngruppe auf geschlossen. Dies ist rein symbolisch und zeigt an, "
                      "dass keine neuen Mitglieder mehr aufgenommen werden. "
-                     "Diese Aktion kann nur von der Besitzerin der Lerngruppe ausgeführt werden. ")
+                     "Diese Aktion kann nur von der Organisatorin der Lerngruppe ausgeführt werden. ")
     )
     @cmd_lg.command(name="close", aliases=["closed", "geschlossen"])
     async def cmd_close(self, ctx):
-        if self.is_group_owner(ctx.channel, ctx.author) or utils.is_mod(ctx):
+        if self.is_group_organizer(ctx.channel, ctx.author) or utils.is_mod(ctx):
             await self.set_channel_state(ctx.channel, state=GroupState.CLOSED)
 
     @help(
         command_group="lg",
         category="learninggroups",
         syntax="!lg private",
-        brief="Macht aus deiner Lerngruppe eine private Lerngruppe wenn du die Besitzerin bist. ",
-        description=("Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. "
+        brief="Macht aus deiner Lerngruppe eine private Lerngruppe, wenn du die Organisatorin bist. ",
+        description=("Muss im betreffenden Lerngruppenkanal ausgeführt werden. "
                      "Stellt die Lerngruppe auf privat. Es haben nur noch Mitglieder "
-                     "der Lerngruppe zugriff auf den Kanal. (siehe `!lg members`)"
-                     "Diese Aktion kann nur von der Besitzerin der Lerngruppe ausgeführt werden. ")
+                     "der Lerngruppe Zugriff auf den Kanal. (siehe `!lg members`)"
+                     "Diese Aktion kann nur von der Organisatorin der Lerngruppe ausgeführt werden. ")
     )
     @cmd_lg.command(name="private", aliases=["privat"])
     async def cmd_private(self, ctx):
-        if self.is_group_owner(ctx.channel, ctx.author) or utils.is_mod(ctx):
+        if self.is_group_organizer(ctx.channel, ctx.author) or utils.is_mod(ctx):
             if await self.set_channel_state(ctx.channel, state=GroupState.PRIVATE):
                 await self.update_permissions(ctx.channel)
 
@@ -742,7 +743,7 @@ class LearningGroups(commands.Cog):
         command_group="lg",
         category="learninggroups",
         syntax="!lg rename <name>",
-        brief="Ändert den Namen des Lerngruppen-Kanals, in dem das Komando ausgeführt wird.",
+        brief="Ändert den Namen des Lerngruppenkanals, in dem das Kommando ausgeführt wird.",
         example="!lg rename matheluschen",
         description="Aus #1142-matheprofis-sose22 wird nach dem Aufruf des Beispiels #1142-matheluschen-sose22.",
         parameters={
@@ -759,8 +760,8 @@ class LearningGroups(commands.Cog):
         command_group="lg",
         syntax="!lg archive",
         category="learninggroups",
-        brief="Archiviert den Lerngruppen-Kanal",
-        description="Verschiebt den Lerngruppen-Kanal, in welchem dieses Kommando ausgeführt wird, ins Archiv.",
+        brief="Archiviert den Lerngruppenkanal.",
+        description="Verschiebt den Lerngruppenkanal, in welchem dieses Kommando ausgeführt wird, ins Archiv.",
         mod=True
     )
     @cmd_lg.command(name="archive", aliases=["archiv"])
@@ -771,42 +772,42 @@ class LearningGroups(commands.Cog):
     @help(
         command_group="lg",
         category="learninggroups",
-        syntax="!lg owner <@usermention>",
-        example="!owner @someuser",
-        brief="Setzt die Besitzerin eines Lerngruppen-Kanals",
-        description="Muss im betreffenden Lerngruppen-Kanal ausgeführt werden. ",
+        syntax="!lg organizer <@usermention>",
+        example="!lg organizer @someuser",
+        brief="Bestimmt die Organisatorin eines Lerngruppenkanals.",
+        description="Muss im betreffenden Lerngruppenkanal ausgeführt werden. ",
         parameters={
-            "@usermention": "Die neue Besitzerin der Lerngruppe."
+            "@usermention": "Die neue Organisatorin der Lerngruppe."
         }
     )
-    @cmd_lg.command(name="owner")
-    async def cmd_owner(self, ctx, new_owner: disnake.Member = None):
+    @cmd_lg.command(name="organizer")
+    async def cmd_organizer(self, ctx, new_organizer: disnake.Member = None):
         group_config = self.groups["groups"].get(str(ctx.channel.id))
 
         if not group_config:
             self.groups["groups"][str(ctx.channel.id)] = {}
             group_config = self.groups["groups"][str(ctx.channel.id)]
 
-        owner_id = group_config.get("owner_id")
+        organizer_id = group_config.get("organizer_id")
 
-        if not owner_id:
+        if not organizer_id:
             return
 
-        if not new_owner:
-                user = await self.bot.fetch_user(owner_id)
-                await ctx.channel.send(f"Besitzerin: @{user.name}#{user.discriminator}")
+        if not new_organizer:
+                user = await self.bot.fetch_user(organizer_id)
+                await ctx.channel.send(f"Organisatorin: @{user.name}#{user.discriminator}")
 
         elif isinstance(group_config, dict):
-            owner = await self.bot.fetch_user(owner_id)
-            if self.is_group_owner(ctx.channel, ctx.author) or utils.is_mod(ctx):
-                group_config["owner_id"] = new_owner.id
-                await self.remove_member_from_group(ctx.channel, new_owner, False)
-                if new_owner != owner:
-                    await self.add_member_to_group(ctx.channel, owner, False)
+            organizer = await self.bot.fetch_user(organizer_id)
+            if self.is_group_organizer(ctx.channel, ctx.author) or utils.is_mod(ctx):
+                group_config["organizer_id"] = new_organizer.id
+                await self.remove_member_from_group(ctx.channel, new_organizer, False)
+                if new_organizer != organizer:
+                    await self.add_member_to_group(ctx.channel, organizer, False)
                 await self.save_groups()
                 await self.update_permissions(ctx.channel)
                 await ctx.channel.send(
-                    f"Glückwunsch {new_owner.mention}! Du bist jetzt die Besitzerin dieser Lerngruppe.")
+                    f"Glückwunsch {new_organizer.mention}! Du bist jetzt die Organisatorin dieser Lerngruppe.")
 
     @help(
         command_group="lg",
@@ -816,7 +817,7 @@ class LearningGroups(commands.Cog):
         brief="Fügt eine Benutzerin zu einer Lerngruppe hinzu.",
         parameters={
             "@usermention": "Die so erwähnte Benutzerin wird zur Lerngruppe hinzugefügt.",
-            "#channel": "(optional) Der Kanal dem die Benutzerin hinzugefügt werden soll."
+            "#channel": "(optional) Der Kanal, zu dem die Benutzerin hinzugefügt werden soll."
         }
     )
     @cmd_lg.command(name="addmember", aliases=["addm", "am"])
@@ -824,10 +825,10 @@ class LearningGroups(commands.Cog):
         if not arg_channel:
             if not self.channels.get(str(ctx.channel.id)):
                 await ctx.channel.send("Wenn das Kommando außerhalb eines Lerngruppenkanals aufgerufen wird, muss der" 
-                                       "Lerngruppenkanal angehängt werden. `!lg addmember <@usermention> <#channel>`")
+                                       "Lerngruppenkanal angefügt werden. `!lg addmember <@usermention> <#channel>`")
                 return
             arg_channel = ctx.channel
-        if self.is_group_owner(arg_channel, ctx.author) or utils.is_mod(ctx):
+        if self.is_group_organizer(arg_channel, ctx.author) or utils.is_mod(ctx):
             await self.add_member_to_group(arg_channel, arg_member)
             await self.update_permissions(arg_channel)
 
@@ -838,7 +839,7 @@ class LearningGroups(commands.Cog):
         example="!lg removemember @someuser #1141-mathegl-lerngruppe-sose21",
         brief="Entfernt eine Benutzerin aus einer Lerngruppe.",
         parameters={
-            "#channel": "Der Kanal aus dem die Benutzerin gelöscht werden soll.",
+            "#channel": "Der Kanal, aus dem die Benutzerin gelöscht werden soll.",
             "@usermention": "Die so erwähnte Benutzerin wird aus der Lerngruppe entfernt."
         },
         mod=True
@@ -853,7 +854,7 @@ class LearningGroups(commands.Cog):
         command_group="lg",
         category="learninggroups",
         syntax="!lg members",
-        brief="Listet die Mitglieder der Lerngruppe auf.",
+        brief="Zählt die Mitglieder der Lerngruppe auf.",
     )
     @cmd_lg.command(name="members")
     async def cmd_members(self, ctx):
@@ -861,14 +862,14 @@ class LearningGroups(commands.Cog):
         if not group_config:
             await ctx.channel.send("Das ist kein Lerngruppenkanal.")
             return
-        owner_id = group_config.get("owner_id")
+        organizer_id = group_config.get("organizer_id")
 
-        if not owner_id:
+        if not organizer_id:
             return
 
-        owner = await self.bot.fetch_user(owner_id)
+        organizer = await self.bot.fetch_user(organizer_id)
         users = group_config.get("users", {})
-        if not users and not owner:
+        if not users and not organizer:
             await ctx.channel.send("Keine Lerngruppenmitglieder vorhanden.")
             return
 
@@ -878,7 +879,7 @@ class LearningGroups(commands.Cog):
             user = await self.bot.fetch_user(user_id)
             names.append("@" + user.name + "#" + user.discriminator)
 
-        await ctx.channel.send(f"Besitzerin: **@{owner.name}#{owner.discriminator}**\nMitglieder: " +
+        await ctx.channel.send(f"Organisatorin: **@{organizer.name}#{organizer.discriminator}**\nMitglieder: " +
                                (f"{', '.join(names)}" if len(names) > 0 else "Keine"))
 
     @help(
@@ -889,7 +890,7 @@ class LearningGroups(commands.Cog):
     )
     @cmd_lg.command(name="id")
     async def cmd_id(self, ctx):
-        if self.is_group_owner(ctx.channel, ctx.author) or utils.is_mod(ctx):
+        if self.is_group_organizer(ctx.channel, ctx.author) or utils.is_mod(ctx):
             group_config = self.groups["groups"].get(str(ctx.channel.id))
             if not group_config:
                 await ctx.channel.send("Das ist kein Lerngruppenkanal.")
@@ -901,9 +902,9 @@ class LearningGroups(commands.Cog):
         command_group="lg",
         category="learninggroups",
         syntax="!lg join <lg-id>",
-        brief="Fragt bei der Besitzerin einer Lerngruppe um Aufnahme.",
+        brief="Fragt bei der Organisatorin einer Lerngruppe um Aufnahme an.",
         parameters={
-            "id": "Die ID zur Lerngruppe."
+            "id": "Die ID der Lerngruppe."
         }
     )
     @cmd_lg.command(name="join")
@@ -925,12 +926,12 @@ class LearningGroups(commands.Cog):
             channel=channel,
             title="Jemand möchte deiner Lerngruppe beitreten!",
             description=f"<@!{ctx.author.id}> möchte gerne der Lerngruppe **#{channel.name}** beitreten.",
-            message=f"<@!{group_config['owner_id']}>, du wirst gebraucht. Anfrage von <@!{ctx.author.id}>:",
+            message=f"<@!{group_config['organizer_id']}>, du wirst gebraucht. Anfrage von <@!{ctx.author.id}>:",
             custom_prefix="learninggroups:join"
         )
         await utils.send_dm(ctx.author, f"Deine Anfrage wurde an **#{channel.name}** gesendet. "
-                                        "Sobald die Besitzerin der Lerngruppe darüber "
-                                        "entschieden hat bekommst du Bescheid.")
+                                        "Sobald die Organisatorin der Lerngruppe darüber "
+                                        "entschieden hat, bekommst du Bescheid.")
 
     @help(
         command_group="lg",
@@ -940,7 +941,7 @@ class LearningGroups(commands.Cog):
     )
     @cmd_lg.command(name="kick")
     async def cmd_kick(self, ctx, arg_member: disnake.Member):
-        if self.is_group_owner(ctx.channel, ctx.author) or utils.is_mod(ctx):
+        if self.is_group_organizer(ctx.channel, ctx.author) or utils.is_mod(ctx):
             group_config = self.groups["groups"].get(str(ctx.channel.id))
             if not group_config:
                 await ctx.channel.send("Das ist keine gültiger Lerngruppenkanal.")
@@ -962,8 +963,8 @@ class LearningGroups(commands.Cog):
             await ctx.channel.send("Das ist keine gültiger Lerngruppenkanal.")
             return
 
-        if group_config["owner_id"] == ctx.author.id:
-            await ctx.channel.send("Du kannst nicht aus deiner eigenen Lerngruppe flüchten. Übertrage erst den Besitz.")
+        if group_config["organizer_id"] == ctx.author.id:
+            await ctx.channel.send("Du kannst nicht aus deiner eigenen Lerngruppe flüchten. Gib erst die Verantwortung ab.")
             return
 
         await self.remove_member_from_group(ctx.channel, ctx.author)
@@ -979,9 +980,9 @@ class LearningGroups(commands.Cog):
             if confirmed and self.is_mod(member):
                 await self.add_requested_group_channel(message, direct=False)
 
-            elif not confirmed and (self.is_request_owner(request, member) or self.is_mod(member)):
+            elif not confirmed and (self.is_request_organizer(request, member) or self.is_mod(member)):
                 if self.is_mod(member):
-                    user = await self.bot.fetch_user(request["owner_id"] )
+                    user = await self.bot.fetch_user(request["organizer_id"] )
                     if user:
                         await utils.send_dm(user, f"Deine Lerngruppenanfrage für #{self.full_channel_name(request)} wurde abgelehnt.")
                 await self.remove_group_request(message)
@@ -997,7 +998,7 @@ class LearningGroups(commands.Cog):
         if not group_config:
             return
 
-        if self.is_group_owner(channel, member) or self.is_mod(member):
+        if self.is_group_organizer(channel, member) or self.is_mod(member):
             if confirmed:
                 if message.mentions and len(message.mentions) == 2:
                     await self.add_member_to_group(channel, message.mentions[1])
