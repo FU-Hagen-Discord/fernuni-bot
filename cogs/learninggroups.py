@@ -765,9 +765,9 @@ class LearningGroups(commands.Cog):
         mod=True
     )
     @cmd_lg.command(name="archive", aliases=["archiv"])
-    @commands.check(utils.is_mod)
     async def cmd_archive(self, ctx):
-        await self.archive(ctx.channel)
+        if self.is_group_organizer(ctx.channel, ctx.author) or utils.is_mod(ctx):
+            await self.archive(ctx.channel)
 
     @help(
         command_group="lg",
