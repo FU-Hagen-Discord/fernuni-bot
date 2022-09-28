@@ -84,6 +84,8 @@ class Scraper:
             info_source = soup.find(summary='Modulinformationen')
         except:
             return None
+        if info_source is None:
+            return None
 
         infos = {
             "ects": self.get_info(info_source, 'ECTS'),
