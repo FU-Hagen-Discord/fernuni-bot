@@ -1,10 +1,10 @@
 import os
 
 import discord
+from cogs.help import help, handle_error
 from discord.ext import commands
 
 import utils
-from cogs.help import help, handle_error
 
 
 class Welcome(commands.Cog):

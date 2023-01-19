@@ -4,10 +4,10 @@ import random
 import re
 
 import discord
+from cogs.help import text_command_help, help, handle_error, remove_help_for, help_category
 from discord.ext import commands
 
 import utils
-from cogs.help import text_command_help, help, handle_error, remove_help_for, help_category
 
 
 @help_category("textcommands", "Text-Kommandos", "", "Alle Werkzeuge zum Anlegen und Verwalten von Textkommandos.")

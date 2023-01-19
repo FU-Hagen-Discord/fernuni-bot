@@ -1,11 +1,11 @@
 import asyncio
 import os
+from typing import List
 
 import discord
 from discord import Intents, Game, app_commands, Interaction
 from discord.ext import commands
 from dotenv import load_dotenv
-from typing import List
 
 from view_manager import ViewManager
 
@@ -21,7 +21,7 @@ CATEGORY_LERNGRUPPEN = int(os.getenv("DISCORD_CATEGORY_LERNGRUPPEN"))
 PIN_EMOJI = "📌"
 
 intents = Intents.all()
-extensions = ["appointments", "change_log", "christmas", "elm_street", "emoji_hunt", "github", "roles"]
+extensions = ["appointments", "github"]
 
 
 class Boty(commands.Bot):
