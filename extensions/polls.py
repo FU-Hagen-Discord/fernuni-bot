@@ -1,81 +1,42 @@
 import os
 
-from cogs.help import help, handle_error, help_category
+from discord import Interaction, app_commands
 from discord.ext import commands
 
-import utils
 from extensions.components.poll.poll import Poll
 
 
-@help_category("poll", "Umfragen", "Erstelle eine Umfrage in einem Kanal oder schlage eine Server-Umfrage vor.",
-               "Umfragen erstellen oder bearbeiten.")
-class Polls(commands.Cog):
+class Polls(commands.GroupCog, name="poll", description="Handle Polls in Channels"):
     def __init__(self, bot):
         self.bot = bot
         self.poll_sugg_channel = int(os.getenv("DISCORD_POLL_SUGG_CHANNEL"))
 
-    @help(
-        category="poll",
-        syntax="!poll <question> <answers...>",
-        brief="Erstellt eine Umfrage im aktuellen Kanal.",
-        parameters={
-            "question": "Die Frage, die gestellt werden soll (in Anführungszeichen).",
-            "answers...": "Durch Leerzeichen getrennte Antwortmöglichkeiten (die einzelnen Antworten in Anführungszeichen einschließen)."
-        },
-        example="!poll \"Wie ist das Wetter?\" \"echt gut\" \"weniger gut\" \"Boar nee, nicht schon wieder Regen\""
-    )
-    @commands.group(name="poll", pass_context=True, invoke_without_command=True)
-    async def cmd_poll(self, ctx, question, *answers):
+    @app_commands.command(name="add", description="Erstelle eine Umfrage mit bis zu 20 Antwortmöglichkeiten.")
+    @app_commands.describe(question="Welche Frage möchtest du stellen?", choice_a="1. Antwortmöglichkeit",
+                           choice_b="2. Antwortmöglichkeit", choice_c="3. Antwortmöglichkeit",
+                           choice_d="4. Antwortmöglichkeit", choice_e="5. Antwortmöglichkeit",
+                           choice_f="6. Antwortmöglichkeit", choice_g="7. Antwortmöglichkeit",
+                           choice_h="8. Antwortmöglichkeit", choice_i="9. Antwortmöglichkeit",
+                           choice_j="10. Antwortmöglichkeit", choice_k="11. Antwortmöglichkeit",
+                           choice_l="12. Antwortmöglichkeit", choice_m="13. Antwortmöglichkeit",
+                           choice_n="14. Antwortmöglichkeit", choice_o="15. Antwortmöglichkeit",
+                           choice_p="16. Antwortmöglichkeit", choice_q="17. Antwortmöglichkeit",
+                           choice_r="18. Antwortmöglichkeit", choice_s="19. Antwortmöglichkeit",
+                           choice_t="20. Antwortmöglichkeit")
+    async def cmd_poll(self, interaction: Interaction, question: str, choice_a: str, choice_b: str,
+                       choice_c: str = None, choice_d: str = None, choice_e: str = None, choice_f: str = None,
+                       choice_g: str = None, choice_h: str = None, choice_i: str = None, choice_j: str = None,
+                       choice_k: str = None, choice_l: str = None, choice_m: str = None, choice_n: str = None,
+                       choice_o: str = None, choice_p: str = None, choice_q: str = None, choice_r: str = None,
+                       choice_s: str = None, choice_t: str = None):
+        await interaction.response.defer()
         """ Create poll """
+        answers = [choice for choice in
+                   [choice_a, choice_b, choice_c, choice_d, choice_e, choice_f, choice_g, choice_h, choice_i, choice_j,
+                    choice_k, choice_l, choice_m, choice_n, choice_o, choice_p, choice_q, choice_r, choice_s, choice_t]
+                   if choice]
 
-        await Poll(self.bot, question, list(answers), ctx.author.id).send_poll(ctx)
-
-    @help(
-        category="poll",
-        syntax="!poll suggest <question> <answers...>",
-        brief="Schlägt eine Umfrage für den Umfrage-Kanal vor.",
-        parameters={
-            "question": "Die Frage die gestellt werden soll (in Anführungszeichen).",
-            "answers...": "Durch Leerzeichen getrennte Antwortmöglichkeiten (die einzelnen Antworten in Anführungszeichen einschließen)."
-        },
-        example="!poll suggest \"Wie ist das Wetter?\" \"echt gut\" \"weniger gut\" \"Boar nee, nicht schon wieder Regen\""
-    )
-    @cmd_poll.command(name="suggest")
-    async def cmd_add_poll(self, ctx, question, *answers):
-        channel = await self.bot.fetch_channel(self.poll_sugg_channel)
-        msg = f"<@!{ctx.author.id}> hat folgende Umfrage vorgeschlagen:\nFrage:{question}\n\nAntwortoptionen:\n"
-        poll = f"!poll \"{question}\""
-
-        for answer in answers:
-            msg += f"{answer}\n"
-            poll += f" \"{answer}\""
-
-        await channel.send(f"{msg}\n{poll}")
-
-    @help(
-        category="poll",
-        brief="Bearbeitet eine bereits vorhandene Umfrage.",
-        syntax="!poll edit <message_id> <question> <answers...>",
-        parameters={
-            "message_id": "die Message-ID ist der Nachricht mit einem Rechtsklick auf die Umfrage zu entnehmen (Entwicklermodus in Discord müssen aktiv sein).",
-            "question": "Die Frage, die gestellt werden soll (in Anführungszeichen).",
-            "answers...": "Durch Leerzeichen getrennte Antwortmöglichkeiten (die einzelnen Antworten in Anführungszeichen einschließen).",
-        },
-        example="!poll edit 838752355595059230 \"Wie ist das Wetter?\" \"echt gut\" \"weniger gut\" \"Boar nee, nicht schon wieder Regen\"",
-        mod=True
-    )
-    @cmd_poll.command(name="edit")
-    @commands.check(utils.is_mod)
-    async def cmd_edit_poll(self, ctx, message_id, question, *answers):
-        message = await ctx.fetch_message(message_id)
-        if message:
-            if message.embeds[0].title == "Umfrage":
-                old_poll = Poll(self.bot, message=message)
-                new_poll = Poll(self.bot, question=question, answers=list(answers), author=old_poll.author)
-                await new_poll.send_poll(ctx.channel, message=message)
-        else:
-            ctx.send("Fehler! Umfrage nicht gefunden!")
-        pass
+        await Poll(self.bot, question, list(answers), interaction.user.id).send_poll(interaction)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
@@ -93,5 +54,6 @@ class Polls(commands.Cog):
                     else:
                         await poll.close_poll()
 
-    async def cog_command_error(self, ctx, error):
-        await handle_error(ctx, error)
+
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(Polls(bot))

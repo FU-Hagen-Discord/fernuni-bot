@@ -19,7 +19,7 @@ HELP_FILE = os.getenv('DISCORD_HELP_FILE')
 PIN_EMOJI = "📌"
 
 intents = Intents.all()
-extensions = ["appointments", "github", "news", "mod_mail", "voice", "welcome", "xkcd", "timer"]
+extensions = ["appointments", "github", "news", "mod_mail", "voice", "welcome", "xkcd", "timer", "polls"]
 
 
 class Boty(commands.Bot):

@@ -1,5 +1,6 @@
 import discord
 import emoji
+from discord import TextChannel
 
 DEFAULT_OPTIONS = ["🇦", "🇧", "🇨", "🇩", "🇪", "🇫", "🇬", "🇭", "🇮", "🇯", "🇰", "🇱", "🇲", "🇳", "🇴", "🇵", "🇶",
                    "🇷"]
@@ -70,7 +71,7 @@ class Poll:
 
         self.options = get_options(self.bot, self.answers)
 
-    async def send_poll(self, channel, result=False, message=None):
+    async def send_poll(self, interaction, result=False, message=None):
         option_ctr = 0
         title = "Umfrage"
         participants = {}
@@ -79,8 +80,8 @@ class Poll:
             title += " Ergebnis"
 
         if len(self.answers) > len(DEFAULT_OPTIONS):
-            await channel.send(
-                f"Fehler beim Erstellen der Umfrage! Es werden nicht mehr als {len(DEFAULT_OPTIONS)} Optionen unterstützt!")
+            await interaction.edit_original_response(
+                content=f"Fehler beim Erstellen der Umfrage! Es werden nicht mehr als {len(DEFAULT_OPTIONS)} Optionen unterstützt!")
             return
 
         embed = discord.Embed(title=title, description=self.question)
@@ -109,7 +110,11 @@ class Poll:
         if message:
             await message.edit(embed=embed)
         else:
-            message = await channel.send("", embed=embed)
+            if type(interaction) is TextChannel:
+                message = await interaction.send(embed=embed)
+            else:
+                await interaction.edit_original_response(embed=embed)
+                message = await interaction.original_response()
 
         reactions = []
         for reaction in message.reactions:
