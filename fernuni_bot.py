@@ -19,7 +19,7 @@ HELP_FILE = os.getenv('DISCORD_HELP_FILE')
 PIN_EMOJI = "📌"
 
 intents = Intents.all()
-extensions = ["appointments", "github", "news", "mod_mail", "voice", "welcome", "xkcd"]
+extensions = ["appointments", "github", "news", "mod_mail", "voice", "welcome", "xkcd", "timer"]
 
 
 class Boty(commands.Bot):
@@ -28,7 +28,6 @@ class Boty(commands.Bot):
         self.is_prod = os.getenv("DISCORD_PROD") == "True"
         self.initial_extensions: List[str] = initial_extensions
         self.view_manager: ViewManager = ViewManager(self)
-        self.persistent_views_added: bool = False
 
     async def setup_hook(self) -> None:
         for extension in self.initial_extensions:
@@ -43,9 +42,6 @@ class Boty(commands.Bot):
 
     async def on_ready(self):
         self.view_manager.on_ready()
-        if not self.persistent_views_added:
-            if timer_cog := self.get_cog("Timer"):
-                self.add_view(timer_cog.get_view())
         print("✅ Client started!")
 
     @app_commands.command(name="sync")

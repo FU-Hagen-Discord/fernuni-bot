@@ -8,9 +8,8 @@ from datetime import datetime, timedelta
 import discord
 from discord import Interaction, app_commands
 from discord.ext import commands, tasks
-from discord.ui import Button
 
-from views import timer_view
+from views.timer_view import TimerView
 
 
 class Timer(commands.Cog):
@@ -34,126 +33,16 @@ class Timer(commands.Cog):
             json.dump(self.running_timers, timer_file)
 
     def get_view(self, disabled=False):
-        view = timer_view.TimerView(callback=self.on_button_click)
+        view = TimerView(self)
 
         if disabled:
             view.disable()
 
         return view
 
-    async def on_button_click(self, button: Button, interaction: Interaction):
-        custom_id = button.custom_id
-
-        if custom_id == timer_view.SUBSCRIBE:
-            await self.on_subscribe(button, interaction)
-        elif custom_id == timer_view.UNSUBSCRIBE:
-            await self.on_unsubscribe(button, interaction)
-        elif custom_id == timer_view.SKIP:
-            await self.on_skip(button, interaction)
-        elif custom_id == timer_view.RESTART:
-            await self.on_restart(button, interaction)
-        elif custom_id == timer_view.STOP:
-            await self.on_stop(button, interaction)
-
-    async def on_subscribe(self, button: Button, interaction: Interaction):
-        msg_id = str(interaction.message.id)
-        if timer := self.running_timers.get(msg_id):
-            if str(interaction.user.id) not in timer['registered']:
-                timer['registered'].append(str(interaction.user.id))
-                self.save()
-                name, status, wt, bt, remaining, registered, _ = self.get_details(msg_id)
-                embed = self.create_embed(name, status, wt, bt, remaining, registered)
-                await interaction.message.edit(embed=embed, view=self.get_view())
-                await interaction.response.send_message("Du hast dich erfolgreich angemeldet", ephemeral=True)
-            else:
-                await interaction.response.send_message("Du bist bereits angemeldet.", ephemeral=True)
-        else:
-            await interaction.response.send_message("Etwas ist schiefgelaufen...", ephemeral=True)
-
-    async def on_unsubscribe(self, button: Button, interaction: Interaction):
-        msg_id = str(interaction.message.id)
-        if timer := self.running_timers.get(msg_id):
-            registered = timer['registered']
-            if str(interaction.user.id) in registered:
-                if len(registered) == 1:
-                    await self.on_stop(button, interaction)
-                    return
-                else:
-                    timer['registered'].remove(str(interaction.user.id))
-                    self.save()
-                    name, status, wt, bt, remaining, registered, _ = self.get_details(msg_id)
-                    embed = self.create_embed(name, status, wt, bt, remaining, registered)
-                    await interaction.message.edit(embed=embed, view=self.get_view())
-                    await interaction.response.send_message("Du hast dich erfolgreich abgemeldet", ephemeral=True)
-            else:
-                await interaction.response.send_message("Du warst gar nicht angemeldet.", ephemeral=True)
-        else:
-            await interaction.response.send_message("Etwas ist schiefgelaufen...", ephemeral=True)
-
-    async def on_skip(self, button: Button, interaction: Interaction):
-        msg_id = str(interaction.message.id)
-        if timer := self.running_timers.get(msg_id):
-            registered = timer['registered']
-            if str(interaction.user.id) in timer['registered']:
-                new_phase = await self.switch_phase(msg_id)
-                if new_phase == "Pause":
-                    await self.make_sound(registered, 'groove-intro.mp3')
-                else:
-                    await self.make_sound(registered, 'roll_with_it-outro.mp3')
-                await interaction.response.send_message("Erfolgreich übersprungen", ephemeral=True)
-            else:
-                await interaction.response.send_message("Nur angemeldete Personen können den Timer bedienen.",
-                                                        ephemeral=True)
-        else:
-            await interaction.response.send_message("Etwas ist schiefgelaufen...", ephemeral=True)
-
-    async def on_restart(self, button: Button, interaction: Interaction):
-        msg_id = str(interaction.message.id)
-        if timer := self.running_timers.get(msg_id):
-            registered = timer['registered']
-            if str(interaction.user.id) in timer['registered']:
-                timer['status'] = 'Arbeiten'
-                timer['remaining'] = timer['working_time']
-                self.save()
-
-                await self.edit_message(msg_id)
-                await self.make_sound(registered, 'roll_with_it-outro.mp3')
-                await interaction.response.send_message("Erfolgreich neugestartet", ephemeral=True)
-            else:
-                await interaction.response.send_message("Nur angemeldete Personen können den Timer neu starten.",
-                                                        ephemeral=True)
-        else:
-            await interaction.response.send_message("Etwas ist schiefgelaufen...", ephemeral=True)
-
-    async def on_stop(self, button: Button, interaction: Interaction):
-        msg_id = str(interaction.message.id)
-        if timer := self.running_timers.get(msg_id):
-            registered = timer['registered']
-            if str(interaction.user.id) in timer['registered']:
-                mentions = self.get_mentions(msg_id)
-                timer['status'] = "Beendet"
-                timer['remaining'] = 0
-                timer['registered'] = []
-
-                await interaction.response.send_message("Erfolgreich beendet", ephemeral=True)
-                if new_msg_id := await self.edit_message(msg_id, mentions=mentions):
-                    await self.make_sound(registered, 'applause.mp3')
-                    self.running_timers.pop(new_msg_id)
-                    self.save()
-            else:
-                # Reply with a hidden message
-                await interaction.response.send_message("Nur angemeldete Personen können den Timer beenden.",
-                                                        ephemeral=True)
-        else:
-            await interaction.response.send_message("Etwas ist schiefgelaufen...", ephemeral=True)
 
     def create_embed(self, name, status, working_time, break_time, remaining, registered):
         color = discord.Colour.green() if status == "Arbeiten" else 0xFFC63A if status == "Pause" else discord.Colour.red()
-        descr = f"👍 beim Timer anmelden\n\n" \
-                f"👎 beim Timer abmelden\n\n" \
-                f"⏩ Phase überspringen\n\n" \
-                f"🔄 Timer neu starten\n\n" \
-                f"🛑 Timer beenden\n"
         zeiten = f"{working_time} Minuten Arbeiten\n{break_time} Minuten Pause"
         remaining_value = f"{remaining} Minuten"
         endzeit = (datetime.now() + timedelta(minutes=remaining)).strftime("%H:%M")
@@ -162,28 +51,26 @@ class Timer(commands.Cog):
         angemeldet_value = ", ".join([user.mention for user in user_list])
 
         embed = discord.Embed(title=name,
-                              description=f'Jetzt: {status}',
                               color=color)
-        embed.add_field(name="Bedienung:", value=descr, inline=False)
+        embed.add_field(name="Status:", value=status, inline=False)
         embed.add_field(name="Zeiten:", value=zeiten, inline=False)
-        embed.add_field(name="verbleibende Zeit:", value=remaining_value + end_value, inline=False)
-        embed.add_field(name="angemeldete User:", value=angemeldet_value if registered else "-", inline=False)
+        embed.add_field(name="Verbleibende Zeit:", value=remaining_value + end_value, inline=False)
+        embed.add_field(name="Angemeldete User:", value=angemeldet_value if registered else "-", inline=False)
 
         return embed
 
     @app_commands.command(name="timer", description="Erstelle deine persönliche  Eieruhr")
     @app_commands.guild_only()
-    async def cmd_timer(self, interaction: Interaction, working_time: int = 25,
-                        break_time: int = 5,
-                        name: str = None):
+    async def cmd_timer(self, interaction: Interaction, working_time: int = 25, break_time: int = 5, name: str = None):
+        await interaction.response.defer()
+        message = await interaction.original_response()
         name = name if name else random.choice(self.default_names)
         remaining = working_time
         status = "Arbeiten"
         registered = [str(interaction.user.id)]
 
         embed = self.create_embed(name, status, working_time, break_time, remaining, registered)
-        await interaction.response.send_message(embed=embed, view=self.get_view())
-        message = await interaction.original_message()
+        await interaction.edit_original_response(embed=embed, view=self.get_view())
 
         self.running_timers[str(message.id)] = {'name': name,
                                                 'status': status,
@@ -270,7 +157,7 @@ class Timer(commands.Cog):
                 if channel:  # If user is in a channel
                     try:
                         voice_client = await channel.connect()
-                        voice_client.play(discord.FFmpegPCMAudio(f'cogs/sounds/{filename}'))
+                        voice_client.play(discord.FFmpegPCMAudio(f'sounds/{filename}'))
                         await sleep(3)
                     except discord.errors.ClientException as e:
                         print(e)
@@ -297,7 +184,8 @@ class Timer(commands.Cog):
     async def before_timer(self):
         await sleep(60)
 
-    @cmd_timer.error
-    async def timer_error(self, ctx, error):
-        await ctx.send("Das habe ich nicht verstanden. Die Timer-Syntax ist:\n"
-                       "`!timer <learning-time?> <break-time?> <name?>`\n")
+
+async def setup(bot: commands.Bot) -> None:
+    timer = Timer(bot)
+    await bot.add_cog(timer)
+    bot.add_view(TimerView(timer))
