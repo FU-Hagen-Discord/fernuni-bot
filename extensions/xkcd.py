@@ -2,7 +2,7 @@ import random
 
 import aiohttp
 import discord
-from cogs.help import help
+from discord import app_commands, Interaction
 from discord.ext import commands
 
 
@@ -10,16 +10,11 @@ class Xkcd(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @help(
-        brief="Ruft einen xkcd Comic ab.",
-        syntax="!xkcd <number>",
-        parameters={
-            "number": "*(optional)* Entweder die Nummer eines spezifischen xkcd Comics, oder `latest`, für den aktuellsten.",
-        },
-    )
-    @commands.command(name="xkcd")
-    async def cmd_xkcd(self, ctx, number=None):
-
+    @app_commands.command(name="xkcd", description="Poste einen XKCD Comic. Zufällig oder deiner Wahl")
+    @app_commands.describe(number="Nummer des XKCD Comics, den du posten möchtest.")
+    @app_commands.guild_only()
+    async def cmd_xkcd(self, interaction: Interaction, number: int = None):
+        await interaction.response.defer()
         async with aiohttp.ClientSession() as session:
 
             # Daten vom aktuellsten Comic holen, um max zu bestimmen
@@ -46,11 +41,11 @@ class Xkcd(commands.Cog):
         text = n_data['alt']
 
         # Comic embedden
-        e = discord.Embed()
-        e.set_image(url=img)
-        e.url = img
-        e.title = f'xkcd #{num}'
-        e.add_field(name=title, value=text)
-        e.set_footer(text='https://xkcd.com', icon_url='https://xkcd.com/s/0b7742.png')
+        embed = discord.Embed(title=f"xkcd #{num}: {title}", description=text, url=f"https://xkcd.com/{num}")
+        embed.set_image(url=img)
 
-        await ctx.send(embed=e)
+        await interaction.edit_original_response(embed=embed)
+
+
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(Xkcd(bot))

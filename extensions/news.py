@@ -53,3 +53,7 @@ class News(commands.Cog):
                                 self.news[link] = date
 
                     self.save_news()
+
+
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(News(bot))

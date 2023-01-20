@@ -1,4 +1,3 @@
-import asyncio
 import os
 from typing import List
 
@@ -17,11 +16,10 @@ ACTIVITY = os.getenv('DISCORD_ACTIVITY')
 OWNER = int(os.getenv('DISCORD_OWNER'))
 ROLES_FILE = os.getenv('DISCORD_ROLES_FILE')
 HELP_FILE = os.getenv('DISCORD_HELP_FILE')
-CATEGORY_LERNGRUPPEN = int(os.getenv("DISCORD_CATEGORY_LERNGRUPPEN"))
 PIN_EMOJI = "📌"
 
 intents = Intents.all()
-extensions = ["appointments", "github"]
+extensions = ["appointments", "github", "news", "mod_mail", "voice", "welcome", "xkcd"]
 
 
 class Boty(commands.Bot):
@@ -56,7 +54,6 @@ class Boty(commands.Bot):
         await interaction.response.defer(ephemeral=True)
         await self.sync_slash_commands_for_guild(GUILD_ID)
         await interaction.followup.send("Synchronisiert!")
-
 
 
 bot = Boty(command_prefix='!', help_command=None, activity=Game(ACTIVITY), owner_id=OWNER, intents=intents,
@@ -94,11 +91,6 @@ async def unpin_message(message):
             await message.unpin()
 
 
-# @bot.event
-# async def on_ready():
-#     print("Client started!")
-
-
 @bot.event
 async def on_raw_reaction_add(payload):
     if payload.user_id == bot.user.id:
@@ -118,21 +110,4 @@ async def on_raw_reaction_remove(payload):
         await unpin_message(message)
 
 
-@bot.event
-async def on_voice_state_update(member, before, after):
-    if before.channel != after.channel and after.channel and "Lerngruppen-Voicy" in after.channel.name:
-        category = await bot.fetch_channel(CATEGORY_LERNGRUPPEN)
-        voice_channels = category.voice_channels
-
-        for voice_channel in voice_channels:
-            if len(voice_channel.members) == 0:
-                return
-
-        await category.create_voice_channel(f"Lerngruppen-Voicy-{len(voice_channels) + 1}", bitrate=256000)
-
-
-async def main():
-    await bot.start(TOKEN)
-
-
-asyncio.run(main())
+bot.run(TOKEN)

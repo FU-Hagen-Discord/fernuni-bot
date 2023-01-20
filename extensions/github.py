@@ -23,6 +23,7 @@ class Github(commands.Cog):
 
     @app_commands.command(name="idee", description="Sendet eine Idee für Boty zur Abstimmung ein.")
     @app_commands.describe(text="Text der Idee.")
+    @app_commands.guild_only()
     async def cmd_idee(self, interaction, text: str):
         await interaction.response.defer(ephemeral=True)
         channel_id = int(os.getenv("DISCORD_IDEE_CHANNEL"))
@@ -36,6 +37,7 @@ class Github(commands.Cog):
     @app_commands.command(name="card", description="Mit diesem Kommando kannst du einen Issue in Github anlegen.")
     @app_commands.describe(text="Text der Idee.")
     @app_commands.default_permissions(manage_roles=True)
+    @app_commands.guild_only()
     async def cmd_card(self, interaction, text: str):
         await interaction.response.send_message("Lege neues Github-Issue an", ephemeral=True)
         idea = {"created": False, "user_id": interaction.user.id, "content": text, "html_url": ""}

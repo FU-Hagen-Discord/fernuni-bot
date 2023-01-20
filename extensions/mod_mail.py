@@ -5,7 +5,7 @@ import discord
 from discord.ext import commands
 
 
-class Support(commands.Cog):
+class ModMail(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.channel_id = int(os.getenv("DISCORD_SUPPORT_CHANNEL"))
@@ -26,3 +26,10 @@ class Support(commands.Cog):
 
             await channel.send(f"Support Nachricht von <@!{message.author.id}>:")
             await channel.send(message.content, files=files)
+            await message.channel.send("Vielen Dank für deine Nachricht. Ich habe deine Nachricht an das Mod-Team "
+                                       "weitergeleitet. Falls dir dich mit einer Frage oder einem Problem an mich "
+                                       "gewandt hast, wird sich so schnell wie möglich jemand bei dir melden.")
+
+
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(ModMail(bot))
