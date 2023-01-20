@@ -34,7 +34,7 @@ class Boty(commands.Bot):
 
     async def setup_hook(self) -> None:
         for extension in self.initial_extensions:
-            await self.load_extension(f"cogs.{extension}")
+            await self.load_extension(f"extensions.{extension}")
             print(f"➕ Module {extension}")
         await self.sync_slash_commands_for_guild(GUILD_ID)
 

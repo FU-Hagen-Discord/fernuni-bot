@@ -6,8 +6,6 @@ from aiohttp import ClientSession
 from discord import app_commands
 from discord.ext import commands
 
-import utils
-
 
 class Github(commands.Cog):
     def __init__(self, bot):
@@ -37,7 +35,7 @@ class Github(commands.Cog):
 
     @app_commands.command(name="card", description="Mit diesem Kommando kannst du einen Issue in Github anlegen.")
     @app_commands.describe(text="Text der Idee.")
-    @app_commands.check(utils.is_mod)
+    @app_commands.default_permissions(manage_roles=True)
     async def cmd_card(self, interaction, text: str):
         await interaction.response.send_message("Lege neues Github-Issue an", ephemeral=True)
         idea = {"created": False, "user_id": interaction.user.id, "content": text, "html_url": ""}

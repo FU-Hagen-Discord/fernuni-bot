@@ -69,6 +69,10 @@ class Appointments(commands.GroupCog, name="appointments", description="Verwalte
         appointments_file = open(self.app_file, mode='r')
         self.appointments = json.load(appointments_file)
 
+    def save_appointments(self):
+        appointments_file = open(self.app_file, mode='w')
+        json.dump(self.appointments, appointments_file)
+
     @tasks.loop(minutes=1)
     async def timer(self):
         delete = []
@@ -86,15 +90,15 @@ class Appointments(commands.GroupCog, name="appointments", description="Verwalte
                         message = await channel.fetch_message(int(message_id))
                         reactions = message.reactions
                         diff = int(round(((date_time - now).total_seconds() / 60), 0))
-                        answer = f"Benachrichtigung!\nDer Termin \"{appointment['title']}\" ist "
+                        answer = f"Benachrichtigung!\nDer Termin \"{appointment['title']}\" startet "
 
                         if appointment["reminder"] > 0 and diff > 0:
-                            answer += f"in {diff} Minuten fällig."
+                            answer += f"<t:{int(date_time.timestamp())}:R>."
                             if (reminder := appointment.get("reminder")) and appointment.get("recurring"):
                                 appointment["original_reminder"] = str(reminder)
                             appointment["reminder"] = 0
                         else:
-                            answer += f"jetzt fällig. :loudspeaker: "
+                            answer += f"jetzt! :loudspeaker: "
                             delete.append(message_id)
 
                         answer += f"\n"
@@ -138,7 +142,7 @@ class Appointments(commands.GroupCog, name="appointments", description="Verwalte
         await asyncio.sleep(60 - datetime.now().second)
 
     @app_commands.command(name="add", description="Fügt dem Kanal einen neunen Termin hinzu.")
-    @app_commands.describe(date="Tag des Termins (z. B. 22.10.2022).", time="Uhrzeit des Termins (z. B. 10:00).",
+    @app_commands.describe(date="Tag des Termins (z. B. 21.10.2015).", time="Uhrzeit des Termins (z. B. 13:37).",
                            reminder="Wie viele Minuten bevor der Termin startet, soll eine Erinnerung verschickt werden?",
                            title="Titel des Termins",
                            recurring="In welchem Intervall (in Tagen) soll der Termin wiederholt werden?")
@@ -147,7 +151,7 @@ class Appointments(commands.GroupCog, name="appointments", description="Verwalte
 
         await interaction.response.defer(ephemeral=True)
         await self.add_appointment(interaction.channel, interaction.user.id, date, time, reminder, title, recurring)
-        await interaction.followup.send("Termin erfolgreich erstellt!", ephemeral=True)
+        await interaction.edit_original_response(content="Termin erfolgreich erstellt!")
 
     # /appointments add date:31.08.2022 time:20:00 reminder:60 title:Test
     async def add_appointment(self, channel: Channel, author_id: int, date: str, time: str, reminder: int, title: str,
@@ -158,27 +162,9 @@ class Appointments(commands.GroupCog, name="appointments", description="Verwalte
             await channel.send("Fehler! Ungültiges Datums und/oder Zeit Format!")
             return
 
-        #if not utils.is_valid_time(reminder):
-        #    await channel.send("Fehler! Benachrichtigung in ungültigem Format!")
-        #    return
-        #else:
-        #    reminder = utils.to_minutes(reminder)
-
-        embed = Embed(title="Neuer Termin hinzugefügt!",
-                              description=f"Wenn du eine Benachrichtigung zum Beginn des Termins"
-                                          f"{f', sowie {reminder} Minuten vorher, ' if reminder > 0 else f''} "
-                                          f"erhalten möchtest, reagiere mit :thumbsup: auf diese Nachricht.",
-                              color=19607)
-
-        embed.add_field(name="Titel", value=title, inline=False)
-        embed.add_field(name="Startzeitpunkt", value=f"{date_time.strftime(self.fmt)}", inline=False)
-        if reminder > 0:
-            embed.add_field(name="Benachrichtigung", value=f"{reminder} Minuten vor dem Start", inline=False)
-        if recurring:
-            embed.add_field(name="Wiederholung", value=f"Alle {recurring} Tage", inline=False)
-
+        embed = self.get_embed(title, date_time, reminder, recurring)
         message = await channel.send(embed=embed, file=File(get_ics_file(title, date_time, reminder, recurring),
-                                                                    filename=f"{title}.ics"))
+                                                            filename=f"{title}.ics"))
         await message.add_reaction("👍")
         await message.add_reaction("🗑️")
 
@@ -190,6 +176,22 @@ class Appointments(commands.GroupCog, name="appointments", description="Verwalte
                                                  "title": title, "author_id": author_id, "recurring": recurring}
 
         self.save_appointments()
+
+    def get_embed(self, title: str, date_time: datetime, reminder: int, recurring: int):
+        embed = Embed(title="Neuer Termin hinzugefügt!",
+                      description=f"Wenn du eine Benachrichtigung zum Beginn des Termins"
+                                  f"{f', sowie {reminder} Minuten vorher, ' if reminder > 0 else f''} "
+                                  f"erhalten möchtest, reagiere mit :thumbsup: auf diese Nachricht.",
+                      color=19607)
+
+        embed.add_field(name="Titel", value=title, inline=False)
+        embed.add_field(name="Startzeitpunkt", value=f"{date_time.strftime(self.fmt)}", inline=False)
+        if reminder > 0:
+            embed.add_field(name="Benachrichtigung", value=f"{reminder} Minuten vor dem Start", inline=False)
+        if recurring:
+            embed.add_field(name="Wiederholung", value=f"Alle {recurring} Tage", inline=False)
+
+        return embed
 
     @app_commands.command(name="list", description="Listet alle Termine dieses Channels auf")
     async def cmd_appointments(self, interaction: Interaction):
@@ -216,10 +218,6 @@ class Appointments(commands.GroupCog, name="appointments", description="Verwalte
             await interaction.followup.send(answer, ephemeral=False)
         else:
             await interaction.followup.send("Für diesen Kanal existieren derzeit keine Termine.", ephemeral=True)
-
-    def save_appointments(self):
-        appointments_file = open(self.app_file, mode='w')
-        json.dump(self.appointments, appointments_file)
 
     async def handle_reactions(self, payload):
         channel = await self.bot.fetch_channel(payload.channel_id)
