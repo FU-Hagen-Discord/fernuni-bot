@@ -2,7 +2,8 @@ import os
 from typing import List
 
 import discord
-from discord import Intents, Game, app_commands, Interaction
+from discord import Intents, Game
+from discord.app_commands import Group
 from discord.ext import commands
 from dotenv import load_dotenv
 
@@ -19,7 +20,8 @@ HELP_FILE = os.getenv('DISCORD_HELP_FILE')
 PIN_EMOJI = "📌"
 
 intents = Intents.all()
-extensions = ["appointments", "github", "news", "mod_mail", "voice", "welcome", "xkcd", "timer", "polls"]
+extensions = ["appointments", "github", "news", "mod_mail", "voice", "welcome", "xkcd", "timer", "polls",
+              "text_commands"]
 
 
 class Boty(commands.Bot):
@@ -40,16 +42,15 @@ class Boty(commands.Bot):
         self.tree.copy_global_to(guild=guild)
         await self.tree.sync(guild=guild)
 
+    async def get_slash_commands_for_guild(self, guild_id, command=None):
+        guild = discord.Object(id=guild_id)
+        commands = [self.tree.get_command(command, guild=guild)] if command else self.tree.get_commands(guild=guild)
+        commands.sort(key=lambda e: f"a{e.name}" if isinstance(e, Group) else f"b{e.name}")
+        return commands
+
     async def on_ready(self):
         self.view_manager.on_ready()
         print("✅ Client started!")
-
-    @app_commands.command(name="sync")
-    @app_commands.guild_only()
-    async def cmd_sync(self, interaction: Interaction):
-        await interaction.response.defer(ephemeral=True)
-        await self.sync_slash_commands_for_guild(GUILD_ID)
-        await interaction.followup.send("Synchronisiert!")
 
 
 bot = Boty(command_prefix='!', help_command=None, activity=Game(ACTIVITY), owner_id=OWNER, intents=intents,

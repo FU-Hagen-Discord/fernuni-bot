@@ -2,8 +2,8 @@ import os
 import re
 from datetime import datetime
 
-from discord.ext.commands import Context
 from discord import ButtonStyle, Embed, User, Member
+from discord.ext.commands import Context
 from dotenv import load_dotenv
 
 from views.dialog_view import DialogView
@@ -25,11 +25,11 @@ async def send_dm(user, message, embed=None):
         print(f"Cannot send DM to {user} with text: {message}")
 
 
-def is_mod(context_or_interaction):
-    if isinstance(context_or_interaction, Context):
-        author = context_or_interaction.author
+def is_mod(context_or_member):
+    if isinstance(context_or_member, Context):
+        author = context_or_member.author
     else:
-        author = context_or_interaction.user
+        author = context_or_member
     roles = author.roles
 
     for role in roles:
