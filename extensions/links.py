@@ -1,12 +1,12 @@
 import json
 
 import discord
-from cogs.help import help, handle_error, help_category
+from discord import app_commands, Interaction
 from discord.ext import commands
 
 
-@help_category("links", "Links", "Feature zum Verwalten von Links innerhalb eines Channels.")
-class Links(commands.Cog):
+@app_commands.guild_only()
+class Links(commands.GroupCog, name="links", description="Linkverwaltung für Kanäle."):
     def __init__(self, bot):
         self.bot = bot
         self.links = {}
@@ -21,16 +21,12 @@ class Links(commands.Cog):
         links_file = open(self.links_file, 'w')
         json.dump(self.links, links_file)
 
-    @help(
-        category="links",
-        brief="Zeigt die Links an, die in diesem Channel (evtl. unter Berücksichtigung eines Themas) hinterlegt sind.",
-        parameters={
-            "topic": "*(optional)* Schränkt die angezeigten Links auf das übergebene Thema ein. "
-        }
-    )
-    @commands.group(name="links", pass_context=True, invoke_without_command=True)
-    async def cmd_links(self, ctx, topic=None):
-        if channel_links := self.links.get(str(ctx.channel.id)):
+    @app_commands.command(name="list", description="Liste Links für diesen Kanal auf.")
+    @app_commands.describe(topic="Zeige nur Links für dieses Thema an.", public="Zeige die Linkliste für alle.")
+    async def cmd_list(self, interaction: Interaction, topic: str = None, public: bool = False):
+        await interaction.response.defer(ephemeral=not public)
+
+        if channel_links := self.links.get(str(interaction.channel_id)):
             embed = discord.Embed(title=f"Folgende Links sind in diesem Channel hinterlegt:\n")
             if topic:
                 topic = topic.lower()
@@ -39,47 +35,39 @@ class Links(commands.Cog):
                     for title, link in topic_links.items():
                         value += f"- [{title}]({link})\n"
                     embed.add_field(name=topic.capitalize(), value=value, inline=False)
-                    await ctx.send(embed=embed)
+                    await interaction.edit_original_response(embed=embed)
                 else:
-                    await ctx.send(
-                        f" Für das Thema `{topic}` sind in diesem Channel keine Links hinterlegt. Versuch es noch mal "
-                        f"mit einem anderen Thema, oder lass dir mit `!links` alle Links in diesem Channel ausgeben")
+                    await interaction.edit_original_response(
+                        content=f"Für das Thema `{topic}` sind in diesem Channel keine Links hinterlegt. Versuch es "
+                                f"noch mal mit einem anderen Thema, oder lass dir mit `!links` alle Links in diesem "
+                                f"Channel ausgeben")
             else:
                 for topic, links in channel_links.items():
                     value = f""
                     for title, link in links.items():
                         value += f"- [{title}]({link})\n"
                     embed.add_field(name=topic.capitalize(), value=value, inline=False)
-                await ctx.send(embed=embed)
+                await interaction.edit_original_response(embed=embed)
         else:
-            await ctx.send("Für diesen Channel sind noch keine Links hinterlegt.")
+            await interaction.edit_original_response(content="Für diesen Channel sind noch keine Links hinterlegt.")
 
-    @help(
-        category="links",
-        syntax="!links add <topic> <link> <title...>",
-        brief="Fügt einen Link zum Channel hinzu.",
-        parameters={
-            "topic": "Name des Themas, dem der Link zugeordnet werden soll. ",
-            "link": "die URL, die aufgerufen werden soll (z. B. https://www.fernuni-hagen.de). ",
-            "title...": "Titel, der für diesen Link angezeigt werden soll (darf Leerzeichen enthalten). "
-        },
-        description="Die mit !links add zu einem Kanal hinzugefügten Links können über das Kommando !links in diesem "
-                    "Kanal wieder abgerufen werden.",
-        command_group="links"
-    )
-    @cmd_links.command(name="add")
-    async def cmd_add_link(self, ctx, topic, link, *title):
+    @app_commands.command(name="add", description="Füge einen neuen Link hinzu.")
+    @app_commands.describe(topic="Thema, zu dem dieser Link hinzugefügt werden soll.",
+                           link="Link, der hinzugefügt werden soll.", title="Titel des Links.")
+    async def cmd_add(self, interaction: Interaction, topic: str, link: str, title: str):
+        await interaction.response.defer(ephemeral=True)
         topic = topic.lower()
-        if not (channel_links := self.links.get(str(ctx.channel.id))):
-            self.links[str(ctx.channel.id)] = {}
-            channel_links = self.links.get(str(ctx.channel.id))
+        if not (channel_links := self.links.get(str(interaction.channel_id))):
+            self.links[str(interaction.channel_id)] = {}
+            channel_links = self.links.get(str(interaction.channel_id))
 
         if not (topic_links := channel_links.get(topic)):
             channel_links[topic] = {}
             topic_links = channel_links.get(topic)
 
-        self.add_link(topic_links, link, " ".join(title))
+        self.add_link(topic_links, link, title)
         self.save_links()
+        await interaction.edit_original_response(content="Link hinzugefügt.")
 
     def add_link(self, topic_links, link, title):
         if topic_links.get(title):
@@ -87,124 +75,97 @@ class Links(commands.Cog):
         else:
             topic_links[title] = link
 
-    @help(
-        category="links",
-        syntax="!links remove-link <topic> <title...>",
-        brief="Löscht einen Link aus dem Channel.",
-        parameters={
-            "topic": "Name des Themas, aus dem der Link entfernt werden soll. ",
-            "title...": "Titel des Links, der entfernt werden soll. "
-        },
-        description="Mit !links remove-link kann ein fehlerhafter oder veralteter Link aus der Linkliste des Channels "
-                    "entfernt werden.",
-        command_group="links"
-    )
-    @cmd_links.command(name="remove-link", aliases=['rl'])
-    async def cmd_remove_link(self, ctx, topic, *title):
+    @app_commands.command(name="remove-link", description="Einen Link entfernen.")
+    @app_commands.describe(topic="Theme zu dem der zu entfernende Link gehört.",
+                           title="Titel des zu entfernenden Links.")
+    async def cmd_remove_link(self, interaction: Interaction, topic: str, title: str):
+        await interaction.response.defer(ephemeral=True)
         topic = topic.lower()
-        title = " ".join(title)
 
-        if channel_links := self.links.get(str(ctx.channel.id)):
+        if channel_links := self.links.get(str(interaction.channel_id)):
             if topic_links := channel_links.get(topic):
                 if title in topic_links:
                     topic_links.pop(title)
                     if not topic_links:
                         channel_links.pop(topic)
+                    await interaction.edit_original_response(content="Link entfernt.")
                 else:
-                    await ctx.channel.send('Ich konnte den Link leider nicht finden.')
+                    await interaction.edit_original_response(content='Ich konnte den Link leider nicht finden.')
             else:
-                await ctx.channel.send('Ich konnte das Thema leider nicht finden.')
+                await interaction.edit_original_response(content='Ich konnte das Thema leider nicht finden.')
         else:
-            await ctx.channel.send('Für diesen Channel sind keine Links hinterlegt.')
+            await interaction.edit_original_response(content='Für diesen Channel sind keine Links hinterlegt.')
 
         self.save_links()
 
-    @help(
-        category="links",
-        syntax="!links remove-topic <topic>",
-        brief="Löscht eine komplette Themenkategorie aus dem Channel.",
-        parameters={
-            "topic": "Name des Themas, das entfernt werden soll. ",
-        },
-        description="Mit !links remove-topic kann ein Thema aus der Linkliste des Channels entfernt werden.",
-        command_group="links"
-    )
-    @cmd_links.command(name="remove-topic", aliases=['rt'])
-    async def cmd_remove_topic(self, ctx, topic):
+    @app_commands.command(name="remove-topic", description="Ein Thema mit allen zugehörigen Links entfernen.")
+    @app_commands.describe(topic="Zu entfernendes Thema.")
+    async def cmd_remove_topic(self, interaction: Interaction, topic: str):
+        await interaction.response.defer(ephemeral=True)
         topic = topic.lower()
 
-        if channel_links := self.links.get(str(ctx.channel.id)):
+        if channel_links := self.links.get(str(interaction.channel_id)):
             if channel_links.get(topic):
                 channel_links.pop(topic)
+                await interaction.edit_original_response(content="Thema entfernt")
             else:
-                await ctx.channel.send('Ich konnte das Thema leider nicht finden.')
+                await interaction.edit_original_response(content='Ich konnte das Thema leider nicht finden.')
         else:
-            await ctx.channel.send('Für diesen Channel sind keine Links hinterlegt.')
+            await interaction.edit_original_response(content='Für diesen Channel sind keine Links hinterlegt.')
 
         self.save_links()
 
-
-    @help(
-        category="links",
-        syntax="!links edit-link <topic> <title> <new_title> <new_topic?> <new_link?>",
-        brief="Bearbeitet einen Link.",
-        parameters={
-            "topic": "Name des Themas, aus dem der zu bearbeitende Link stammt. ",
-            "title": "Titel des Links, der bearbeitet werden soll. ",
-            "new_title": "Neuer Titel für den geänderten Link. ",
-            "new_topic": "*(optional)* Neues Thema für den geänderten Link. ",
-            "new_link": "*(optional)* Der neue Link. "
-        },
-        description="Mit !links edit-link kann ein fehlerhafter oder veralteter Link bearbeitet werden.",
-        command_group="links"
-    )
-    @cmd_links.command(name="edit-link", aliases=["el"])
-    async def cmd_edit_link(self, ctx, topic, title, new_title, new_topic=None, new_link=None):
+    @app_commands.command(name="edit-link", description="Einen bestehenden Link in der Liste bearbeiten.")
+    @app_commands.describe(topic="Thema zu dem der zu bearbeitende Link gehört.",
+                           title="Titel des zu bearbeitenden Links.", new_title="Neuer Titel des Links.",
+                           new_topic="Neues Thema des Links.", new_link="Neuer Link.")
+    async def cmd_edit_link(self, interaction: Interaction, topic: str, title: str, new_title: str,
+                            new_topic: str = None, new_link: str = None):
+        await interaction.response.defer(ephemeral=True)
         topic = topic.lower()
+        new_topic = new_topic.lower() if new_topic else topic
 
-        if not new_topic:
-            new_topic = topic
-
-        if not new_link:
-            if channel_links := self.links.get(str(ctx.channel.id)):
-                if topic_links := channel_links.get(topic):
-                    if topic_links.get(title):
-                        new_link = topic_links.get(title)
-                    else:
-                        await ctx.channel.send('Ich konnte den Link leider nicht finden.')
+        if channel_links := self.links.get(str(interaction.channel_id)):
+            if topic_links := channel_links.get(topic):
+                if topic_links.get(title):
+                    new_link = new_link if new_link else topic_links.get(title)
+                    del topic_links[title]
                 else:
-                    await ctx.channel.send('Ich konnte das Thema leider nicht finden.')
+                    await interaction.edit_original_response(content='Ich konnte den Link leider nicht finden.')
+                    return
             else:
-                await ctx.channel.send('Für diesen Channel sind keine Links hinterlegt.')
+                await interaction.edit_original_response(content='Ich konnte das Thema leider nicht finden.')
+                return
+            new_title = new_title if new_title else title
+            if topic_links := channel_links.get(new_topic):
+                topic_links[new_title] = new_link
+            else:
+                channel_links[new_topic] = {new_title: new_link}
+            await interaction.edit_original_response(content="Link erfolgreich editiert.")
+        else:
+            await interaction.edit_original_response(content='Für diesen Channel sind keine Links hinterlegt.')
 
-        await self.cmd_remove_link(ctx, topic, title)
-        await self.cmd_add_link(ctx, new_topic, new_link, new_title)
+        self.save_links()
 
-    @help(
-        category="links",
-        syntax="!links edit-topic <topic> <new_topic>",
-        brief="Bearbeitet den Namen eines Themas.",
-        parameters={
-            "topic": "Name des Themas, das bearbeitet werden soll. ",
-            "new_topic": "Neuer Name des Themas. "
-        },
-        description="Mit !links edit-topic kann der Name eines Themas geändert werden.",
-        command_group="links"
-    )
-    @cmd_links.command(name="edit-topic", aliases=["et"])
-    async def cmd_edit_topic(self, ctx, topic, new_topic):
+    @app_commands.command(name="edit-topic", description="Thema bearbeiten.")
+    @app_commands.describe(topic="Zu bearbeitendes Thema", new_topic="Neues Thema")
+    async def cmd_edit_topic(self, interaction: Interaction, topic: str, new_topic: str):
+        await interaction.response.defer(ephemeral=True)
         topic = topic.lower()
         new_topic = new_topic.lower()
-        if channel_links := self.links.get(str(ctx.channel.id)):
+
+        if channel_links := self.links.get(str(interaction.channel_id)):
             if topic_links := channel_links.get(topic):
                 channel_links[new_topic] = topic_links
-                await self.cmd_remove_topic(ctx, topic)
+                del channel_links[topic]
+                await interaction.edit_original_response(content="Thema aktualisiert.")
             else:
-                await ctx.channel.send('Ich konnte das Thema leider nicht finden.')
+                await interaction.edit_original_response(content='Ich konnte das Thema leider nicht finden.')
         else:
-            await ctx.channel.send('Für diesen Channel sind keine Links hinterlegt.')
+            await interaction.edit_original_response(content='Für diesen Channel sind keine Links hinterlegt.')
 
         self.save_links()
 
-    async def cog_command_error(self, ctx, error):
-        await handle_error(ctx, error)
+
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(Links(bot))
