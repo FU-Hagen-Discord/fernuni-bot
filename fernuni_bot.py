@@ -21,7 +21,7 @@ PIN_EMOJI = "📌"
 
 intents = Intents.all()
 extensions = ["appointments", "github", "news", "mod_mail", "voice", "welcome", "xkcd", "timer", "polls",
-              "text_commands", "links"]
+              "text_commands", "links", "module_information"]
 
 
 class Boty(commands.Bot):
