@@ -3,8 +3,8 @@ import json
 import os
 from datetime import datetime, timedelta
 
-from disnake import ApplicationCommandInteraction, Member
-from disnake.ext import commands, tasks
+from discord import Interaction, Member, app_commands
+from discord.ext import commands, tasks
 from dotenv import load_dotenv
 
 import utils
@@ -27,11 +27,12 @@ def create_advent_calendar():
     return advent_calendar
 
 
-class Christmas(commands.Cog):
+@app_commands.guild_only()
+class Christmas(commands.GroupCog, name="advent"):
     def __init__(self, bot):
         self.bot = bot
         self.seasonal_events_category = int(os.getenv("DISCORD_SEASONAL_EVENTS_CATEGORY"))
-        self.advent_calendar_channel = int(os.getenv("DISCORD_ADVENT_CALENDAR_CHANNEL_2021"))
+        self.advent_calendar_channel = int(os.getenv("DISCORD_ADVENT_CALENDAR_CHANNEL_2022"))
         self.file_name = os.getenv("DISCORD_ADVENT_CALENDAR_FILE")
         self.advent_calendar = self.load()
         self.advent_calendar_loop.start()
@@ -49,15 +50,11 @@ class Christmas(commands.Cog):
         with open(self.file_name, mode='w') as f:
             json.dump(self.advent_calendar, f)
 
-    @commands.slash_command(name="advent", guild_ids=[int(os.getenv('DISCORD_GUILD'))])
-    async def cmd_advent(self, interaction: ApplicationCommandInteraction):
-        pass
-
-    @cmd_advent.sub_command(name="list", description="Erhalte die Liste aller Türchen mit Zuordnung und Thema")
-    @commands.check(utils.is_mod)
-    async def cmd_advent_list(self, interaction: ApplicationCommandInteraction):
+    @app_commands.command(name="list", description="Erhalte die Liste aller Türchen mit Zuordnung und Thema")
+    @app_commands.check(utils.is_mod)
+    async def cmd_advent_list(self, interaction: Interaction):
         message = f"__**Adventskalender 2021**__\n\n"
-
+        await interaction.response.defer(ephemeral=True)
         for day in self.advent_calendar:
             message += f"{day['number']}. "
             if day["assigned"]:
@@ -67,29 +64,31 @@ class Christmas(commands.Cog):
 
             message += "\n"
 
-        await interaction.response.send_message(message, ephemeral=True)
+        await interaction.followup.send(message, ephemeral=True)
 
-    @cmd_advent.sub_command(name="assign", description="Einer Person ein Türchen zuweisen",
-                            guild_ids=[int(os.getenv('DISCORD_GUILD'))])
-    @commands.check(utils.is_mod)
-    async def cmd_advent_assign(self, interaction: ApplicationCommandInteraction, day: int, member: Member, name: str):
-        if self.advent_calendar[day - 1]["assigned"]:
-            await interaction.response.send_message("Das gewählte Türchen ist bereits vergeben. \n"
+    @app_commands.command(name="assign", description="Einer Person ein Türchen zuweisen")
+    @app_commands.describe(day="Adventstag des Türchens", member="User der das Türchen bespielt", name="Kanalname")
+    @app_commands.guild_only()
+    @app_commands.check(utils.is_mod)
+    async def cmd_advent_assign(self, interaction: Interaction, day: int, member: Member, name: str):
+        if "assigned" in self.advent_calendar[day - 1] and self.advent_calendar[day - 1]["assigned"]:
+            await interaction.response.send("Das gewählte Türchen ist bereits vergeben. \n"
                                                     "Wenn du das Türchen an jemand anderen vergeben möchtest, oder das "
                                                     "Thema ändern möchtest, verwende `/advent reassign`.",
                                                     ephemeral=True)
         else:
             await interaction.response.defer(ephemeral=True)
             await self.assign_day(day, member, name)
-            await interaction.edit_original_message(content="Das gewählte Türchen wurde vergeben.")
+            await interaction.followup.send(content="Das gewählte Türchen wurde vergeben.")
 
-    @cmd_advent.sub_command(name="reassign", description="Ein Türchen neu zuweisen",
-                            guild_ids=[int(os.getenv('DISCORD_GUILD'))])
+    @app_commands.command(name="reassign", description="Ein Türchen neu zuweisen")
+    @app_commands.describe(day="Adventstag des Türchens", member="User der das Türchen bespielt", name="Kanalname")
+    @app_commands.guild_only()
     @commands.check(utils.is_mod)
-    async def cmd_advent_reassign(self, interaction: ApplicationCommandInteraction, day: int, member: Member,
+    async def cmd_advent_reassign(self, interaction: Interaction, day: int, member: Member,
                                   name: str):
         if not self.advent_calendar[day - 1]["assigned"]:
-            await interaction.response.send_message("Das gewählte Türchen ist noch nicht vergeben. \n"
+            await interaction.response.send("Das gewählte Türchen ist noch nicht vergeben. \n"
                                                     "Bitte verwende `/advent assign` um das Türchen an "
                                                     "jemanden zu vergeben.", ephemeral=True)
         else:
@@ -98,19 +97,20 @@ class Christmas(commands.Cog):
             old_member = await self.bot.fetch_user(self.advent_calendar[day - 1]["assignee"])
             await channel.set_permissions(old_member, overwrite=None)
             await self.assign_day(day, member, name)
-            await interaction.edit_original_message(content="Das gewählte Türchen wurde neu vergeben.")
+            await interaction.followup.send(content="Das gewählte Türchen wurde neu vergeben.")
 
-    @cmd_advent.sub_command(name="remaining", description="Noch nicht zugewiesene Türchen ausgeben lassen.",
-                            guild_ids=[int(os.getenv('DISCORD_GUILD'))])
+    @app_commands.command(name="remaining", description="Noch nicht zugewiesene Türchen ausgeben lassen.")
+    @app_commands.guild_only()
     @commands.check(utils.is_mod)
-    async def cmd_advent_remaining(self, interaction: ApplicationCommandInteraction):
+    async def cmd_advent_remaining(self, interaction: Interaction):
+        await interaction.response.defer(ephemeral=True)
         message = f"Noch verfügbare Türchen: "
 
         for day in self.advent_calendar:
             if not day["assigned"]:
                 message += f"{day['number']}, "
 
-        await interaction.response.send_message(message[:-2], ephemeral=True)
+        await interaction.followup.send(message[:-2], ephemeral=True)
 
     async def assign_day(self, day: int, member: Member, name: str):
         category = await self.bot.fetch_channel(self.seasonal_events_category)
@@ -167,3 +167,7 @@ class Christmas(commands.Cog):
     @advent_calendar_loop.before_loop
     async def before_advent_calendar_loop(self):
         await asyncio.sleep(10 - datetime.now().second % 10)
+
+
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(Christmas(bot))
