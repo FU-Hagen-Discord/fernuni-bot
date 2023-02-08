@@ -215,13 +215,13 @@ class ModuleInformation(commands.Cog):
                 )
 
         if (requirements := info.get('requirements')) and len(requirements) > 0 and requirements != 'keine':
-            desc += f"\nInhaltliche Voraussetzungen: \n{requirements}\n"
+            desc += f"\n__Inhaltliche Voraussetzungen__: \n{requirements}\n"
 
         if (notes := info.get('notes')) and len(notes) > 0 and notes != '-':
-            desc += f"\nAnmerkungen: \n\n{notes}\n"
+            desc += f"\n__Anmerkungen__: \n{notes}\n"
 
         if (persons := data['page'].get('persons')) and len(persons) > 0:
-            desc += f"\nAnsprechparnter: \n"
+            desc += f"\n__Ansprechperson(en)__: \n"
             desc += ', '.join(persons) + "\n"
 
         if (courses := data['page'].get('courses')) and len(courses) > 0:
