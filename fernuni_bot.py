@@ -57,11 +57,6 @@ bot = Boty(command_prefix='!', help_command=None, activity=Game(ACTIVITY), owner
            initial_extensions=extensions)
 
 
-# bot.add_cog(ChangeLogCog(bot))
-
-# SlashClient(bot, show_warnings=True)  # Stellt den Zugriff auf die Buttons bereit
-
-
 def get_reaction(reactions):
     """ Returns the reaction, that is equal to the specified PIN_EMOJI,
     or if that reaction does not exist in list of reactions, None will be returned"""

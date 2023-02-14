@@ -10,7 +10,7 @@ from views.dialog_view import DialogView
 
 load_dotenv()
 DATE_TIME_FMT = os.getenv("DISCORD_DATE_TIME_FORMAT")
-
+MAX_MESSAGE_LEN = 2000
 
 async def send_dm(user, message, embed=None):
     """ Send DM to a user/member """
