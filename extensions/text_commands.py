@@ -129,24 +129,31 @@ class TextCommands(commands.GroupCog, name="commands", description="Text Command
                "Texte zu diesem Command ausgeben lassen.\n\n_"
         for command in commands:
             text_command = self.text_commands.get(command.name)
+            command_msg = ""
             if command.default_permissions and interaction.permissions.value & command.default_permissions.value == 0:
                 continue
             if isinstance(command, Group):
-                msg += f"**{command.name}**: *{command.description}*\n"
+                command_msg += f"**{command.name}**: *{command.description}*\n"
                 for c in command.commands:
-                    msg += f"    `/{command.name} {c.name}`: *{c.description}*\n"
-                msg += "\n"
+                    command_msg += f"    `/{command.name} {c.name}`: *{c.description}*\n"
+                command_msg += "\n"
             else:
                 if text_command:
-                    msg += f"`/{command.name}`\*: *{command.description}*\n"
+                    command_msg += f"`/{command.name}`\*: *{command.description}*\n"
                     if cmd:
                         for i, text in enumerate(text_command["data"]):
-                            msg += f"`{i}`: {text}\n"
+                            command_msg += f"`{i}`: {text}\n"
                 else:
-                    msg += f"`/{command.name}`: *{command.description}*\n"
-                msg += "\n"
+                    command_msg += f"`/{command.name}`: *{command.description}*\n"
+                command_msg += "\n"
 
-        await interaction.edit_original_response(content=msg)
+            if len(msg + command_msg) > utils.MAX_MESSAGE_LEN:
+                await interaction.followup.send(content=msg, ephemeral=True)
+                msg = command_msg
+            else:
+                msg += command_msg
+
+        await interaction.followup.send(content=msg, ephemeral=True)
 
     async def add_command(self, cmd: str, text: str, description: str, guild_id: int):
         mod_channel = await self.bot.fetch_channel(self.mod_channel_id)
