@@ -314,7 +314,7 @@ class ModuleInformation(commands.Cog):
 
     @app_commands.command(name="module",
                           description="Erhalte Informationen zu einem Kurs/Modul, abhängig von deinem Studiengang")
-    @app_commands.describe(public="Zeige die Modulinformationen öffentlich, oder nicht.",
+    @app_commands.describe(public="Zeige die Ausgabe des Commands öffentlich, für alle Mitglieder sichtbar.",
                            topic="Welche speziellen Informationen interessieren dich?",
                            stg="Der Studiengang, für den die Informationen angezeigt werden sollen.")
     async def cmd_module(self, interaction: Interaction, public: bool, topic: Topics = None,
@@ -323,7 +323,7 @@ class ModuleInformation(commands.Cog):
 
         if topic == Topics.handbuch:
             await self.execute_subcommand(interaction, stg, self.handbook)
-        elif topic == Topics.probe:
+        elif topic == Topics.leseprobe:
             await self.execute_subcommand(interaction, stg, self.reading_sample)
         elif topic == Topics.aufwand:
             await self.execute_subcommand(interaction, stg, self.load)

@@ -22,7 +22,8 @@ class Links(commands.GroupCog, name="links", description="Linkverwaltung für Ka
         json.dump(self.links, links_file)
 
     @app_commands.command(name="list", description="Liste Links für diesen Kanal auf.")
-    @app_commands.describe(topic="Zeige nur Links für dieses Thema an.", public="Zeige die Linkliste für alle.")
+    @app_commands.describe(topic="Zeige nur Links für dieses Thema an.",
+                           public="Zeige die Ausgabe des Commands öffentlich, für alle Mitglieder sichtbar.")
     async def cmd_list(self, interaction: Interaction, topic: str = None, public: bool = False):
         await interaction.response.defer(ephemeral=not public)
 
