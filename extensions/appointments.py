@@ -84,13 +84,10 @@ class Appointments(commands.GroupCog, name="appointments", description="Verwalte
                             date_time_str = channel_appointment["date_time"]
                             date_time = datetime.strptime(date_time_str, self.fmt)
                             new_date_time = date_time + timedelta(days=recurring)
-                            new_date_time_str = new_date_time.strftime(self.fmt)
-                            splitted_new_date_time_str = new_date_time_str.split(" ")
                             reminder = channel_appointment.get("original_reminder")
                             reminder = reminder if reminder else 0
                             await self.add_appointment(channel, channel_appointment["author_id"],
-                                                       splitted_new_date_time_str[0],
-                                                       splitted_new_date_time_str[1],
+                                                       new_date_time,
                                                        reminder,
                                                        channel_appointment["title"],
                                                        channel_appointment["attendees"],
@@ -104,14 +101,8 @@ class Appointments(commands.GroupCog, name="appointments", description="Verwalte
     async def before_timer(self):
         await asyncio.sleep(60 - datetime.now().second)
 
-    async def add_appointment(self, channel: Channel, author_id: int, date: str, time: str, reminder: int, title: str,
+    async def add_appointment(self, channel: Channel, author_id: int, date_time: datetime, reminder: int, title: str,
                               attendees: Dict, ics_uuid: str, description: str = "", recurring: int = None) -> None:
-        try:
-            date_time = datetime.strptime(f"{date} {time}", self.fmt)
-        except ValueError:
-            await channel.send("Fehler! Ungültiges Datums und/oder Zeit Format!")
-            return
-
         message = await self.send_or_update_appointment(channel, author_id, description, title, date_time, reminder,
                                                         recurring, attendees)
 
@@ -126,7 +117,6 @@ class Appointments(commands.GroupCog, name="appointments", description="Verwalte
 
         self.save_appointments()
 
-    # /appointments add date:31.08.2022 time:20:00 reminder:60 title:Test
     @app_commands.command(name="add", description="Fügt dem Kanal einen neunen Termin hinzu.")
     @app_commands.describe(date="Tag des Termins (z. B. 21.10.2015).", time="Uhrzeit des Termins (z. B. 13:37).",
                            reminder="Wie viele Minuten bevor der Termin startet, soll eine Erinnerung verschickt werden?",
@@ -136,10 +126,18 @@ class Appointments(commands.GroupCog, name="appointments", description="Verwalte
                                   description: str = "", recurring: int = None):
 
         await interaction.response.defer(ephemeral=True)
-        attendees = {str(interaction.user.id): 1}
-        await self.add_appointment(interaction.channel, interaction.user.id, date, time, reminder, title, attendees,
-                                   str(uuid.uuid4()), description, recurring)
-        await interaction.edit_original_response(content="Termin erfolgreich erstellt!")
+        try:
+            attendees = {str(interaction.user.id): 1}
+            date_time = datetime.strptime(f"{date} {time}", self.fmt)
+            if date_time < datetime.now():
+                await interaction.edit_original_response(
+                    content="Fehler! Der Termin darf nicht in der Vergangenheit liegen.")
+                return
+            await self.add_appointment(interaction.channel, interaction.user.id, date_time, reminder, title, attendees,
+                                       str(uuid.uuid4()), description, recurring)
+            await interaction.edit_original_response(content="Termin erfolgreich erstellt!")
+        except ValueError:
+            await interaction.edit_original_response(content="Fehler! Ungültiges Datums und/oder Zeit Format!")
 
     def get_embed(self, title: str, organizer: int, description: str, date_time: datetime, reminder: int,
                   recurring: int, attendees: Dict):
