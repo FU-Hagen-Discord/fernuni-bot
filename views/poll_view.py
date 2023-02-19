@@ -15,7 +15,7 @@ async def show_participants(interaction, poll, ephemeral):
         choice_msg = f"{choices[idx][0]} {choices[idx][1]} ({choices[idx][2]}):"
         choice_msg += "<@" if choices[idx][2] > 0 else ""
         choice_msg += ">, <@".join(participants)
-        choice_msg += ">\n" if choices[idx][2] > 0 else ""
+        choice_msg += ">\n" if choices[idx][2] > 0 else "\n"
         if len(msg) + len(choice_msg) >= utils.MAX_MESSAGE_LEN:
             await interaction.followup.send(msg, ephemeral=ephemeral)
             msg = choice_msg
@@ -110,7 +110,7 @@ class PollDropdown(discord.ui.Select):
         for idx, choice in enumerate(self.poll["choices"]):
             choice[2] = choices[idx]
 
-        await self.message.edit(embed=self.polls.get_embed(self.poll), view=PollView(self.poll))
+        await self.message.edit(embed=self.polls.get_embed(self.poll), view=PollView(self.polls))
         self.polls.save()
 
     def is_default(self, participant, idx):
