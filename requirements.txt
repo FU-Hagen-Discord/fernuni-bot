@@ -16,7 +16,7 @@ peewee==3.16.2
 pycparser==2.21
 PyNaCl==1.5.0
 python-dotenv==0.21.0
-requests==2.28.2
+requests==2.31.0
 soupsieve==2.3.2.post1
 urllib3==1.26.14
 yarl==1.8.2
