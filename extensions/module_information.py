@@ -7,6 +7,7 @@ import discord
 from discord import app_commands, Interaction
 from discord.ext import commands, tasks
 
+from extensions.components.module_information.module_resolver import ModuleResolver
 from extensions.components.module_information.scraper import Scraper
 
 
@@ -47,6 +48,7 @@ class CoursesOfStudy(enum.Enum):
   Environment Variablen:
   DISCORD_MODULE_COURSE_FILE - Datei mit Studiengangsinformationen
   DISCORD_MODULE_DATA_FILE - In dieser Datei werden die gescrappten Daten gespeichert
+  DISCORD_MODULE_COURSE_MAPPING_FILE - Enthält Zuordnung von Modulen und Kursen
 """
 
 
@@ -57,6 +59,7 @@ class ModuleInformation(commands.Cog):
         self.roles_channel_id = int(os.getenv("DISCORD_ROLLEN_CHANNEL"))
         self.data_file = os.getenv("DISCORD_MODULE_DATA_FILE")
         self.courses_file = os.getenv("DISCORD_MODULE_COURSE_FILE")
+        self.module_resolver = ModuleResolver(os.getenv("DISCORD_MODULE_COURSE_MAPPING_FILE"))
         self.load_data()
         self.update_loop.start()
 
@@ -137,24 +140,23 @@ class ModuleInformation(commands.Cog):
             raise NoCourseOfStudyError
         return stg
 
-    async def get_valid_modules_for_course_number(self, number):
+    async def get_valid_modules_for_course_number(self, course_number):
+        module_numbers_for_course_number = self.module_resolver.get_modules_for_course(course_number)
+        if not module_numbers_for_course_number:
+            print(f"[ModuleInformation] could not find modules for course {course_number}")
+            return []
+
         valid_modules = []
         try:
             for course_of_studies in self.data:
                 if course_of_studies['modules'] is not None:
                     for module in course_of_studies['modules']:
-                        if module['page']['courses'] is not None:
-                            for course in module['page']['courses']:
-                                cn = re.sub(r'^0+', '', course['number'])
-                                n = re.sub(r'^0+', '', number)
-                                if n == cn:
-                                    valid_modules.append({
-                                        "stg": course_of_studies['name'],
-                                        "short": course_of_studies['short'],
-                                        "data": module
-                                    })
-                        else:
-                            print(f"[ModuleInformation] {module['number']} is an invalid Module")
+                        if module['number'] in module_numbers_for_course_number:
+                            valid_modules.append({
+                                "stg": course_of_studies['name'],
+                                "short": course_of_studies['short'],
+                                "data": module
+                            })
             return valid_modules
         except:
             return []
