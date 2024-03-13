@@ -23,7 +23,7 @@ class ModuleResolver(object):
             "name": "Differentialrechnung mit dem Abakus"
           },
           {
-            "courseId": "01981",
+            "courseId": "01982",
             "name": "Das sehr große Einmaleins"
           }
         ]
