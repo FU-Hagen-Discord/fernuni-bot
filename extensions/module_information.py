@@ -245,9 +245,9 @@ class ModuleInformation(commands.Cog):
             desc += ', '.join(persons) + "\n"
 
         if (courses := data['page'].get('courses')) and len(courses) > 0:
-            desc += f"\nKurse: \n"
+            desc += f"\nModul in der VU: \n"
             for course in courses:
-                desc += f"[{course['number']} - {course['name']}]({course['url']})\n"
+                desc += f"[{course['name']}]({course['url']})\n"
 
         desc += self.stg_string_for_desc(module)
         return discord.Embed(title=f"Modul {data['title']}",
