@@ -7,6 +7,7 @@ from discord.app_commands import Group
 from discord.ext import commands
 from dotenv import load_dotenv
 
+from models import Settings
 from view_manager import ViewManager
 
 # .env file is necessary in the same directory, that contains several strings.
@@ -27,7 +28,6 @@ extensions = ["appointments", "news", "mod_mail", "voice", "welcome", "xkcd", "t
 class Boty(commands.Bot):
     def __init__(self, *args, initial_extensions: List[str], **kwargs):
         super().__init__(*args, **kwargs)
-        self.is_prod = os.getenv("DISCORD_PROD") == "True"
         self.initial_extensions: List[str] = initial_extensions
         self.view_manager: ViewManager = ViewManager(self)
 
@@ -51,6 +51,14 @@ class Boty(commands.Bot):
     async def on_ready(self):
         self.view_manager.on_ready()
         print("✅ Client started!")
+
+    @staticmethod
+    def get_settings(guild_id: int) -> Settings:
+        return Settings.get(Settings.guild_id == guild_id)
+
+    @staticmethod
+    def dt_format():
+        return "%d.%m.%Y %H:%M"
 
 
 bot = Boty(command_prefix='!', help_command=None, activity=Game(ACTIVITY), owner_id=OWNER, intents=intents,

@@ -1,37 +1,28 @@
-import json
-import os
-
 from aiohttp import ClientSession
 from bs4 import BeautifulSoup
 from discord.ext import commands, tasks
+
+import models
 
 
 class News(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.channel_id = int(os.getenv("DISCORD_NEWS_CHANNEL"))
-        self.news_role = int(os.getenv("DISCORD_NEWS_ROLE"))
-        self.url = "https://www.fernuni-hagen.de/mi/studium/aktuelles/index.shtml"
-        self.news = {}
-        self.load_news()
         self.news_loop.start()
-
-    def load_news(self):
-        news_file = open("data/news.json", mode="r")
-        self.news = json.load(news_file)
-
-    def save_news(self):
-        news_file = open("data/news.json", mode="w")
-        json.dump(self.news, news_file)
 
     @tasks.loop(hours=1)
     async def news_loop(self):
+        # ToDo: Add better handling for guild
+        guild = models.Settings.select()[0].guild_id
+        url = self.bot.get_settings(guild).news_url
+        channel_id = self.bot.get_settings(guild).news_channel_id
+
         async with ClientSession() as session:
-            async with session.get(self.url) as r:
+            async with session.get(url) as r:
                 if r.status == 200:
                     content = await r.read()
                     soup = BeautifulSoup(content, "html.parser")
-                    channel = await self.bot.fetch_channel(self.channel_id)
+                    channel = await self.bot.fetch_channel(channel_id)
 
                     for news in soup.find("ul", attrs={"class": "fu-link-list"}).find_all("li"):
                         date = news.span.text
@@ -41,18 +32,19 @@ class News(commands.Cog):
                         if link[0] == "/":
                             link = f"https://www.fernuni-hagen.de" + link
 
-                        if not self.news.get(link):
-                            await channel.send(
-                                f":loudspeaker: <@&{self.news_role}> Neues aus der Fakultät vom {date} :loudspeaker: \n{title} \n{link}")
-                            self.news[link] = date
+                        if news := models.News.get_or_none(link=link):
+                            if news.date != date:
+                                await self.announce_news(channel, date, title, link)
+                                news.update(date=date).where(models.News.link == link).execute()
                         else:
-                            prev_date = self.news[link]
-                            if date != prev_date:
-                                await channel.send(
-                                    f":loudspeaker: <@&{self.news_role}> Neues aus der Fakultät vom {date} :loudspeaker: \n{title} \n{link}")
-                                self.news[link] = date
+                            await self.announce_news(channel, date, title, link)
+                            models.News.create(link=link, date=date)
 
-                    self.save_news()
+    async def announce_news(self, channel, date, title, link):
+        guild = models.Settings.select()[0].guild_id
+        news_role = self.bot.get_settings(guild).news_role_id
+        await channel.send(
+            f":loudspeaker: <@&{news_role}> Neues aus der Fakultät vom {date} :loudspeaker: \n{title} \n{link}")
 
 
 async def setup(bot: commands.Bot) -> None:
