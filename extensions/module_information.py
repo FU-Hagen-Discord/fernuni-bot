@@ -101,7 +101,7 @@ class ModuleInformation(commands.Cog):
             desc += ', '.join([contact.name for contact in contacts]) + "\n"
 
         if (events := module.events) and len(events) > 0:
-            desc += f"\nAktuelles Angebot: \n"
+            desc += f"\nAktuelles Angebot in der VU: \n"
             for event in events:
                 desc += f"[{event.name}]({event.url})\n"
 
