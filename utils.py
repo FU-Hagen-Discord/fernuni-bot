@@ -39,9 +39,8 @@ async def send_dm(user, message, embed=None):
 #     return False
 
 def is_mod(user: Member, bot):
-    for mod_role in bot.config["mod_roles"]:
-        if user.get_role(mod_role):
-            return True
+    if user.get_role(int(os.getenv("DISCORD_MOD_ROLE"))):
+        return True
 
     return False
 
