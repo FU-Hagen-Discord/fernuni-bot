@@ -39,12 +39,12 @@ class LinkModal(ui.Modal, title='Link hinzufügen'):
         db_category = models.LinkCategory.get_or_create(channel=interaction.channel_id, name=self.category)
 
         if self.link_id is None:
-            models.Link.create(link=self.link, title=self.link_title, category=db_category[0].id)
+            models.Link.create(url=self.link, title=self.link_title, category=db_category[0].id)
             await interaction.response.send_message(content="Link erfolgreich hinzugefügt.", ephemeral=True)
         else:
             if link := models.Link.get_or_none(models.Link.id == self.link_id):
                 link_category = link.category
-                link.update(title=self.link_title, link=self.link, category=db_category[0].id).where(
+                link.update(title=self.link_title, url=self.link, category=db_category[0].id).where(
                     models.Link.id == link.id).execute()
 
                 if link_category.id != db_category[0].id and link.category.links.count() == 0:

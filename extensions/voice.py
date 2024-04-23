@@ -1,5 +1,3 @@
-import os
-
 from discord import app_commands, Interaction
 from discord.app_commands import Choice
 from discord.ext import commands
@@ -7,7 +5,6 @@ from discord.ext import commands
 
 class Voice(commands.Cog):
     def __init__(self, bot):
-        self.lerngruppen_category = int(os.getenv("DISCORD_CATEGORY_LERNGRUPPEN"))
         self.bot = bot
 
     @app_commands.command(name="voice", description="Sprachkanäle öffnen oder schließen")
@@ -30,14 +27,16 @@ class Voice(commands.Cog):
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
         if before.channel != after.channel and after.channel and "Lerngruppen-Voicy" in after.channel.name:
-            category = await self.bot.fetch_channel(self.lerngruppen_category)
+            category_id = self.bot.get_settings(member.guild.id).learninggroup_voice_category_id
+            bitrate = self.bot.get_settings(member.guild.id).voice_bitrate
+            category = await self.bot.fetch_channel(category_id)
             voice_channels = category.voice_channels
 
             for voice_channel in voice_channels:
                 if len(voice_channel.members) == 0:
                     return
 
-            await category.create_voice_channel(f"Lerngruppen-Voicy-{len(voice_channels) + 1}", bitrate=256000)
+            await category.create_voice_channel(f"Lerngruppen-Voicy-{len(voice_channels) + 1}", bitrate=bitrate)
 
 
 async def setup(bot: commands.Bot) -> None:

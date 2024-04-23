@@ -16,21 +16,28 @@ class Links(commands.GroupCog, name="links", description="Linkverwaltung für Ka
     async def cmd_show(self, interaction: Interaction, category: str = None, public: bool = False):
         await interaction.response.defer(ephemeral=not public)
 
-        embed = discord.Embed(title=f"Links")
+        message = "### __Folgende Links sind in diesem Channel hinterlegt__\n"
         if not models.LinkCategory.has_links(interaction.channel_id):
-            embed.description = "Für diesen Channel sind noch keine Links hinterlegt."
-        if category and not models.LinkCategory.has_links(interaction.channel_id, category=category):
-            embed.description = f"Für die Kategorie `{category}` sind in diesem Channel keine Links hinterlegt. " \
-                                f"Versuch es noch mal mit einer anderen Kategorie, oder lass dir mit `/links show` " \
-                                f"alle Links in diesem Channel ausgeben."
+            message = "Für diesen Channel sind noch keine Links hinterlegt."
+        elif category and not models.LinkCategory.has_links(interaction.channel_id, category=category):
+            message = (f"Für die Kategorie `{category}` sind in diesem Channel keine Links hinterlegt. "
+                       f"Versuch es noch mal mit einer anderen Kategorie, oder lass dir mit `/links show` alle Links "
+                       f"in diesem Channel ausgeben.")
+        else:
+            for category in models.LinkCategory.get_categories(interaction.channel_id, category=category):
+                message += f"**{category.name}**\n"
+                if category.links.count() > 0:
+                    for link in category.links:
+                        link_text = f"- [{link.title}](<{link.url}>)\n"
 
-        for category in models.LinkCategory.get_categories(interaction.channel_id, category=category):
-            if category.links.count() > 0:
-                category.append_field(embed)
-            else:
-                category.delete_instance()
+                        if len(message) + len(link_text) > 1900:
+                            await interaction.followup.send(message, ephemeral=not public)
+                            message = ""
+                        message += link_text
+                else:
+                    category.delete_instance()
 
-        await interaction.edit_original_response(embed=embed)
+        await interaction.followup.send(message, ephemeral=not public)
 
     @app_commands.command(name="add", description="Füge einen neuen Link hinzu.")
     async def cmd_add(self, interaction: Interaction):
@@ -44,7 +51,7 @@ class Links(commands.GroupCog, name="links", description="Linkverwaltung für Ka
                                                           models.LinkCategory.name == category):
             if link := models.Link.get_or_none(models.Link.title == title, models.Link.category == db_category.id):
                 await interaction.response.send_modal(
-                    LinkModal(category=link.category.name, link_title=link.title, link=link.link, link_id=link.id,
+                    LinkModal(category=link.category.name, link_title=link.title, link=link.url, link_id=link.id,
                               title="Link bearbeiten"))
             else:
                 await interaction.response.send_message(content='Ich konnte den Link leider nicht finden.',
