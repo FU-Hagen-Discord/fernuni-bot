@@ -32,6 +32,7 @@ class Boty(commands.Bot):
         self.view_manager: ViewManager = ViewManager(self)
 
     async def setup_hook(self) -> None:
+        await self.tree.sync()
         for extension in self.initial_extensions:
             await self.load_extension(f"extensions.{extension}")
             print(f"➕ Module {extension}")

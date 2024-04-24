@@ -95,6 +95,7 @@ class PollParticipant(BaseModel):
 
 
 class Command(BaseModel):
+    guild_id = IntegerField()
     command = CharField(unique=True)
     description = CharField()
 

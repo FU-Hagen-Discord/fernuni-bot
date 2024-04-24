@@ -6,6 +6,7 @@ from discord import app_commands, Interaction
 from discord.ext import commands
 
 import utils
+from modals.text_command_modal import TextCommandModal
 from models import Command, CommandText
 from views.text_command_view import TextCommandView
 
@@ -52,24 +53,17 @@ class TextCommands(commands.GroupCog, name="commands", description="Text Command
     @app_commands.command(name="add",
                           description="Ein neues Text Command hinzufügen, oder zu einem bestehenden einen weiteren Text hinzufügen")
     @app_commands.describe(cmd="Command. Bsp: \"link\" für das Command \"/link\".",
-                           text="Text, der bei Benutzung des Commands ausgegeben werden soll.",
-                           description="Beschreibung des Commands, die bei Benutzung angezeigt wird. Wird nur übernommen, bei neuen Commands.")
-    async def cmd_add(self, interaction: Interaction, cmd: str, text: str, description: str):
-        await interaction.response.defer(ephemeral=True)
+                           text="Text, der bei Benutzung des Commands ausgegeben werden soll.")
+    async def cmd_add(self, interaction: Interaction, cmd: str, text: str):
         if not re.match(r"^[a-z0-9]+(-[a-z0-9]+)*$", cmd):
             await interaction.edit_original_response(
                 content="Ein Command darf nur aus Kleinbuchstaben und Zahlen bestehen, die durch Bindestriche getrennt werden können.")
             return
 
-        if utils.is_mod(interaction.user, self.bot):
-            if await self.add_command(cmd, text, description, interaction.guild_id):
-                await interaction.edit_original_response(content="Dein Command wurde erfolgreich hinzugefügt!")
-            else:
-                await interaction.edit_original_response(
-                    content="Das Command, dass du hinzufügen möchtest existiert bereits.")
-        else:
-            await self.suggest_command(cmd, text, description, interaction.guild_id)
-            await interaction.edit_original_response(content="Dein Vorschlag wurde den Mods zur Genehmigung vorgelegt.")
+        command = Command.get_or_none(Command.command == cmd)
+        description = command.description if command else ""
+        await interaction.response.send_modal(
+            TextCommandModal(text_commands=self, cmd=cmd, text=text, description=description))
 
     @app_commands.command(name="edit", description="Bearbeite bestehende Text Commands")
     @app_commands.describe(cmd="Command, dass du bearbeiten möchtest", id="ID des zu bearbeitenden Texts",
@@ -125,6 +119,11 @@ class TextCommands(commands.GroupCog, name="commands", description="Text Command
         mod_channel = await self.bot.fetch_channel(mod_channel_id)
         if command := Command.get_or_none(Command.command == cmd):
             CommandText.create(text=text, command=command.id)
+            if command.description != description:
+                Command.update(description=description).where(Command.id == command.id).execute()
+                self.bot.tree.get_command(command.command).description = description
+                await self.bot.sync_slash_commands_for_guild(command.guild_id)
+                await mod_channel.send(f"Beschreibung von Command `{cmd}` geändert zu `{description}`")
         else:
             if self.exists(cmd):
                 return False
@@ -135,27 +134,13 @@ class TextCommands(commands.GroupCog, name="commands", description="Text Command
         await mod_channel.send(f"[{cmd}] => [{text}] erfolgreich hinzugefügt.")
         return True
 
-    async def suggest_command(self, cmd: str, text: str, description: str, guild_id: int):
-        mod_channel_id = self.bot.get_settings(guild_id).modmail_channel_id
-        mod_channel = await self.bot.fetch_channel(mod_channel_id)
-        command = Command.get_or_none(Command.command == cmd)
-        title = "Vorschlag für neuen Command Text" if command else "Vorschlag für neues Command"
-
-        embed = discord.Embed(title=title)
-        embed.add_field(name="Command", value=cmd, inline=False)
-        embed.add_field(name="Text", value=text, inline=False)
-        if not command:
-            embed.add_field(name="Beschreibung", value=description, inline=False)
-
-        await mod_channel.send(embed=embed, view=TextCommandView(self))
-
     async def remove_text(self, command, command_texts, id):
         command_text = list(command_texts)[id]
         command_text.delete_instance(recursive=True)
         if command.texts.count() == 0:
             await self.remove_command(command)
 
-    async def remove_command(self, command):
+    async def remove_command(self, command: Command):
         await self.unregister_command(command)
         command.delete_instance(recursive=True)
 
@@ -187,11 +172,11 @@ class TextCommands(commands.GroupCog, name="commands", description="Text Command
 
         self.bot.tree.add_command(process_command)
         if sync:
-            await self.bot.tree.sync()
+            await self.bot.sync_slash_commands_for_guild(command.guild_id)
 
     async def unregister_command(self, command: Command):
         self.bot.tree.remove_command(command.command)
-        await self.bot.tree.sync()
+        await self.bot.sync_slash_commands_for_guild(command.guild_id)
 
 
 async def setup(bot: commands.Bot) -> None:
