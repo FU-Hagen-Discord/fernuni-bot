@@ -341,7 +341,7 @@ class LearningGroups(commands.Cog):
                            "- `!lg open`: Lerngruppe wird sichtbar und geöffnet.\n"
                            "- `!lg close`: Lerngruppe wird sichtbar und geschlossen. \n"
                            "- `!lg private`: Lerngruppe wird für alle außer für Mitglieder unsichtbar.\n"
-                           "- `!lg show` / `!lg hide`: geschlossene oder private Lerngruppe wird in der Lerngruppenliste beim <#{infochannel}> Kanal aufgenommen / entfernt.\n"
+                           "- `!lg show` / `!lg hide`: private Lerngruppe wird in der Lerngruppenliste beim <#{infochannel}> Kanal aufgenommen / entfernt.\n"
                            "### Verwaltung der Mitgliedsliste\n"
                            " - `!lg addmember <@newmember>`: Fügt ein Mitglied zur Lerngruppe hinzu. \n"
                            "||*(alias: `!lg am <@newmember`)*||\n"
