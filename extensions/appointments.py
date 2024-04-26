@@ -13,9 +13,9 @@ async def send_notification(appointment, channel):
     message = f"Benachrichtigung!\nDer Termin \"{appointment.title}\" startet "
 
     if appointment.reminder_sent:
-        message += f"jetzt! :loudspeaker: "
+        message += f"**jetzt**! :alarm_clock: "
     else:
-        message += f"<t:{int(appointment.date_time.timestamp())}:R>."
+        message += f"um <t:{int(appointment.date_time.timestamp())}:t> (<t:{int(appointment.date_time.timestamp())}:R>) :person_running:"
 
     message += f"\n"
     message += " ".join([f"<@!{str(attendee.member_id)}>" for attendee in appointment.attendees])

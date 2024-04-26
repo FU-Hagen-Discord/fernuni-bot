@@ -101,7 +101,7 @@ class ModuleInformation(commands.Cog):
             desc += ', '.join([contact.name for contact in contacts]) + "\n"
 
         if (events := module.events) and len(events) > 0:
-            desc += f"\nAktuelles Angebot: \n"
+            desc += f"\nAktuelles Angebot in der VU: \n"
             for event in events:
                 desc += f"[{event.name}]({event.url})\n"
 
@@ -171,10 +171,10 @@ class ModuleInformation(commands.Cog):
         return await self.info(module)
 
     @app_commands.command(name="module",
-                          description="Erhalte Informationen zu einem Kurs/Modul, abhängig von deinem Studiengang")
-    @app_commands.describe(public="Zeige die Ausgabe des Commands öffentlich, für alle Mitglieder sichtbar.",
-                           topic="Welche speziellen Informationen interessieren dich?",
-                           module_nr="Nummer des Moduls, für das du die Informationen angezeigt bekommen möchtest.")
+                          description="Erhalte die Modulinformationen von der Uniwebseite.")
+    @app_commands.describe(public="Sichtbarkeit der Ausgabe: für alle Mitglieder oder nur für dich.",
+                           topic="Möchtest du eine bestimmte Rubrik abrufen?",
+                           module_nr="Nummer des Moduls, das dich interessiert. (In einem Moduilkanal optional).")
     async def cmd_module(self, interaction: Interaction, public: bool, topic: Topics = None, module_nr: int = None):
         await interaction.response.defer(ephemeral=not public)
 
