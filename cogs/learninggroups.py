@@ -324,7 +324,6 @@ class LearningGroups(commands.Cog):
         category = await self.category_of_channel(requested_channel_config["state"])
         full_channel_name = self.full_channel_name(requested_channel_config)
         channel = await category.create_text_channel(full_channel_name)
-        infochannel = await self.bot.fetch_channel(int(self.channel_info))
         await self.move_channel(channel, category, False)
         user = await self.bot.fetch_user(requested_channel_config["organizer_id"])
 
@@ -341,7 +340,7 @@ class LearningGroups(commands.Cog):
                            "- `!lg open`: Lerngruppe wird sichtbar und geöffnet.\n"
                            "- `!lg close`: Lerngruppe wird sichtbar und geschlossen. \n"
                            "- `!lg private`: Lerngruppe wird für alle außer für Mitglieder unsichtbar.\n"
-                           "- `!lg show` / `!lg hide`: private Lerngruppe wird in der Lerngruppenliste beim <#{infochannel}> Kanal aufgenommen / entfernt.\n"
+                           f"- `!lg show` / `!lg hide`: private Lerngruppe wird in der Lerngruppenliste im <#{self.channel_info}> Kanal aufgenommen / entfernt.\n"
                            "### Verwaltung der Mitgliedsliste\n"
                            " - `!lg addmember <@newmember>`: Fügt ein Mitglied zur Lerngruppe hinzu. \n"
                            "||*(alias: `!lg am <@newmember`)*||\n"
@@ -353,9 +352,9 @@ class LearningGroups(commands.Cog):
                            "- `!lg members`: Zeigt die Mitglieder der Lerngruppe an.\n"
                            "- `!lg organizer`: Zeigt die Organisatorin der Lerngruppe an.\n"
                            "- `!lg leave`: Du verlässt die Lerngruppe.\n"
-                           "- `!lg join`: Anfrage, um der Lerngruppe beizutreten.\n"
+                           "- `!lg join`: Sendet eine Anfrage an die Organisatorin der Lerngruppe, um beizutreten.\n"
                            "\n"
-                           "Mit dem nachfolgenden Kommando kann eine Kommilitonin darum bitten in die Lerngruppe aufgenommen zu werden wenn die Gruppe privat ist.\n"
+                           "Mit dem nachfolgenden Kommando kann eine Kommilitonin darum bitten, in die Lerngruppe aufgenommen zu werden, wenn die Gruppe privat ist.\n"
                            "`!lg join {channel.id}` \n"
                            "*PS: Manche Kommandos werden von Discord eingeschränkt und können nur einmal alle 5 Minuten ausgeführt werden.*\n"
                            )
