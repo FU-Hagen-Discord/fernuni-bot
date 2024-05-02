@@ -25,6 +25,7 @@ class Settings(BaseModel):
     command_approval_channel_id = IntegerField(default=0)
     learninggroup_voice_category_id = IntegerField(default=0)
     voice_bitrate = IntegerField(default=0)
+    thread_notification_role_id = IntegerField(default=0)
 
 
 class LinkCategory(BaseModel):

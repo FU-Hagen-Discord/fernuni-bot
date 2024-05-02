@@ -27,8 +27,11 @@ class ViewManager:
             json.dump(self.views, file)
 
     def load(self):
-        with open("data/views.json", "r") as file:
-            self.views = json.load(file)
+        try:
+            with open("data/views.json", "r") as file:
+                self.views = json.load(file)
+        except FileNotFoundError:
+            self.views = {}
 
     def register(self, key, func):
         self.functions[key] = func

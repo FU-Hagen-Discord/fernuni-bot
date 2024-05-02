@@ -2,7 +2,7 @@ import os
 from typing import List
 
 import discord
-from discord import Intents, Game
+from discord import Intents, Game, Thread
 from discord.app_commands import Group
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -16,8 +16,8 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD_ID = int(os.getenv('DISCORD_GUILD'))
 ACTIVITY = os.getenv('DISCORD_ACTIVITY')
 OWNER = int(os.getenv('DISCORD_OWNER'))
-ROLES_FILE = os.getenv('DISCORD_ROLES_FILE')
-HELP_FILE = os.getenv('DISCORD_HELP_FILE')
+# ROLES_FILE = os.getenv('DISCORD_ROLES_FILE')
+# HELP_FILE = os.getenv('DISCORD_HELP_FILE')
 PIN_EMOJI = "📌"
 
 intents = Intents.all()
@@ -109,6 +109,13 @@ async def on_raw_reaction_remove(payload):
         channel = await bot.fetch_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
         await unpin_message(message)
+
+
+@bot.event()
+async def on_thread_create(self, thread: Thread) -> None:
+    thread_notification_role_id = self.bot.get_settings(thread.guild.id).thread_notification_role_id
+    msg = await thread.send(f"<@&{thread_notification_role_id}>")
+    await msg.delete()
 
 
 bot.run(TOKEN)
