@@ -111,9 +111,9 @@ async def on_raw_reaction_remove(payload):
         await unpin_message(message)
 
 
-@bot.event()
-async def on_thread_create(self, thread: Thread) -> None:
-    thread_notification_role_id = self.bot.get_settings(thread.guild.id).thread_notification_role_id
+@bot.event
+async def on_thread_create(thread: Thread) -> None:
+    thread_notification_role_id = bot.get_settings(thread.guild.id).thread_notification_role_id
     msg = await thread.send(f"<@&{thread_notification_role_id}>")
     await msg.delete()
 
