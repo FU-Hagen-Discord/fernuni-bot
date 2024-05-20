@@ -20,7 +20,10 @@ async def send_notification(appointment, channel):
     message += f"\n"
     message += " ".join([f"<@!{str(attendee.member_id)}>" for attendee in appointment.attendees])
 
-    await channel.send(message)
+    if appointment.reminder_sent:
+        return await channel.send(message, embed=appointment.get_embed())
+
+    return await channel.send(message, embed=appointment.get_embed(), view=AppointmentView())
 
 
 @app_commands.guild_only()
@@ -41,11 +44,11 @@ class Appointments(commands.GroupCog, name="appointments", description="Handle A
                 try:
                     channel = await self.bot.fetch_channel(appointment.channel)
                     message = await channel.fetch_message(appointment.message)
-                    await send_notification(appointment, channel)
+                    new_message = await send_notification(appointment, channel)
+                    Appointment.update(message=new_message.id).where(Appointment.id == appointment.id).execute()
+                    await message.delete()
 
                     if appointment.reminder_sent:
-                        await message.delete()
-
                         if appointment.recurring == 0:
                             appointment.delete_instance(recursive=True)
                         else:

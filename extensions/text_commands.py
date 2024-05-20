@@ -56,8 +56,9 @@ class TextCommands(commands.GroupCog, name="commands", description="Text Command
                            text="Text, der bei Benutzung des Commands ausgegeben werden soll.")
     async def cmd_add(self, interaction: Interaction, cmd: str, text: str):
         if not re.match(r"^[a-z0-9]+(-[a-z0-9]+)*$", cmd):
-            await interaction.edit_original_response(
-                content="Ein Command darf nur aus Kleinbuchstaben und Zahlen bestehen, die durch Bindestriche getrennt werden können.")
+            await interaction.response.send_message(
+                "Ein Command darf nur aus Kleinbuchstaben und Zahlen bestehen, die durch Bindestriche getrennt werden können.",
+                ephemeral=True)
             return
 
         command = Command.get_or_none(Command.command == cmd)
@@ -127,7 +128,7 @@ class TextCommands(commands.GroupCog, name="commands", description="Text Command
         else:
             if self.exists(cmd):
                 return False
-            command = Command.create(command=cmd, description=description)
+            command = Command.create(command=cmd, description=description, guild_id=guild_id)
             CommandText.create(text=text, command=command.id)
             await self.register_command(command)
 

@@ -120,10 +120,13 @@ class Appointment(BaseModel):
 
     def get_embed(self):
         attendees = self.attendees
+        description = "" if self.reminder_sent else (f"Wenn du eine Benachrichtigung zum Beginn des Termins "
+                                                     f"{f', sowie {self.reminder} Minuten vorher, ' if self.reminder > 0 else f''}"
+                                                     f" erhalten möchtest, verwende den \"Zusagen\" Button unter dieser Nachricht."
+                                                     f" Hast du bereits zugesagt und möchtest keine Benachrichtigung erhalten, "
+                                                     f"kannst du den \"Absagen\" Button benutzen.")
         embed = discord.Embed(title=self.title,
-                              description=f"Wenn du eine Benachrichtigung zum Beginn des Termins"
-                                          f"{f', sowie {self.reminder} Minuten vorher, ' if self.reminder > 0 else f''}"
-                                          f" erhalten möchtest, reagiere mit :thumbsup: auf diese Nachricht.",
+                              description=description,
                               color=19607)
 
         if len(self.description) > 0:
