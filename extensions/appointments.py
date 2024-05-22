@@ -10,20 +10,15 @@ from views.appointment_view import AppointmentView
 
 
 async def send_notification(appointment, channel):
-    message = f"Benachrichtigung!\nDer Termin \"{appointment.title}\" startet "
-
-    if appointment.reminder_sent:
-        message += f"**jetzt**! :alarm_clock: "
-    else:
-        message += f"um <t:{int(appointment.date_time.timestamp())}:t> (<t:{int(appointment.date_time.timestamp())}:R>) :person_running:"
+    message = f"Erinnerung!"
 
     message += f"\n"
     message += " ".join([f"<@!{str(attendee.member_id)}>" for attendee in appointment.attendees])
 
     if appointment.reminder_sent:
-        return await channel.send(message, embed=appointment.get_embed())
+        return await channel.send(message, embed=appointment.get_embed(2))
 
-    return await channel.send(message, embed=appointment.get_embed(), view=AppointmentView())
+    return await channel.send(message, embed=appointment.get_embed(1), view=AppointmentView())
 
 
 @app_commands.guild_only()
@@ -57,7 +52,7 @@ class Appointments(commands.GroupCog, name="appointments", description="Handle A
                             Appointment.update(reminder_sent=reminder_sent, date_time=new_date_time).where(
                                 Appointment.id == appointment.id).execute()
                             updated_appointment = Appointment.get(Appointment.id == appointment.id)
-                            new_message = await channel.send(embed=updated_appointment.get_embed(),
+                            new_message = await channel.send(embed=updated_appointment.get_embed(0),
                                                              view=AppointmentView())
                             Appointment.update(message=new_message.id).where(Appointment.id == appointment.id).execute()
                     else:
@@ -90,7 +85,7 @@ class Appointments(commands.GroupCog, name="appointments", description="Handle A
                                          title=title, description=description, author=author_id, recurring=recurring,
                                          reminder_sent=reminder == 0, uuid=uuid.uuid4())
 
-        await interaction.response.send_message(embed=appointment.get_embed(), view=AppointmentView())
+        await interaction.response.send_message(embed=appointment.get_embed(0), view=AppointmentView())
         message = await interaction.original_response()
         Appointment.update(message=message.id).where(Appointment.id == appointment.id).execute()
 
