@@ -127,7 +127,7 @@ class Appointment(BaseModel):
                        f"Hast du bereits zugesagt und möchtest keine Benachrichtigung erhalten, "
                        f"kannst du den \"Absagen\" Button benutzen.") if state != 2 else ""
         emoji = "📅" if state == 0 else ("📣" if state == 1 else "✅")
-        embed = discord.Embed(title=f"{emoji} {self.title} {'begint!!!' if state == 2 else ""}",
+        embed = discord.Embed(title=f"{emoji} {self.title} {'begint!!!' if state == 2 else ''}",
                               description=description)
 
         embed.color = Colour.green() if state == 0 else Colour.yellow() if state == 1 else 19607
