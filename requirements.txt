@@ -17,5 +17,5 @@ idna==3.7
 multidict==6.0.5
 pycparser==2.22
 soupsieve==2.5
-urllib3==2.2.1
+urllib3==2.2.2
 yarl==1.9.4
