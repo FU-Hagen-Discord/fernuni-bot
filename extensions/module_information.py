@@ -114,10 +114,10 @@ class ModuleInformation(commands.Cog):
             shorts = []
             for course_of_studies in self.data:
                 shorts.append(f"`{course_of_studies['short']}`")
-            await interaction.edit_original_response(content=
-                                                     f"Fehler! Wähle entweder eine Studiengangs-Rolle aus oder gebe ein Studiengangskürzel "
-                                                     f"nach dem Kommando an.\nMögliche Kürzel: {', '.join(shorts)}"
-                                                     )
+            await ctx.channel.send(
+                f"Fehler! Wähle entweder eine Studiengangs-Rolle aus oder gebe ein Studiengangskürzel "
+                f"nach dem Kommando an.\nMögliche Kürzel: {', '.join(shorts)}"
+            )
             return None
         except NoCourseChannelError:
             return None

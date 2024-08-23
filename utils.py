@@ -16,7 +16,7 @@ async def send_dm(user, message, embed=None):
     """ Send DM to a user/member """
 
     try:
-        if type(user) is User or type(user) is Member:
+        if type(user) is disnake.User or type(user) is disnake.Member:
             if user.dm_channel is None:
                 await user.create_dm()
 
