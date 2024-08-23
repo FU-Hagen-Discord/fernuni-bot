@@ -16,13 +16,10 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD_ID = int(os.getenv('DISCORD_GUILD'))
 ACTIVITY = os.getenv('DISCORD_ACTIVITY')
 OWNER = int(os.getenv('DISCORD_OWNER'))
-# ROLES_FILE = os.getenv('DISCORD_ROLES_FILE')
-# HELP_FILE = os.getenv('DISCORD_HELP_FILE')
 PIN_EMOJI = "📌"
 
 intents = Intents.all()
-extensions = ["appointments", "news", "mod_mail", "voice", "welcome", "xkcd", "timer", "polls",
-              "text_commands", "links", "module_information", "learninggroups"]
+extensions = ["welcome"]
 
 
 class Boty(commands.Bot):
