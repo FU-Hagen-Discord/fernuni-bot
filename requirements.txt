@@ -1,4 +1,4 @@
-aiohttp==3.9.5
+aiohttp==3.10.2
 beautifulsoup4==4.12.3
 discord.py==2.3.2
 emoji==2.12.1
