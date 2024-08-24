@@ -67,7 +67,7 @@ class ModuleInformation(commands.Cog):
         if not found:
             raise ModuleInformationNotFoundError
 
-        return discord.Embed(title=title,
+        return discord.Embed(title=f"{title} {module.title}",
                              description=desc,
                              color=19607, url=module.url)
 
@@ -116,7 +116,7 @@ class ModuleInformation(commands.Cog):
                 f"Ich kann leider derzeit nichts über den Aufwand des Moduls {module.number}-{module.title} sagen.")
 
         effort = re.sub(r': *(\r*\n*)*', ':\n', module.effort)
-        return discord.Embed(title=f"Arbeitsaufwand",
+        return discord.Embed(title=f"Arbeitsaufwand {module.title}",
                              description=f"{effort}",
                              color=19607, url=module.url)
 
@@ -129,7 +129,7 @@ class ModuleInformation(commands.Cog):
         desc = ""
         for support in module.support:
             desc += f"[{support.title}]({support.url})\n"
-        return discord.Embed(title=f"Mentoriate ",
+        return discord.Embed(title=f"Mentoriate {module.title}",
                              description=desc,
                              color=19607, url=module.url)
 
@@ -153,7 +153,7 @@ class ModuleInformation(commands.Cog):
                     and exam.hard_requirements != 'keine':
                 desc += f"Formale Voraussetzungen: \n{exam.hard_requirements}\n\n"
 
-        return discord.Embed(title=f"Prüfungsinformationen",
+        return discord.Embed(title=f"Prüfungsinformationen {module.title}",
                              description=desc,
                              color=19607, url=module.url)
 
