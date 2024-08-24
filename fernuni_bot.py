@@ -1,4 +1,6 @@
+import logging
 import os
+from logging import DEBUG
 from typing import List
 
 import discord
@@ -19,7 +21,8 @@ OWNER = int(os.getenv('DISCORD_OWNER'))
 PIN_EMOJI = "📌"
 
 intents = Intents.all()
-extensions = ["welcome"]
+extensions = ["welcome", "xkcd"]
+_log = logging.getLogger('discord')
 
 
 class Boty(commands.Bot):
@@ -32,7 +35,7 @@ class Boty(commands.Bot):
         await self.tree.sync()
         for extension in self.initial_extensions:
             await self.load_extension(f"extensions.{extension}")
-            print(f"➕ Module {extension}")
+            _log.info("Module %s loaded", extension)
         await self.sync_slash_commands_for_guild(GUILD_ID)
 
     async def sync_slash_commands_for_guild(self, guild_id):
@@ -48,7 +51,7 @@ class Boty(commands.Bot):
 
     async def on_ready(self):
         self.view_manager.on_ready()
-        print("✅ Client started!")
+        _log.info("Client started!")
 
     @staticmethod
     def get_settings(guild_id: int) -> Settings:
