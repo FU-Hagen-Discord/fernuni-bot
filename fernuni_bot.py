@@ -22,7 +22,7 @@ PIN_EMOJI = "📌"
 
 intents = Intents.all()
 extensions = ["welcome", "xkcd"]
-_log = logging.getLogger('discord')
+_log = logging.getLogger('discord.boty')
 
 
 class Boty(commands.Bot):
