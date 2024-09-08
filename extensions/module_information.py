@@ -172,10 +172,11 @@ class ModuleInformation(commands.Cog):
 
     @app_commands.command(name="module",
                           description="Erhalte die Modulinformationen von der Uniwebseite.")
-    @app_commands.describe(public="Sichtbarkeit der Ausgabe: für alle Mitglieder oder nur für dich.",
-                           topic="Möchtest du eine bestimmte Rubrik abrufen?",
-                           module_nr="Nummer des Moduls, das dich interessiert. (In einem Moduilkanal optional).")
-    async def cmd_module(self, interaction: Interaction, public: bool, topic: Topics = None, module_nr: int = None):
+    @app_commands.describe(topic="Möchtest du eine bestimmte Rubrik abrufen?",
+                           module_nr="Nummer des Moduls, das dich interessiert. (In einem Moduilkanal optional).",
+                           public="Sichtbarkeit der Ausgabe: für alle Mitglieder oder nur für dich.")
+    async def cmd_module(self, interaction: Interaction, topic: Topics = None, module_nr: int = None,
+                         public: bool = True):
         await interaction.response.defer(ephemeral=not public)
 
         try:
