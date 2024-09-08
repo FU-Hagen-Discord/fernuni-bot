@@ -161,7 +161,7 @@ class TextCommands(commands.GroupCog, name="commands", description="Text Command
         @app_commands.command(name=command.command, description=command.description)
         @app_commands.guild_only()
         @app_commands.describe(public="Zeige die Ausgabe des Commands öffentlich, für alle Mitglieder sichtbar.")
-        async def process_command(interaction: Interaction, public: bool):
+        async def process_command(interaction: Interaction, public: bool = True):
             await interaction.response.defer(ephemeral=not public)
             if cmd := Command.get_or_none(Command.command == interaction.command.name):
                 texts = list(cmd.texts)
