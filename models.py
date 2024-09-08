@@ -53,9 +53,19 @@ class Link(BaseModel):
     category = ForeignKeyField(LinkCategory, backref='links')
 
 
-class News(BaseModel):
+class NewsFeed(BaseModel):
+    settings = ForeignKeyField(Settings)
+    url = CharField()
+    type = CharField()
+
+
+class NewsArticle(BaseModel):
+    news_feed = ForeignKeyField(NewsFeed)
+    title = CharField(null=True)
+    description = CharField(null=True)
     link = CharField()
-    date = CharField()
+    pubDate = CharField()
+
 
 
 class Poll(BaseModel):
@@ -254,5 +264,5 @@ class Contact(BaseModel):
 
 
 db.create_tables(
-    [Settings, LinkCategory, Link, News, Poll, PollChoice, PollParticipant, Command, CommandText, Appointment,
+    [Settings, LinkCategory, Link, NewsFeed, NewsArticle, Poll, PollChoice, PollParticipant, Command, CommandText, Appointment,
      Attendee, Course, Module, Event, Support, Exam, Download, Contact], safe=True)
