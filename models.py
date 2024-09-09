@@ -64,7 +64,7 @@ class NewsArticle(BaseModel):
     title = CharField(null=True)
     description = CharField(null=True)
     link = CharField()
-    pubDate = CharField()
+    pub_date = CharField()
 
 
 
