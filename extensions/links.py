@@ -79,7 +79,6 @@ class Links(commands.GroupCog, name="links", description="Linkverwaltung für Ka
                            title="Titel des zu entfernenden Links.")
     async def cmd_remove_link(self, interaction: Interaction, topic: str, title: str):
         await interaction.response.defer(ephemeral=True)
-        topic = topic.lower()
 
         if not models.LinkCategory.has_links(interaction.channel_id):
             await interaction.edit_original_response(content="Für diesen Channel sind noch keine Links hinterlegt.")
@@ -99,7 +98,6 @@ class Links(commands.GroupCog, name="links", description="Linkverwaltung für Ka
     @app_commands.describe(topic="Zu entfernendes Thema.")
     async def cmd_remove_topic(self, interaction: Interaction, topic: str):
         await interaction.response.defer(ephemeral=True)
-        topic = topic.lower()
 
         if not models.LinkCategory.has_links(interaction.channel_id):
             await interaction.edit_original_response(content="Für diesen Channel sind noch keine Links hinterlegt.")
