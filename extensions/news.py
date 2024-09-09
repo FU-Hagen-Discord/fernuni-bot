@@ -45,17 +45,17 @@ class News(commands.Cog):
         title = find_text(article, "title")
         description = find_text(article, "description")
         link = find_text(article, "link")
-        pubDate = find_text(article, "pubDate")
+        pub_date = find_text(article, "pubDate")
 
         if news_article := NewsArticle.get_or_none(link=link):
-            if news_article.pubDate != pubDate:
-                news_article.update(title=title, description=description, pubDate=pubDate).where(
+            if news_article.pub_date != pub_date:
+                news_article.update(title=title, description=description, pub_date=pub_date).where(
                     NewsArticle.link == link).execute()
                 return NewsArticle.get_or_none(link=link)
             else:
                 return None
         else:
-            return NewsArticle.create(news_feed=feed, title=title, description=description, link=link, pubDate=pubDate)
+            return NewsArticle.create(news_feed=feed, title=title, description=description, link=link, pub_date=pub_date)
 
     async def announce_news(self, news_article: NewsArticle):
         settings = news_article.news_feed.settings
@@ -66,7 +66,7 @@ class News(commands.Cog):
             if news_article.description:
                 embed.description = news_article.description
             await channel.send(
-                f":loudspeaker: <@&{news_role}> Neues aus der Fakultät vom {news_article.pubDate} :loudspeaker:", embed=embed)
+                f":loudspeaker: <@&{news_role}> Neues aus der Fakultät vom {news_article.pub_date} :loudspeaker:", embed=embed)
         except errors.NotFound:
             pass
 
