@@ -72,42 +72,42 @@ class Links(commands.GroupCog, name="links", description="Linkverwaltung für Ka
                                                           models.LinkCategory.name == category):
             await interaction.response.send_modal(LinkCategoryModal(db_category=db_category))
         else:
-            await interaction.response.send_message(content='Ich konnte das Thema leider nicht finden.', ephemeral=True)
+            await interaction.response.send_message(content='Ich konnte die Kategorie leider nicht finden.', ephemeral=True)
 
     @app_commands.command(name="remove-link", description="Einen Link entfernen.")
-    @app_commands.describe(topic="Theme zu dem der zu entfernende Link gehört.",
+    @app_commands.describe(category="Kategorie zu der der zu entfernende Link gehört.",
                            title="Titel des zu entfernenden Links.")
-    async def cmd_remove_link(self, interaction: Interaction, topic: str, title: str):
+    async def cmd_remove_link(self, interaction: Interaction, category: str, title: str):
         await interaction.response.defer(ephemeral=True)
 
         if not models.LinkCategory.has_links(interaction.channel_id):
             await interaction.edit_original_response(content="Für diesen Channel sind noch keine Links hinterlegt.")
             return
-        if topic_entity := models.LinkCategory.get_or_none(models.LinkCategory.channel == interaction.channel_id,
-                                                           models.LinkCategory.name == topic):
-            if link := models.Link.get_or_none(models.Link.title == title, models.Link.topic == topic_entity.id):
+        if category_entity := models.LinkCategory.get_or_none(models.LinkCategory.channel == interaction.channel_id,
+                                                           models.LinkCategory.name == category):
+            if link := models.Link.get_or_none(models.Link.title == title, models.Link.category == category_entity.id):
                 link.delete_instance(recursive=True)
                 await interaction.edit_original_response(content=f'Link {title} entfernt')
             else:
                 await interaction.edit_original_response(content='Ich konnte den Link leider nicht finden.')
         else:
-            await interaction.edit_original_response(content='Ich konnte das Thema leider nicht finden.')
+            await interaction.edit_original_response(content='Ich konnte die Kategorie leider nicht finden.')
             return
 
-    @app_commands.command(name="remove-topic", description="Ein Thema mit allen zugehörigen Links entfernen.")
-    @app_commands.describe(topic="Zu entfernendes Thema.")
-    async def cmd_remove_topic(self, interaction: Interaction, topic: str):
+    @app_commands.command(name="remove-category", description="Eine Kategorie mit allen zugehörigen Links entfernen.")
+    @app_commands.describe(category="Zu entfernende Kategorie.")
+    async def cmd_remove_category(self, interaction: Interaction, category: str):
         await interaction.response.defer(ephemeral=True)
 
         if not models.LinkCategory.has_links(interaction.channel_id):
             await interaction.edit_original_response(content="Für diesen Channel sind noch keine Links hinterlegt.")
             return
-        if topic_entity := models.LinkCategory.get_or_none(models.LinkCategory.channel == interaction.channel_id,
-                                                           models.LinkCategory.name == topic):
-            topic_entity.delete_instance(recursive=True)
-            await interaction.edit_original_response(content=f'Thema {topic} mit allen zugehörigen Links entfernt')
+        if category_entity := models.LinkCategory.get_or_none(models.LinkCategory.channel == interaction.channel_id,
+                                                           models.LinkCategory.name == category):
+            category_entity.delete_instance(recursive=True)
+            await interaction.edit_original_response(content=f'Kategorie {category} mit allen zugehörigen Links entfernt')
         else:
-            await interaction.edit_original_response(content='Ich konnte das Thema leider nicht finden.')
+            await interaction.edit_original_response(content='Ich konnte die Kategory leider nicht finden.')
             return
 
 
