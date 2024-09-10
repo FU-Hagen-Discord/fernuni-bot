@@ -131,13 +131,13 @@ class Appointment(BaseModel):
 
     def get_embed(self, state: int) -> discord.Embed:
         attendees = self.attendees
-        description = (f"Wenn du eine Benachrichtigung zum Beginn des Termins "
-                       f"{f', sowie {self.reminder} Minuten vorher, ' if self.reminder > 0 else f''}"
-                       f" erhalten möchtest, verwende den \"Zusagen\" Button unter dieser Nachricht. "
-                       f"Hast du bereits zugesagt und möchtest keine Benachrichtigung erhalten, "
+        description = (f"Wenn du eine Benachrichtigung zum Beginn des Termins"
+                       f"{f', sowie {self.reminder} Minuten vorher, ' if self.reminder > 0 else f' '}"
+                       f"erhalten möchtest, verwende den \"Zusagen\" Button unter dieser Nachricht. "
+                       f"Hast du bereits zugesagt und möchtest aber doch keine Benachrichtigung erhalten, "
                        f"kannst du den \"Absagen\" Button benutzen.") if state != 2 else ""
         emoji = "📅" if state == 0 else ("📣" if state == 1 else "✅")
-        embed = discord.Embed(title=f"{emoji} {self.title} {'begint!!!' if state == 2 else ''}",
+        embed = discord.Embed(title=f"{emoji} {self.title} {'findet jetzt statt.' if state == 2 else ''}",
                               description=description)
 
         embed.color = Colour.green() if state == 0 else Colour.yellow() if state == 1 else 19607
@@ -159,10 +159,8 @@ class Appointment(BaseModel):
     def get_start_time(self, state) -> str:
         if state == 0:
             return f"<t:{int(self.date_time.timestamp())}:F>"
-        elif state == 1:
-            return f"<t:{int(self.date_time.timestamp())}:F> (<t:{int(self.date_time.timestamp())}:R>)"
-
-        return "Jetzt!"
+        
+        return f"<t:{int(self.date_time.timestamp())}:F> (<t:{int(self.date_time.timestamp())}:R>)"
 
     def get_ics_file(self):
         fmt = "%Y%m%dT%H%M"
