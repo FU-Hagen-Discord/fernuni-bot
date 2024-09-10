@@ -78,7 +78,7 @@ class Appointments(commands.GroupCog, name="appointments", description="Handle A
         try:
             date_time = datetime.strptime(f"{date} {time}", self.bot.dt_format())
         except ValueError:
-            await interaction.response.send_message("Fehler! Ungültiges Datums und/oder Zeit Format!")
+            await interaction.response.send_message("Fehler! Ungültiges Datums und/oder Zeit Format!\nBitte gib das Datum im Format TT.MM.JJJJ und die Uhrzeit im Format HH:MM an.", ephemeral=True)
             return
 
         appointment = Appointment.create(channel=channel.id, message=0, date_time=date_time, reminder=reminder,
