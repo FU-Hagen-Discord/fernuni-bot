@@ -33,15 +33,11 @@ class TextCommandModal(ui.Modal, title='Neues Text Command hinzufügen'):
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.send_message("Verarbeite Command...", ephemeral=True)
 
-        if utils.is_mod(interaction.user, self.text_commands.bot):
-            if await self.text_commands.add_command(self.cmd, self.text.value, self.description.value, interaction.guild_id):
-                await interaction.edit_original_response(content="Dein Command wurde erfolgreich hinzugefügt!")
-            else:
-                await interaction.edit_original_response(
-                    content="Das Command, dass du hinzufügen möchtest existiert bereits.")
+        if await self.text_commands.add_command(self.cmd, self.text.value, self.description.value, interaction.guild_id):
+            await interaction.edit_original_response(content="Dein Command wurde erfolgreich hinzugefügt!")
         else:
-            await self.text_commands.suggest_command(self.cmd, self.text.value, self.description.value, interaction.guild_id)
-            await interaction.edit_original_response(content="Dein Vorschlag wurde den Mods zur Genehmigung vorgelegt.")
+            await interaction.edit_original_response(
+                content="Das Command, dass du hinzufügen möchtest existiert bereits.")
 
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
         if type(error) in [InvalidLinkError, LinkDoesNotExistError]:
