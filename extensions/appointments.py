@@ -91,10 +91,10 @@ class Appointments(commands.GroupCog, name="appointments", description="Handle A
         Appointment.update(message=message.id).where(Appointment.id == appointment.id).execute()
 
     @app_commands.command(name="list", description="Listet alle Termine dieses Kanals auf.")
-    @app_commands.describe(show_all="Zeige die Liste für alle an.")
-    async def cmd_appointments_list(self, interaction: Interaction, show_all: bool = False):
+    @app_commands.describe(public="Sichtbarkeit der Ausgabe: für alle Mitglieder oder nur für dich.")
+    async def cmd_appointments_list(self, interaction: Interaction, public: bool = False):
         """ List (and link) all Appointments in the current channel """
-        await interaction.response.defer(ephemeral=not show_all)
+        await interaction.response.defer(ephemeral=not public)
 
         appointments = Appointment.select().where(Appointment.channel == interaction.channel_id)
         if appointments:
