@@ -8,7 +8,7 @@ class AppointmentView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label='Zusagen', style=discord.ButtonStyle.green, custom_id='appointment_view:accept', emoji="👍")
+    @discord.ui.button(label='Anmelden', style=discord.ButtonStyle.green, custom_id='appointment_view:accept', emoji="👍")
     async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):
         if appointment := Appointment.get_or_none(Appointment.message == interaction.message.id):
             attendee = appointment.attendees.filter(member_id=interaction.user.id)
@@ -22,7 +22,7 @@ class AppointmentView(discord.ui.View):
 
         await interaction.response.defer(thinking=False)
 
-    @discord.ui.button(label='Absagen', style=discord.ButtonStyle.red, custom_id='appointment_view:decline', emoji="👎")
+    @discord.ui.button(label='Abmelden', style=discord.ButtonStyle.red, custom_id='appointment_view:decline', emoji="👎")
     async def decline(self, interaction: discord.Interaction, button: discord.ui.Button):
         if appointment := Appointment.get_or_none(Appointment.message == interaction.message.id):
             attendee = appointment.attendees.filter(member_id=interaction.user.id)

@@ -31,11 +31,8 @@ class Appointments(commands.GroupCog, name="appointments", description="Handle A
     async def timer(self):
         for appointment in Appointment.select().order_by(Appointment.channel):
             now = datetime.now()
-            date_time = appointment.date_time
-            remind_at = date_time - timedelta(
-                minutes=appointment.reminder) if not appointment.reminder_sent else date_time
 
-            if now >= remind_at:
+            if now >= appointment.remind_at():
                 try:
                     channel = await self.bot.fetch_channel(appointment.channel)
                     message = await channel.fetch_message(appointment.message)
@@ -71,14 +68,29 @@ class Appointments(commands.GroupCog, name="appointments", description="Handle A
                            description="Detailliertere Beschreibung, was gemacht werden soll.",
                            recurring="In welchem Intervall (in Tagen) soll der Termin wiederholt werden?")
     async def cmd_add_appointment(self, interaction: Interaction, date: str, time: str, reminder: int, title: str,
-                                  description: str = "", recurring: int = 0):
+                                  description: str = "", recurring: int = 0) -> None:
         """ Add an appointment to a channel """
         channel = interaction.channel
         author_id = interaction.user.id
         try:
             date_time = datetime.strptime(f"{date} {time}", self.bot.dt_format())
+            if date_time <= datetime.now():
+                await interaction.response.send_message("Fehler! Der Termin muss in der Zukunft liegen.",
+                                                        ephemeral=True)
+                return
+            elif reminder < 0:
+                await interaction.response.send_message("Fehler! Du kannst keinen negativen Wert für die Benachrichtigung angeben.",
+                                                        ephemeral=True)
+                return
+            elif recurring < 0:
+                await interaction.response.send_message("Fehler! Du kannst keinen negativen Wert für die Wiederholung deines Termins angeben.",
+                                                        ephemeral=True)
+                return
+
         except ValueError:
-            await interaction.response.send_message("Fehler! Ungültiges Datum und/oder Zeit.\nBitte gib ein gültiges Datum im Format TT.MM.JJJJ und eine gültige Uhrzeit im Format HH:MM an.", ephemeral=True)
+            await interaction.response.send_message(
+                "Fehler! Ungültiges Datum und/oder Zeit.\nBitte gib ein gültiges Datum im Format TT.MM.JJJJ und eine gültige Uhrzeit im Format HH:MM an.",
+                ephemeral=True)
             return
 
         appointment = Appointment.create(channel=channel.id, message=0, date_time=date_time, reminder=reminder,

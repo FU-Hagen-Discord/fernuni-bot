@@ -1,6 +1,6 @@
-import datetime
 import io
 import uuid
+from datetime import timedelta, datetime
 
 import discord
 from discord import Colour
@@ -131,11 +131,10 @@ class Appointment(BaseModel):
 
     def get_embed(self, state: int) -> discord.Embed:
         attendees = self.attendees
-        description = (f"Wenn du eine Benachrichtigung zum Beginn des Termins"
-                       f"{f', sowie {self.reminder} Minuten vorher, ' if self.reminder > 0 else f' '}"
-                       f"erhalten möchtest, verwende den \"Zusagen\" Button unter dieser Nachricht. "
-                       f"Hast du bereits zugesagt und möchtest aber doch keine Benachrichtigung erhalten, "
-                       f"kannst du den \"Absagen\" Button benutzen.") if state != 2 else ""
+        description = (f"- Durch Klicken auf Anmelden erhältst du eine Benachrichtigung zum Beginn des Termins"
+                       f"{f', sowie {self.reminder} Minuten vorher' if self.reminder > 0 else f''}.\n"
+                       f"- Durch Klicken auf Abmelden nimmst du deine vorherige Abmeldung wieder zurück und wirst "
+                       f"nicht benachrichtigt.") if state != 2 else ""
         emoji = "📅" if state == 0 else ("📣" if state == 1 else "✅")
         embed = discord.Embed(title=f"{emoji} {self.title} {'findet jetzt statt.' if state == 2 else ''}",
                               description=description)
@@ -155,6 +154,16 @@ class Appointment(BaseModel):
                             value=",".join([f"<@{attendee.member_id}>" for attendee in attendees]))
 
         return embed
+
+    def remind_at(self) -> datetime:
+        if self.reminder_sent:
+            return self.date_time
+        elif datetime.now() >= self.date_time:
+            Appointment.update(reminder_sent=True).where(Appointment.id == self.id).execute()
+            self.reminder_sent = True
+            return self.date_time
+        else:
+            return self.date_time - timedelta(minutes=self.reminder)
 
     def get_start_time(self, state) -> str:
         if state == 0:
