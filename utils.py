@@ -25,16 +25,22 @@ async def send_dm(user, message, embed=None):
         print(f"Cannot send DM to {user} with text: {message}")
 
 
-def is_mod(context_or_member):
-    if isinstance(context_or_member, Context):
-        author = context_or_member.author
-    else:
-        author = context_or_member
-    roles = author.roles
+# def is_mod(context_or_member):
+#     if isinstance(context_or_member, Context):
+#         author = context_or_member.author
+#     else:
+#         author = context_or_member
+#     roles = author.roles
+#
+#     for role in roles:
+#         if role.id == int(os.getenv("DISCORD_MOD_ROLE")):
+#             return True
+#
+#     return False
 
-    for role in roles:
-        if role.id == int(os.getenv("DISCORD_MOD_ROLE")):
-            return True
+def is_mod(user: Member, bot):
+    if user.get_role(int(os.getenv("DISCORD_MOD_ROLE"))):
+        return True
 
     return False
 

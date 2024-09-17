@@ -25,8 +25,11 @@ class Timer(commands.Cog):
         self.run_timer.start()
 
     def load(self):
-        with open(self.timer_file_path, mode='r') as timer_file:
-            return json.load(timer_file)
+        try:
+            with open(self.timer_file_path, mode='r') as timer_file:
+                return json.load(timer_file)
+        except FileNotFoundError:
+            return {}
 
     def save(self):
         with open(self.timer_file_path, mode='w') as timer_file:

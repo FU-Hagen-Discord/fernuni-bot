@@ -1,7 +1,9 @@
 import random
+from typing import Dict, Any
 
 import aiohttp
 import discord
+from aiohttp import ClientSession
 from discord import app_commands, Interaction
 from discord.ext import commands
 
@@ -17,34 +19,37 @@ class Xkcd(commands.Cog):
         await interaction.response.defer()
         async with aiohttp.ClientSession() as session:
 
-            # Daten vom aktuellsten Comic holen, um max zu bestimmen
-            async with session.get('http://xkcd.com/info.0.json') as request:
-                data = await request.json()
-            max = data['num']
+            latest = (await self.get_info(session)).get("num")
 
             # Nummer übernehmen wenn vorhanden und zwischen 1 und max, sonst random Nummer wählen
-            if number == 'latest':
-                n = max
-            else:
-                try:
-                    n = number if (number and 0 < int(number) <= max) else str(random.randint(1, max))
-                except ValueError:
-                    n = str(random.randint(1, max))
+            n = number if number and (0 < number <= latest) else random.randint(1, latest)
 
             # Daten zum Bild holen
-            async with session.get(f'http://xkcd.com/{n}/info.0.json') as request:
-                n_data = await request.json()
+            if info := await self.get_info(session, number=n):
+                img = info["img"]
+                num = info["num"]
+                title = info["title"]
+                text = info["alt"]
 
-        img = n_data['img']
-        num = n_data['num']
-        title = n_data['title']
-        text = n_data['alt']
+                # Comic embedden
+                embed = discord.Embed(title=f"xkcd #{num}: {title}", description=text, url=f"https://xkcd.com/{num}")
+                if n != number:
+                    embed.set_footer(text="Du erhältst einen zufälligen Comic, da du entweder keine Nummer eingegeben hast, oder die von dir eingegebene Nummer ungültig war. Viel Spaß :)")
+                embed.set_image(url=img)
 
-        # Comic embedden
-        embed = discord.Embed(title=f"xkcd #{num}: {title}", description=text, url=f"https://xkcd.com/{num}")
-        embed.set_image(url=img)
+                await interaction.edit_original_response(embed=embed)
+                return
 
-        await interaction.edit_original_response(embed=embed)
+        await interaction.edit_original_response(content="Leider ist beim Abrufen des xkcd Comics ein Fehler aufgetreten.")
+
+    @staticmethod
+    async def get_info(session: ClientSession, number: int = None) -> Dict[str, Any]:
+        url = f"http://xkcd.com/{number}/info.0.json" if number else "http://xkcd.com/info.0.json"
+        async with session.get(url) as request:
+            if request.status == 200:
+                return await request.json()
+
+        return {}
 
 
 async def setup(bot: commands.Bot) -> None:

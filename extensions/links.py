@@ -13,24 +13,31 @@ class Links(commands.GroupCog, name="links", description="Linkverwaltung für Ka
 
     @app_commands.command(name="show", description="Zeige Links für diesen Kanal an.")
     @app_commands.describe(category="Zeige nur Links für diese Kategorie an.", public="Zeige die Linkliste für alle.")
-    async def cmd_show(self, interaction: Interaction, category: str = None, public: bool = False):
+    async def cmd_show(self, interaction: Interaction, category: str = None, public: bool = True):
         await interaction.response.defer(ephemeral=not public)
 
-        embed = discord.Embed(title=f"Links")
+        message = "### __Folgende Links sind in diesem Channel hinterlegt__\n"
         if not models.LinkCategory.has_links(interaction.channel_id):
-            embed.description = "Für diesen Channel sind noch keine Links hinterlegt."
-        if category and not models.LinkCategory.has_links(interaction.channel_id, category=category):
-            embed.description = f"Für die Kategorie `{category}` sind in diesem Channel keine Links hinterlegt. " \
-                                f"Versuch es noch mal mit einer anderen Kategorie, oder lass dir mit `/links show` " \
-                                f"alle Links in diesem Channel ausgeben."
+            message = "Für diesen Channel sind noch keine Links hinterlegt."
+        elif category and not models.LinkCategory.has_links(interaction.channel_id, category=category):
+            message = (f"Für die Kategorie `{category}` sind in diesem Channel keine Links hinterlegt. "
+                       f"Versuch es noch mal mit einer anderen Kategorie, oder lass dir mit `/links show` alle Links "
+                       f"in diesem Channel ausgeben.")
+        else:
+            for category in models.LinkCategory.get_categories(interaction.channel_id, category=category):
+                message += f"**{category.name}**\n"
+                if category.links.count() > 0:
+                    for link in category.links:
+                        link_text = f"- [{link.title}](<{link.url}>)\n"
 
-        for category in models.LinkCategory.get_categories(interaction.channel_id, category=category):
-            if category.links.count() > 0:
-                category.append_field(embed)
-            else:
-                category.delete_instance()
+                        if len(message) + len(link_text) > 1900:
+                            await interaction.followup.send(message, ephemeral=not public)
+                            message = ""
+                        message += link_text
+                else:
+                    category.delete_instance()
 
-        await interaction.edit_original_response(embed=embed)
+        await interaction.followup.send(message, ephemeral=not public)
 
     @app_commands.command(name="add", description="Füge einen neuen Link hinzu.")
     async def cmd_add(self, interaction: Interaction):
@@ -44,7 +51,7 @@ class Links(commands.GroupCog, name="links", description="Linkverwaltung für Ka
                                                           models.LinkCategory.name == category):
             if link := models.Link.get_or_none(models.Link.title == title, models.Link.category == db_category.id):
                 await interaction.response.send_modal(
-                    LinkModal(category=link.category.name, link_title=link.title, link=link.link, link_id=link.id,
+                    LinkModal(category=link.category.name, link_title=link.title, link=link.url, link_id=link.id,
                               title="Link bearbeiten"))
             else:
                 await interaction.response.send_message(content='Ich konnte den Link leider nicht finden.',
@@ -65,44 +72,42 @@ class Links(commands.GroupCog, name="links", description="Linkverwaltung für Ka
                                                           models.LinkCategory.name == category):
             await interaction.response.send_modal(LinkCategoryModal(db_category=db_category))
         else:
-            await interaction.response.send_message(content='Ich konnte das Thema leider nicht finden.', ephemeral=True)
+            await interaction.response.send_message(content='Ich konnte die Kategorie leider nicht finden.', ephemeral=True)
 
     @app_commands.command(name="remove-link", description="Einen Link entfernen.")
-    @app_commands.describe(topic="Theme zu dem der zu entfernende Link gehört.",
+    @app_commands.describe(category="Kategorie zu der der zu entfernende Link gehört.",
                            title="Titel des zu entfernenden Links.")
-    async def cmd_remove_link(self, interaction: Interaction, topic: str, title: str):
+    async def cmd_remove_link(self, interaction: Interaction, category: str, title: str):
         await interaction.response.defer(ephemeral=True)
-        topic = topic.lower()
 
         if not models.LinkCategory.has_links(interaction.channel_id):
             await interaction.edit_original_response(content="Für diesen Channel sind noch keine Links hinterlegt.")
             return
-        if topic_entity := models.LinkCategory.get_or_none(models.LinkCategory.channel == interaction.channel_id,
-                                                           models.LinkCategory.name == topic):
-            if link := models.Link.get_or_none(models.Link.title == title, models.Link.topic == topic_entity.id):
+        if category_entity := models.LinkCategory.get_or_none(models.LinkCategory.channel == interaction.channel_id,
+                                                           models.LinkCategory.name == category):
+            if link := models.Link.get_or_none(models.Link.title == title, models.Link.category == category_entity.id):
                 link.delete_instance(recursive=True)
                 await interaction.edit_original_response(content=f'Link {title} entfernt')
             else:
                 await interaction.edit_original_response(content='Ich konnte den Link leider nicht finden.')
         else:
-            await interaction.edit_original_response(content='Ich konnte das Thema leider nicht finden.')
+            await interaction.edit_original_response(content='Ich konnte die Kategorie leider nicht finden.')
             return
 
-    @app_commands.command(name="remove-topic", description="Ein Thema mit allen zugehörigen Links entfernen.")
-    @app_commands.describe(topic="Zu entfernendes Thema.")
-    async def cmd_remove_topic(self, interaction: Interaction, topic: str):
+    @app_commands.command(name="remove-category", description="Eine Kategorie mit allen zugehörigen Links entfernen.")
+    @app_commands.describe(category="Zu entfernende Kategorie.")
+    async def cmd_remove_category(self, interaction: Interaction, category: str):
         await interaction.response.defer(ephemeral=True)
-        topic = topic.lower()
 
         if not models.LinkCategory.has_links(interaction.channel_id):
             await interaction.edit_original_response(content="Für diesen Channel sind noch keine Links hinterlegt.")
             return
-        if topic_entity := models.LinkCategory.get_or_none(models.LinkCategory.channel == interaction.channel_id,
-                                                           models.LinkCategory.name == topic):
-            topic_entity.delete_instance(recursive=True)
-            await interaction.edit_original_response(content=f'Thema {topic} mit allen zugehörigen Links entfernt')
+        if category_entity := models.LinkCategory.get_or_none(models.LinkCategory.channel == interaction.channel_id,
+                                                           models.LinkCategory.name == category):
+            category_entity.delete_instance(recursive=True)
+            await interaction.edit_original_response(content=f'Kategorie {category} mit allen zugehörigen Links entfernt')
         else:
-            await interaction.edit_original_response(content='Ich konnte das Thema leider nicht finden.')
+            await interaction.edit_original_response(content='Ich konnte die Kategory leider nicht finden.')
             return
 
 
