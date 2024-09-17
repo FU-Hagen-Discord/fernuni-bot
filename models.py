@@ -133,7 +133,7 @@ class Appointment(BaseModel):
         attendees = self.attendees
         description = (f"- Durch Klicken auf Anmelden erhältst du eine Benachrichtigung zum Beginn des Termins"
                        f"{f', sowie {self.reminder} Minuten vorher' if self.reminder > 0 else f''}.\n"
-                       f"- Durch Klicken auf Abmelden nimmst du deine vorherige Abmeldung wieder zurück und wirst "
+                       f"- Durch Klicken auf Abmelden nimmst du deine vorherige Anmeldung wieder zurück und wirst "
                        f"nicht benachrichtigt.") if state != 2 else ""
         emoji = "📅" if state == 0 else ("📣" if state == 1 else "✅")
         embed = discord.Embed(title=f"{emoji} {self.title} {'findet jetzt statt.' if state == 2 else ''}",
