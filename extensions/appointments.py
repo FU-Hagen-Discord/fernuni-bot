@@ -18,7 +18,7 @@ async def send_notification(appointment, channel):
     if appointment.reminder_sent:
         return await channel.send(message, embed=appointment.get_embed(2))
 
-    return await channel.send(message, embed=appointment.get_embed(1), view=AppointmentView())
+    return await channel.send(message, embed=appointment.get_embed(1), view=AppointmentView(can_skip=appointment.recurring > 0))
 
 
 @app_commands.guild_only()
@@ -50,7 +50,7 @@ class Appointments(commands.GroupCog, name="appointments", description="Handle A
                                 Appointment.id == appointment.id).execute()
                             updated_appointment = Appointment.get(Appointment.id == appointment.id)
                             new_message = await channel.send(embed=updated_appointment.get_embed(0),
-                                                             view=AppointmentView())
+                                                             view=AppointmentView(can_skip=appointment.recurring > 0))
                             Appointment.update(message=new_message.id).where(Appointment.id == appointment.id).execute()
                     else:
                         Appointment.update(reminder_sent=True).where(Appointment.id == appointment.id).execute()
@@ -98,7 +98,7 @@ class Appointments(commands.GroupCog, name="appointments", description="Handle A
                                          reminder_sent=reminder == 0, uuid=uuid.uuid4())
         Attendee.create(appointment=appointment, member_id=author_id)
 
-        await interaction.response.send_message(embed=appointment.get_embed(0), view=AppointmentView())
+        await interaction.response.send_message(embed=appointment.get_embed(0), view=AppointmentView(can_skip=appointment.recurring > 0))
         message = await interaction.original_response()
         Appointment.update(message=message.id).where(Appointment.id == appointment.id).execute()
 
@@ -127,4 +127,4 @@ class Appointments(commands.GroupCog, name="appointments", description="Handle A
 
 async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(Appointments(bot))
-    bot.add_view(AppointmentView())
+    bot.add_view(AppointmentView(can_skip=True))
