@@ -1,12 +1,16 @@
+from datetime import timedelta
+
 import discord
 from discord import File
 
+import utils
 from models import Appointment, Attendee
 
 
 class AppointmentView(discord.ui.View):
-    def __init__(self):
+    def __init__(self, can_skip: bool):
         super().__init__(timeout=None)
+        self.on_skip.disabled = not can_skip
 
     @discord.ui.button(label='Anmelden', style=discord.ButtonStyle.green, custom_id='appointment_view:accept', emoji="👍")
     async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -37,7 +41,7 @@ class AppointmentView(discord.ui.View):
 
         await interaction.response.defer(thinking=False)
 
-    @discord.ui.button(label='Übersringen', style=discord.ButtonStyle.blurple, custom_id='appointment_view:skip',
+    @discord.ui.button(label='Überspringen', style=discord.ButtonStyle.blurple, custom_id='appointment_view:skip',
                        emoji="⏭️")
     async def on_skip(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(thinking=False)
@@ -47,7 +51,7 @@ class AppointmentView(discord.ui.View):
                 Appointment.update(date_time=new_date_time, reminder_sent=False).where(
                     Appointment.id == appointment.id).execute()
                 updated_appointment = Appointment.get(Appointment.id == appointment.id)
-                await interaction.message.edit(embed=updated_appointment.get_embed())
+                await interaction.message.edit(embed=updated_appointment.get_embed(1 if updated_appointment.reminder_sent and updated_appointment.reminder > 0 else 0))
 
 
     @discord.ui.button(label='Download .ics', style=discord.ButtonStyle.blurple, custom_id='appointment_view:ics',
