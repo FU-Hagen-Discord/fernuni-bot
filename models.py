@@ -1,6 +1,6 @@
-import datetime
 import io
 import uuid
+from datetime import timedelta, datetime
 
 import discord
 from discord import Colour
@@ -53,9 +53,19 @@ class Link(BaseModel):
     category = ForeignKeyField(LinkCategory, backref='links')
 
 
-class News(BaseModel):
+class NewsFeed(BaseModel):
+    settings = ForeignKeyField(Settings)
+    url = CharField()
+    type = CharField()
+
+
+class NewsArticle(BaseModel):
+    news_feed = ForeignKeyField(NewsFeed)
+    title = CharField(null=True)
+    description = CharField(null=True)
     link = CharField()
-    date = CharField()
+    pub_date = CharField()
+
 
 
 class Poll(BaseModel):
@@ -121,13 +131,12 @@ class Appointment(BaseModel):
 
     def get_embed(self, state: int) -> discord.Embed:
         attendees = self.attendees
-        description = (f"Wenn du eine Benachrichtigung zum Beginn des Termins "
-                       f"{f', sowie {self.reminder} Minuten vorher, ' if self.reminder > 0 else f''}"
-                       f" erhalten möchtest, verwende den \"Zusagen\" Button unter dieser Nachricht. "
-                       f"Hast du bereits zugesagt und möchtest keine Benachrichtigung erhalten, "
-                       f"kannst du den \"Absagen\" Button benutzen.") if state != 2 else ""
+        description = (f"- Durch Klicken auf Anmelden erhältst du eine Benachrichtigung zum Beginn des Termins"
+                       f"{f', sowie {self.reminder} Minuten vorher' if self.reminder > 0 else f''}.\n"
+                       f"- Durch Klicken auf Abmelden nimmst du deine vorherige Anmeldung wieder zurück und wirst "
+                       f"nicht benachrichtigt.") if state != 2 else ""
         emoji = "📅" if state == 0 else ("📣" if state == 1 else "✅")
-        embed = discord.Embed(title=f"{emoji} {self.title} {'begint!!!' if state == 2 else ''}",
+        embed = discord.Embed(title=f"{emoji} {self.title} {'findet jetzt statt.' if state == 2 else ''}",
                               description=description)
 
         embed.color = Colour.green() if state == 0 else Colour.yellow() if state == 1 else 19607
@@ -146,13 +155,21 @@ class Appointment(BaseModel):
 
         return embed
 
+    def remind_at(self) -> datetime:
+        if self.reminder_sent:
+            return self.date_time
+        elif datetime.now() >= self.date_time:
+            Appointment.update(reminder_sent=True).where(Appointment.id == self.id).execute()
+            self.reminder_sent = True
+            return self.date_time
+        else:
+            return self.date_time - timedelta(minutes=self.reminder)
+
     def get_start_time(self, state) -> str:
         if state == 0:
             return f"<t:{int(self.date_time.timestamp())}:F>"
-        elif state == 1:
-            return f"<t:{int(self.date_time.timestamp())}:F> (<t:{int(self.date_time.timestamp())}:R>)"
-
-        return "Jetzt!"
+        
+        return f"<t:{int(self.date_time.timestamp())}:F> (<t:{int(self.date_time.timestamp())}:R>)"
 
     def get_ics_file(self):
         fmt = "%Y%m%dT%H%M"
@@ -177,7 +194,7 @@ class Appointment(BaseModel):
                       f"END:STANDARD\n" \
                       f"END:VTIMEZONE\n" \
                       f"BEGIN:VEVENT\n" \
-                      f"DTSTAMP:{datetime.datetime.now().strftime(fmt)}00Z\n" \
+                      f"DTSTAMP:{datetime.now().strftime(fmt)}00Z\n" \
                       f"UID:{self.uuid}\n" \
                       f"SUMMARY:{self.title}\n"
         appointment += f"RRULE:FREQ=DAILY;INTERVAL={self.recurring}\n" if self.recurring else f""
@@ -254,5 +271,5 @@ class Contact(BaseModel):
 
 
 db.create_tables(
-    [Settings, LinkCategory, Link, News, Poll, PollChoice, PollParticipant, Command, CommandText, Appointment,
+    [Settings, LinkCategory, Link, NewsFeed, NewsArticle, Poll, PollChoice, PollParticipant, Command, CommandText, Appointment,
      Attendee, Course, Module, Event, Support, Exam, Download, Contact], safe=True)
