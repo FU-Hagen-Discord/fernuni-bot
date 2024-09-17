@@ -18,7 +18,7 @@ class AppointmentView(discord.ui.View):
                 return
             else:
                 Attendee.create(appointment=appointment.id, member_id=interaction.user.id)
-                await interaction.message.edit(embed=appointment.get_embed(1 if appointment.reminder_sent else 0))
+                await interaction.message.edit(embed=appointment.get_embed(1 if appointment.reminder_sent and appointment.reminder > 0 else 0))
 
         await interaction.response.defer(thinking=False)
 
@@ -29,7 +29,7 @@ class AppointmentView(discord.ui.View):
             if attendee:
                 attendee = attendee[0]
                 attendee.delete_instance()
-                await interaction.message.edit(embed=appointment.get_embed(1 if appointment.reminder_sent else 0))
+                await interaction.message.edit(embed=appointment.get_embed(1 if appointment.reminder_sent and appointment.reminder > 0 else 0))
             else:
                 await interaction.response.send_message("Du kannst nur absagen, wenn du vorher zugesagt hast.",
                                                         ephemeral=True)
