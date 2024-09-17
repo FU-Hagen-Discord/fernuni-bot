@@ -194,7 +194,7 @@ class Appointment(BaseModel):
                       f"END:STANDARD\n" \
                       f"END:VTIMEZONE\n" \
                       f"BEGIN:VEVENT\n" \
-                      f"DTSTAMP:{datetime.datetime.now().strftime(fmt)}00Z\n" \
+                      f"DTSTAMP:{datetime.now().strftime(fmt)}00Z\n" \
                       f"UID:{self.uuid}\n" \
                       f"SUMMARY:{self.title}\n"
         appointment += f"RRULE:FREQ=DAILY;INTERVAL={self.recurring}\n" if self.recurring else f""
