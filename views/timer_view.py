@@ -1,6 +1,6 @@
-import disnake
-from disnake import MessageInteraction, SelectOption, TextInputStyle
-from disnake.ui import Button, View, Modal, TextInput
+import discord
+from discord import ButtonStyle, Interaction
+from discord.ui import Button, View
 
 VOICY = "timerview:voicy"
 SOUND = "timerview:sound"
@@ -32,62 +32,108 @@ class TimerButton(Button):
 
 
 class TimerView(View):
-    def __init__(self, callback, voicy):
+    def __init__(self, timer):
         super().__init__(timeout=None)
-        self.callback = callback
-        self.voicy_emoji = "🔇" if voicy else "🔊"
-        self.disable_soundschemes = not voicy
+        self.timer = timer
 
-        custom_ids = [VOICY, SOUND, STATS, MANUAL, SUBSCRIBE, RESTART, SKIP, STOP]
-        emojis = [self.voicy_emoji, "🎶", "📈", "⁉", "👋", "🔄", "⏩", "🛑"]
+    @discord.ui.button(label="Anmelden", emoji="👍", style=ButtonStyle.green, custom_id=SUBSCRIBE)
+    async def btn_subscribe(self, interaction: Interaction, button: Button):
+        await interaction.response.defer(ephemeral=True, thinking=False)
+        msg_id = str(interaction.message.id)
+        if timer := self.timer.running_timers.get(msg_id):
+            if str(interaction.user.id) not in timer['registered']:
+                timer['registered'].append(str(interaction.user.id))
+                self.timer.save()
+                name, status, wt, bt, remaining, registered, _ = self.timer.get_details(msg_id)
+                embed = self.timer.create_embed(name, status, wt, bt, remaining, registered)
+                await interaction.message.edit(embed=embed, view=self.timer.get_view())
+                await interaction.followup.send(content="Du hast dich erfolgreich angemeldet", ephemeral=True)
+            else:
+                await interaction.followup.send(content="Du bist bereits angemeldet.", ephemeral=True)
+        else:
+            await interaction.followup.send(content="Etwas ist schiefgelaufen...", ephemeral=True)
 
-        for i in range(8):
-            self.add_item(TimerButton(
-                emoji=emojis[i],
-                custom_id=custom_ids[i],
-                row=2 if i<4 else 1,
-                disabled= True if ((not voicy) and i==1) else False,
-                callback=self.callback
-            ))
+    @discord.ui.button(label="Abmelden", emoji="👎", style=ButtonStyle.red, custom_id=UNSUBSCRIBE)
+    async def btn_unsubscribe(self, interaction: Interaction, button: Button):
+        await interaction.response.defer(ephemeral=True, thinking=False)
+        msg_id = str(interaction.message.id)
+        if timer := self.timer.running_timers.get(msg_id):
+            registered = timer['registered']
+            if str(interaction.user.id) in registered:
+                if len(registered) == 1:
+                    await self.timer.on_stop(button, interaction)
+                    return
+                else:
+                    timer['registered'].remove(str(interaction.user.id))
+                    self.timer.save()
+                    name, status, wt, bt, remaining, registered, _ = self.timer.get_details(msg_id)
+                    embed = self.timer.create_embed(name, status, wt, bt, remaining, registered)
+                    await interaction.message.edit(embed=embed, view=self.timer.get_view())
+                    await interaction.followup.send(content="Du hast dich erfolgreich abgemeldet", ephemeral=True)
+            else:
+                await interaction.followup.send(content="Du warst gar nicht angemeldet.", ephemeral=True)
+        else:
+            await interaction.followup.send(content="Etwas ist schiefgelaufen...", ephemeral=True)
 
-    def disable(self):
-        for button in self.children:
-            button.disabled = True
+    @discord.ui.button(label="Phase überspringen", emoji="⏩", style=ButtonStyle.blurple, custom_id=SKIP)
+    async def btn_skip(self, interaction: Interaction, button: Button):
+        await interaction.response.defer(ephemeral=True, thinking=False)
+        msg_id = str(interaction.message.id)
+        if timer := self.timer.running_timers.get(msg_id):
+            registered = timer['registered']
+            if str(interaction.user.id) in timer['registered']:
+                new_phase = await self.timer.switch_phase(msg_id)
+                if new_phase == "Pause":
+                    await self.timer.make_sound(registered, 'groove-intro.mp3')
+                else:
+                    await self.timer.make_sound(registered, 'roll_with_it-outro.mp3')
+            else:
+                await interaction.followup.send(content="Nur angemeldete Personen können den Timer bedienen.",
+                                                ephemeral=True)
+        else:
+            await interaction.followup.send("Etwas ist schiefgelaufen...", ephemeral=True)
 
+    @discord.ui.button(label="Neustarten", emoji="🔄", style=ButtonStyle.blurple, custom_id=RESTART)
+    async def btn_restart(self, interaction: Interaction, button: Button):
+        await interaction.response.defer(ephemeral=True, thinking=False)
+        msg_id = str(interaction.message.id)
+        if timer := self.timer.running_timers.get(msg_id):
+            registered = timer['registered']
+            if str(interaction.user.id) in timer['registered']:
+                timer['status'] = 'Arbeiten'
+                timer['remaining'] = timer['working_time']
+                self.timer.save()
 
-class ManualSelectView(View):
-    def __init__(self, callback):
-        super().__init__(timeout=None)
-        self.callback = callback
+                await self.timer.edit_message(msg_id)
+                await self.timer.make_sound(registered, 'roll_with_it-outro.mp3')
+            else:
+                await interaction.followup.send(content="Nur angemeldete Personen können den Timer neu starten.",
+                                                ephemeral=True)
+        else:
+            await interaction.followup.send(content="Etwas ist schiefgelaufen...", ephemeral=True)
 
-    @disnake.ui.select(custom_id=MANUALDROPDOWN,
-                       placeholder="wähle hier eine Option aus",
-                       min_values=1,
-                       max_values=1,
-                       options=[SelectOption(label="👋 beim Timer an-/abmelden", value="subscribe"),
-                                SelectOption(label="🔄 Session neu starten", value="restart"),
-                                SelectOption(label="⏩ Phase überspringen", value="skip"),
-                                SelectOption(label="🛑 Timer beenden", value="stop"),
-                                SelectOption(label="🔊/🔇 Voicy-Option", value="voicy"),
-                                SelectOption(label="🎶 Soundschema", value="sound"),
-                                SelectOption(label="📈 Statistik", value="stats")])
-    async def sel_manual(self, option: SelectOption, interaction: MessageInteraction):
-        await self.callback(option, interaction)
+    @discord.ui.button(label="Beenden", emoji="🛑", style=ButtonStyle.grey, custom_id=STOP)
+    async def btn_stop(self, interaction: Interaction, button: Button):
+        await interaction.response.defer(ephemeral=True, thinking=False)
+        msg_id = str(interaction.message.id)
+        if timer := self.timer.running_timers.get(msg_id):
+            registered = timer['registered']
+            if str(interaction.user.id) in timer['registered']:
+                mentions = self.timer.get_mentions(msg_id)
+                timer['status'] = "Beendet"
+                timer['remaining'] = 0
+                timer['registered'] = []
 
-
-class RestartConfirmView(View):
-    def __init__(self, timer_id, callback):
-        super().__init__(timeout=None)
-        self.callback = callback
-        self.timer_id = timer_id
-
-    @disnake.ui.button(emoji="👍", custom_id=RESTART_YES)
-    async def btn_restart_yes(self, button: Button, interaction: MessageInteraction):
-        await self.callback(interaction, self.timer_id)
-
-    @disnake.ui.button(emoji="👎", custom_id=RESTART_NO)
-    async def btn_restart_no(self, button: Button, interaction: MessageInteraction):
-        await self.callback(interaction, self.timer_id)
+                if new_msg_id := await self.timer.edit_message(msg_id, mentions=mentions):
+                    await self.timer.make_sound(registered, 'applause.mp3')
+                    self.timer.running_timers.pop(new_msg_id)
+                    self.timer.save()
+            else:
+                # Reply with a hidden message
+                await interaction.followup.send(content="Nur angemeldete Personen können den Timer beenden.",
+                                                ephemeral=True)
+        else:
+            await interaction.followup.send(content="Etwas ist schiefgelaufen...", ephemeral=True)
 
     def disable(self):
         for button in self.children:

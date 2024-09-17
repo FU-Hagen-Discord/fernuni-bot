@@ -1,7 +1,7 @@
 import json
 import uuid
 
-import disnake
+import discord
 
 from views.dialog_view import DialogView
 
@@ -27,8 +27,11 @@ class ViewManager:
             json.dump(self.views, file)
 
     def load(self):
-        with open("data/views.json", "r") as file:
-            self.views = json.load(file)
+        try:
+            with open("data/views.json", "r") as file:
+                self.views = json.load(file)
+        except FileNotFoundError:
+            self.views = {}
 
     def register(self, key, func):
         self.functions[key] = func
@@ -48,7 +51,7 @@ class ViewManager:
         )
 
     async def dialog(self, channel, title, description, message="", fields=[], buttons=None, callback_key: str = None):
-        embed = disnake.Embed(title=title,
+        embed = discord.Embed(title=title,
                               description=description,
                               color=19607)
         for field in fields:

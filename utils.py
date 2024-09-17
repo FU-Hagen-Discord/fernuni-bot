@@ -2,33 +2,45 @@ import os
 import re
 from datetime import datetime
 
-import disnake
-from disnake import ButtonStyle
+from discord import ButtonStyle, Embed, User, Member
+from discord.ext.commands import Context
 from dotenv import load_dotenv
 
 from views.dialog_view import DialogView
 
 load_dotenv()
 DATE_TIME_FMT = os.getenv("DISCORD_DATE_TIME_FORMAT")
-
+MAX_MESSAGE_LEN = 2000
 
 async def send_dm(user, message, embed=None):
     """ Send DM to a user/member """
 
-    if type(user) is disnake.User or type(user) is disnake.Member:
-        if user.dm_channel is None:
-            await user.create_dm()
+    try:
+        if type(user) is User or type(user) is Member:
+            if user.dm_channel is None:
+                await user.create_dm()
 
-        return await user.dm_channel.send(message, embed=embed)
+            return await user.dm_channel.send(message, embed=embed)
+    except:
+        print(f"Cannot send DM to {user} with text: {message}")
 
 
-def is_mod(ctx):
-    author = ctx.author
-    roles = author.roles
+# def is_mod(context_or_member):
+#     if isinstance(context_or_member, Context):
+#         author = context_or_member.author
+#     else:
+#         author = context_or_member
+#     roles = author.roles
+#
+#     for role in roles:
+#         if role.id == int(os.getenv("DISCORD_MOD_ROLE")):
+#             return True
+#
+#     return False
 
-    for role in roles:
-        if role.id == int(os.getenv("DISCORD_MOD_ROLE")):
-            return True
+def is_mod(user: Member, bot):
+    if user.get_role(int(os.getenv("DISCORD_MOD_ROLE"))):
+        return True
 
     return False
 
@@ -52,7 +64,7 @@ def to_minutes(time):
 
 
 async def confirm(channel, title, description, message="", custom_prefix="", callback=None):
-    embed = disnake.Embed(title=title,
+    embed = Embed(title=title,
                           description=description,
                           color=19607)
     return await channel.send(message, embed=embed, view=DialogView([
