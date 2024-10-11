@@ -67,7 +67,7 @@ class Appointments(commands.GroupCog, name="appointments", description="Handle A
                            title="Titel des Termins (so wie er dann evtl. auch im Kalender steht).",
                            description="Detailliertere Beschreibung, was gemacht werden soll.",
                            recurring="In welchem Intervall (in Tagen) soll der Termin wiederholt werden?")
-    async def cmd_add_appointment(self, interaction: Interaction, date: str, time: str, reminder: int, title: str,
+    async def cmd_add_appointment(self, interaction: Interaction, title: str, date: str, time: str, reminder: int,
                                   description: str = "", recurring: int = 0) -> None:
         """ Add an appointment to a channel """
         channel = interaction.channel
