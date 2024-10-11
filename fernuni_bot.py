@@ -62,7 +62,7 @@ class Boty(commands.Bot):
         return "%d.%m.%Y %H:%M"
 
 
-bot = Boty(command_prefix='!', help_command=None, activity=Game(ACTIVITY), owner_id=OWNER, intents=intents,
+bot = Boty(command_prefix=')', help_command=None, activity=Game(ACTIVITY), owner_id=OWNER, intents=intents,
            initial_extensions=extensions)
 
 
