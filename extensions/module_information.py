@@ -59,16 +59,12 @@ class ModuleInformation(commands.Cog):
 
     @staticmethod
     async def download_for(title, module):
-        desc = ""
-        found = False
-        for download in module.downloads.where(Download.title.contains(title)):
-            found = True
-            desc += f"[{download.title}]({download.url})\n"
-        if not found:
+        downloads = [f"- [{download.title}]({download.url})" for download in module.downloads.where(Download.title.contains(title))]
+        if len(downloads) == 0:
             raise ModuleInformationNotFoundError
 
         return discord.Embed(title=f"{title} {module.title}",
-                             description=desc,
+                             description="\n".join(downloads),
                              color=19607, url=module.url)
 
     async def handbook(self, module):
@@ -85,29 +81,26 @@ class ModuleInformation(commands.Cog):
 
     @staticmethod
     async def info(module):
-        desc = (f"Wie viele Credits bekomme ich? **{module.ects} ECTS**\n"
-                f"Wie lange geht das Modul? **{module.duration}**\n"
-                f"Wie oft wird das Modul angeboten? **{module.interval}**\n"
-                )
+        embed = discord.Embed(title=f"Modul {module.title}",
+                             color=19607, url=module.url)
+        embed.add_field(name="Wie viele Credits bekomme ich?", value=f"{module.ects} ECTS", inline=False)
+        embed.add_field(name="Wie lange geht das Modul?", value=module.duration, inline=False)
+        embed.add_field(name="Wie oft wird das Modul angeboten?", value=module.interval, inline=False)
+        embed.add_field(name="\u200b", value="\u200b", inline=False)
 
-        if (requirements := module.requirements) and len(requirements) > 0 and requirements != 'keine':
-            desc += f"\nInhaltliche Voraussetzungen: \n{requirements}\n"
+        if (requirements := module.requirements) and len(requirements) > 0 and requirements not in  ['keine', "-"]:
+            embed.add_field(name="Inhaltliche Voraussetzungen", value=requirements, inline=False)
 
         if (notes := module.notes) and len(notes) > 0 and notes != '-':
-            desc += f"\nAnmerkungen: \n\n{notes}\n"
+            embed.add_field(name="Anmerkunden", value=notes, inline=False)
 
         if (contacts := module.contacts) and len(contacts) > 0:
-            desc += f"\nAnsprechparnter: \n"
-            desc += ', '.join([contact.name for contact in contacts]) + "\n"
+            embed.add_field(name="Ansprechpartner", value=', '.join([f"- {contact.name}" for contact in contacts]), inline=False)
 
         if (events := module.events) and len(events) > 0:
-            desc += f"\nAktuelles Angebot in der VU: \n"
-            for event in events:
-                desc += f"[{event.name}]({event.url})\n"
+            embed.add_field(name="Aktuelles Angebot in der VU", value="\n".join([f"- [{event.name}]({event.url})" for event in events]), inline=False)
 
-        return discord.Embed(title=f"Modul {module.title}",
-                             description=desc,
-                             color=19607, url=module.url)
+        return embed
 
     @staticmethod
     async def effort(module):
@@ -126,11 +119,8 @@ class ModuleInformation(commands.Cog):
             raise ModuleInformationNotFoundError(
                 f"Ich kann leider derzeit keine Mentoriate für das Modul {module.number}-{module.title} finden.")
 
-        desc = ""
-        for support in module.support:
-            desc += f"[{support.title}]({support.url})\n"
         return discord.Embed(title=f"Mentoriate {module.title}",
-                             description=desc,
+                             description="\n".join([f"- [{support.title}]({support.url})" for support in module.support]),
                              color=19607, url=module.url)
 
     @staticmethod
@@ -139,23 +129,23 @@ class ModuleInformation(commands.Cog):
             raise ModuleInformationNotFoundError(
                 f"Ich kann leider derzeit keine Prüfungsinformationen für das Modul {module.number}-{module.title} finden.")
 
-        desc = ""
+        embed = discord.Embed(title=f"Prüfungsinformationen {module.title}",
+                             color=19607, url=module.url)
+
         for exam in module.exams:
-            desc += f"**{exam.name}**\n{exam.type}\n"
+            desc = f"- {exam.type}\n"
             if exam.weight and len(exam.weight) > 0 and exam.weight != '-':
-                desc += f"Gewichtung: **{exam.weight}**\n"
-            desc += "\n"
+                desc += f"- Gewichtung: **{exam.weight}**\n"
 
             if exam.requirements and len(exam.requirements) > 0 and exam.requirements != 'keine':
-                desc += f"Inhaltliche Voraussetzungen: \n{exam.requirements}\n\n"
+                desc += f"- Inhaltliche Voraussetzungen: \n  - {exam.requirements}\n"
 
             if exam.hard_requirements and len(exam.hard_requirements) > 0 \
                     and exam.hard_requirements != 'keine':
-                desc += f"Formale Voraussetzungen: \n{exam.hard_requirements}\n\n"
+                desc += f"- Formale Voraussetzungen: \n  - {exam.hard_requirements}\n"
+            embed.add_field(name=exam.name, value=desc, inline=False)
 
-        return discord.Embed(title=f"Prüfungsinformationen {module.title}",
-                             description=desc,
-                             color=19607, url=module.url)
+        return embed
 
     async def get_embed(self, module: Module, topic: Topics):
         if topic == Topics.handbuch:

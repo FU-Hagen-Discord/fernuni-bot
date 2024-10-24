@@ -136,7 +136,7 @@ class Appointment(BaseModel):
                        f"- Durch Klicken auf Abmelden nimmst du deine vorherige Anmeldung wieder zurück und wirst "
                        f"nicht benachrichtigt.") if state != 2 else ""
         emoji = "📅" if state == 0 else ("📣" if state == 1 else "✅")
-        embed = discord.Embed(title=f"{emoji} *{self.title}* {'findet jetzt statt.' if state == 2 else ''}",
+        embed = discord.Embed(title=f"{emoji} __{self.title}__ {'findet jetzt statt.' if state == 2 else ''}",
                               description=description)
 
         embed.color = Colour.green() if state == 0 else Colour.yellow() if state == 1 else 19607
