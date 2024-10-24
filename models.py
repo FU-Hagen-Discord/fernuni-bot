@@ -273,3 +273,4 @@ class Contact(BaseModel):
 db.create_tables(
     [Settings, LinkCategory, Link, NewsFeed, NewsArticle, Poll, PollChoice, PollParticipant, Command, CommandText, Appointment,
      Attendee, Course, Module, Event, Support, Exam, Download, Contact], safe=True)
+
