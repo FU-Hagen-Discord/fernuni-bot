@@ -60,6 +60,15 @@ class Boty(commands.Bot):
     @staticmethod
     def dt_format():
         return "%d.%m.%Y %H:%M"
+    
+    @staticmethod
+    def is_dev_mode_activated() -> bool:
+        dev_mode = os.getenv('DISCORD_DEV_MODE')
+
+        if dev_mode == None:
+            return False
+
+        return bool(dev_mode)    
 
 
 bot = Boty(command_prefix=')', help_command=None, activity=Game(ACTIVITY), owner_id=OWNER, intents=intents,

@@ -1,0 +1,13 @@
+version: '3.8'
+
+name: fernuni_discord_bot
+
+services:
+  bot:
+    build: .
+    env_file:
+      - docker.env
+    # environment:
+    #   - PYTHONUNBUFFERED=1
+    volumes:
+      - ./data:/app/data

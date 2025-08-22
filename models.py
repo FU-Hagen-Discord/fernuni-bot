@@ -7,7 +7,7 @@ from discord import Colour
 from peewee import *
 from peewee import ModelSelect
 
-db = SqliteDatabase("db.sqlite3")
+db = SqliteDatabase("data/db.sqlite3")
 
 
 class BaseModel(Model):
