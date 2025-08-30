@@ -26,14 +26,13 @@ _log = logging.getLogger('discord.boty')
 
 
 class Boty(commands.Bot):
-    def __init__(self, *args, initial_extensions: List[str], **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.initial_extensions: List[str] = initial_extensions
         self.view_manager: ViewManager = ViewManager(self)
 
     async def setup_hook(self) -> None:
         await self.tree.sync()
-        for extension in self.initial_extensions:
+        for extension in self.get_activated_extensions():
             await self.load_extension(f"extensions.{extension}")
             _log.info("Module %s loaded", extension)
         await self.sync_slash_commands_for_guild(GUILD_ID)
@@ -60,10 +59,30 @@ class Boty(commands.Bot):
     @staticmethod
     def dt_format():
         return "%d.%m.%Y %H:%M"
+    
+    @staticmethod
+    def is_dev_mode_activated() -> bool:
+        dev_mode = os.getenv('DISCORD_DEV_MODE')
 
+        if dev_mode == None:
+            return False
 
-bot = Boty(command_prefix=')', help_command=None, activity=Game(ACTIVITY), owner_id=OWNER, intents=intents,
-           initial_extensions=extensions)
+        return bool(dev_mode)    
+    
+    @staticmethod
+    def get_activated_extensions():
+        called_extensions = os.getenv('DISCORD_ACTIVATED_EXTENSIONS')
+
+        if called_extensions == None:
+            return ["welcome", "xkcd", "mod_mail", "module_information", "links", "news", "appointments", "text_commands"]
+        
+        activated_extensions = []
+        for extension_name in called_extensions.split(","):
+            activated_extensions.append(extension_name.strip().lower())
+
+        return activated_extensions     
+
+bot = Boty(command_prefix=')', help_command=None, activity=Game(ACTIVITY), owner_id=OWNER, intents=intents)
 
 
 def get_reaction(reactions):
@@ -116,6 +135,5 @@ async def on_thread_create(thread: Thread) -> None:
     thread_notification_role_id = bot.get_settings(thread.guild.id).thread_notification_role_id
     msg = await thread.send(f"<@&{thread_notification_role_id}>")
     await msg.delete()
-
 
 bot.run(TOKEN)

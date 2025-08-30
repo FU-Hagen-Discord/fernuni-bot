@@ -1,0 +1,10 @@
+name: fernuni_discord_bot
+
+services:
+  bot:
+    build: .
+    user: appuser:appuser
+    env_file:
+      - docker.env
+    volumes:
+      - ./data:/app/data
