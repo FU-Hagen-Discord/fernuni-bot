@@ -1,25 +1,18 @@
 import os
-import random
 
 from discord import Member
 from discord.ext import commands
-
 
 class Welcome(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.Cog.listener()
-    async def on_member_update(self, before: Member, after: Member) -> None:
-        if (before.pending != after.pending and not after.pending) or self.bot.is_dev_mode_activated():
-            await self.send_welcome_message(before)
-
-    async def send_welcome_message(self, before):
-        channel_id = self.bot.get_settings(before.guild.id).greeting_channel_id
+    async def send_welcome_message(self, member: Member) -> None:
+        channel_id = self.bot.get_settings(member.guild.id).greeting_channel_id
         channel = await self.bot.fetch_channel(channel_id)
 
         welcome_message = f"""
-        Hey {before.mention}, 
+        Hey {member.mention}, 
 schön, dass du hergefunden hast :nerd: 
 
 Unsere Serverregeln findest du hier: <#{os.getenv('DISCORD_RULE_CHANNEL')}> 
