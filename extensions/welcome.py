@@ -7,6 +7,10 @@ class Welcome(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+        await self.send_welcome_message(member)
+
     async def send_welcome_message(self, member: Member) -> None:
         channel_id = self.bot.get_settings(member.guild.id).greeting_channel_id
         channel = await self.bot.fetch_channel(channel_id)
