@@ -784,7 +784,7 @@ class LearningGroups(commands.GroupCog, name="lg", description="Lerngruppenverwa
 
         if group_config["organizer_id"] == interaction.author.id:
             await interaction.edit_original_response(content=
-                                                     "Du kannst nicht aus deiner eigenen Lerngruppe flüchten. Gib erst die Verantwortung ab.")
+                                                     "Du kannst nicht aus deiner eigenen Lerngruppe flüchten. Gib erst die Verantwortung ab. Falls deine Kommilitonys und du den Kanal nicht mehr braucht, dann pinge bitte die Mods (mit `@Mod`) an, damit sie ihn archivieren :door:")
             return
 
         await self.remove_member_from_group(interaction.channel, interaction.user)
