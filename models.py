@@ -7,7 +7,9 @@ from discord import Colour
 from peewee import *
 from peewee import ModelSelect
 
-db = SqliteDatabase("db.sqlite3")
+db = SqliteDatabase("db.sqlite3", pragmas={
+    'journal_mode': 'wal',
+    'cache_size': -1 * 64000})
 
 
 class BaseModel(Model):

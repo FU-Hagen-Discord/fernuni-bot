@@ -39,7 +39,7 @@ class Welcome(commands.Cog):
                 f"Herzlich Willkommen, {before.mention} <:winking_boty:873222361015545906>",
                 f"Hallo {before.mention}!"
             ]
-            await channel.send(msg=random.choice(welcome_messages))
+            await channel.send(random.choice(welcome_messages))
 
 
 async def setup(bot: commands.Bot) -> None:

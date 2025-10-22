@@ -20,7 +20,7 @@ OWNER = int(os.getenv('DISCORD_OWNER'))
 PIN_EMOJI = "📌"
 
 intents = Intents.all()
-extensions = ["welcome", "xkcd", "mod_mail", "module_information", "links", "news", "appointments", "text_commands"]
+extensions = ["welcome", "xkcd", "mod_mail", "module_information", "links", "appointments", "text_commands", "news"]
         # ["learninggroups", "polls", "timer", "voice"]
 _log = logging.getLogger('discord.boty')
 

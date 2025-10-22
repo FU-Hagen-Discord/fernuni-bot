@@ -2,6 +2,7 @@ import asyncio
 import uuid
 from datetime import datetime, timedelta
 
+import discord
 from discord import app_commands, errors, Interaction
 from discord.ext import tasks, commands
 
@@ -108,21 +109,26 @@ class Appointments(commands.GroupCog, name="appointments", description="Handle A
         """ List (and link) all Appointments in the current channel """
         await interaction.response.defer(ephemeral=not public)
 
-        appointments = Appointment.select().where(Appointment.channel == interaction.channel_id)
+        appointments = Appointment.select().where(Appointment.channel == interaction.channel_id).order_by(Appointment.date_time)
         if appointments:
-            answer = f'Termine dieses Channels:\n'
+            embed = discord.Embed(title="📅 Termine dieses Channels:")
 
             for appointment in appointments:
                 try:
                     message = await interaction.channel.fetch_message(appointment.message)
-                    answer += f'<t:{int(appointment.date_time.timestamp())}:F>: {appointment.title} => ' \
-                              f'{message.jump_url}\n'
+                    embed.add_field(
+                        name=appointment.title,
+                        value=f"<t:{int(appointment.date_time.timestamp())}:F> — [Details]({message.jump_url})",
+                        inline=False
+                    )
                 except errors.NotFound:
                     appointment.delete_instance(recursive=True)
 
-            await interaction.edit_original_response(content=answer)
+            # await channel.send(embed=embed)
+
+            await interaction.edit_original_response(embed=embed)
         else:
-            await interaction.edit_original_response(content="Für diesen Channel existieren derzeit keine Termine")
+            await interaction.edit_original_response(content="Für diesen Kanal existieren derzeit keine Termine")
 
 
 async def setup(bot: commands.Bot) -> None:
