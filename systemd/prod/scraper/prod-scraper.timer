@@ -1,0 +1,12 @@
+# /etc/systemd/system/prod.scraper.timer
+[Unit]
+Description=Run prod-scraper.service every 23 hours
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=23h
+AccuracySec=1min
+Unit=prod-scraper.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,12 @@
+name: fernuni_discord_bot
+
+services:
+
+  scraper:
+    # image: rndintusr/fuh-winfo-discordbot-grade-scraper:v1.0.1
+    build:
+      context: .
+      dockerfile: scraper.Dockerfile
+    user: appuser:appuser
+    volumes:
+      - ./data:/app/data

@@ -1,6 +1,5 @@
 import logging
 import os
-from typing import List
 
 import discord
 from discord import Intents, Game, Thread
@@ -20,8 +19,6 @@ OWNER = int(os.getenv('DISCORD_OWNER'))
 PIN_EMOJI = "📌"
 
 intents = Intents.all()
-extensions = ["welcome", "xkcd", "mod_mail", "module_information", "links", "news", "appointments", "text_commands"]
-        # ["learninggroups", "polls", "timer", "voice"]
 _log = logging.getLogger('discord.boty')
 
 

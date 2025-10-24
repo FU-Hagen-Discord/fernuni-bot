@@ -1,0 +1,12 @@
+# /etc/systemd/system/prod-plotter.timer
+[Unit]
+Description=Run prod-plotter.service every 24 hours
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=24h
+AccuracySec=1min
+Unit=prod-plotter.service
+
+[Install]
+WantedBy=timers.target

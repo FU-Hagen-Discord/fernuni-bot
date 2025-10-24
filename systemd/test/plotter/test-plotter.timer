@@ -1,0 +1,12 @@
+# /etc/systemd/system/test-plotter.timer
+[Unit]
+Description=Run test-plotter.service every 15 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=24h
+AccuracySec=1min
+Unit=test-plotter.service
+
+[Install]
+WantedBy=timers.target

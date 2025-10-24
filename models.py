@@ -6,6 +6,7 @@ import discord
 from discord import Colour
 from peewee import *
 from peewee import ModelSelect
+from playhouse.migrate import *
 
 db = SqliteDatabase("data/db.sqlite3")
 
@@ -224,10 +225,10 @@ class Course(BaseModel):
     role_id = IntegerField()
 
 
-class Module(BaseModel):
+class UniversityModule(BaseModel):
     number = IntegerField(primary_key=True)
     title = CharField()
-    url = CharField()
+    url = CharField(null=True)
     ects = CharField(null=True)
     effort = CharField(null=True)
     duration = CharField(null=True)
@@ -240,14 +241,14 @@ class Event(BaseModel):
     name = CharField()
     number = CharField()
     url = CharField()
-    module = ForeignKeyField(Module, backref='events')
+    module = ForeignKeyField(UniversityModule, backref='events')
 
 
 class Support(BaseModel):
     title = CharField()
     city = CharField()
     url = CharField()
-    module = ForeignKeyField(Module, backref='support')
+    module = ForeignKeyField(UniversityModule, backref='support')
 
 
 class Exam(BaseModel):
@@ -256,21 +257,71 @@ class Exam(BaseModel):
     requirements = CharField(null=True)
     weight = CharField(null=True)
     hard_requirements = CharField(null=True)
-    module = ForeignKeyField(Module, backref='exams')
+    module = ForeignKeyField(UniversityModule, backref='exams')
 
 
 class Download(BaseModel):
     title = CharField()
     url = CharField()
-    module = ForeignKeyField(Module, backref='downloads')
+    module = ForeignKeyField(UniversityModule, backref='downloads')
 
 
 class Contact(BaseModel):
     name = CharField()
-    module = ForeignKeyField(Module, backref='contacts')
+    module = ForeignKeyField(UniversityModule, backref='contacts')
 
 
+class ModuleGradeStatistics(BaseModel):
+    module_number = ForeignKeyField(UniversityModule)
+
+    is_summer_semester = BooleanField()
+    year = IntegerField()
+    examination_period = CharField()
+    anonymous = BooleanField(default=False)
+
+    very_good = IntegerField(default=0)
+    good = IntegerField(default=0)
+    satisfactory = IntegerField(default=0)
+    sufficient = IntegerField(default=0)
+    insufficient = IntegerField(default=0)
+
+    class Meta:
+       primary_key = CompositeKey('module_number', 'year', 'is_summer_semester', 'examination_period')
+
+
+class GradeStatisticsImage(BaseModel):
+    number = ForeignKeyField(UniversityModule, primary_key=True)
+    path = CharField()
+    
+
+class ExtractedGradeStatistics:
+    def __init__(self, 
+                 module_number: int, 
+                 module_name: str,
+                 is_summer_semester: bool,
+                 year: int,
+                 examination_period: str) -> None:
+        self.module_number = module_number
+        self.module_name = module_name
+        self.is_summer_semester = is_summer_semester
+        self.year = year
+        self.examination_period = examination_period
+        self.grades_overview = {}  # key: student_id or exam_id, value: grade
+        self.anonyomous=False
+        self.very_good=0
+        self.good=0
+        self.satisfactory=0
+        self.sufficient=0
+        self.insufficient=0
+    
+    def get_participant_count(self) -> int:
+        participants = self.very_good + self.good + self.satisfactory + self.sufficient + self.insufficient
+        return participants
+
+
+# Create all tables
 db.create_tables(
     [Settings, LinkCategory, Link, NewsFeed, NewsArticle, Poll, PollChoice, PollParticipant, Command, CommandText, Appointment,
-     Attendee, Course, Module, Event, Support, Exam, Download, Contact], safe=True)
+     Attendee, Course, UniversityModule, Event, Support, Exam, Download, Contact, ModuleGradeStatistics, GradeStatisticsImage], safe=True)
+
 

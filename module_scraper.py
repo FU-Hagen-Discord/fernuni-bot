@@ -6,7 +6,7 @@ import aiohttp
 from bs4 import BeautifulSoup
 
 import models
-from models import Course, Module, Event, Support, Exam, Download, Contact
+from models import Course, UniversityModule, Event, Support, Exam, Download, Contact
 
 
 class Scraper:
@@ -16,7 +16,7 @@ class Scraper:
 
     async def scrape(self) -> None:
         with models.db.transaction() as txn:
-            Module.delete().execute()
+            UniversityModule.delete().execute()
             Event.delete().execute()
             Support.delete().execute()
             Exam.delete().execute()
@@ -25,7 +25,7 @@ class Scraper:
             for course in Course.select():
                 print(f"Get modules for {course.name}")
                 await self.fetch_modules(course)
-            modules = Module.select()
+            modules = UniversityModule.select()
             for idx, module in enumerate(modules):
                 print(f"{idx + 1}/{len(modules)} Get infos for {module.title}")
                 await self.fetch_modules_infos(module)
@@ -34,9 +34,9 @@ class Scraper:
     async def fetch_modules(self, course: Course) -> None:
         module_links = self.parse_index_page(await self.fetch(course.url))
         for module_link in module_links:
-            Module.get_or_create(number=module_link["number"], title=module_link["title"], url=module_link["url"])
+            UniversityModule.get_or_create(number=module_link["number"], title=module_link["title"], url=module_link["url"])
 
-    async def fetch_modules_infos(self, module: Module) -> None:
+    async def fetch_modules_infos(self, module: UniversityModule) -> None:
         html = await self.fetch(module.url)
         self.parse_module_page(html, module)
 
@@ -62,12 +62,12 @@ class Scraper:
                  "url": self.prepare_url(module_link['href']).split("?")[0]}
                 for module_link in module_links]
 
-    def parse_module_page(self, html: str, module: Module) -> None:
+    def parse_module_page(self, html: str, module: UniversityModule) -> None:
         soup = BeautifulSoup(html, "html.parser")
         info = self.parse_info(soup)
-        Module.update(ects=info["ects"], effort=info["effort"], duration=info["duration"], interval=info["interval"],
+        UniversityModule.update(ects=info["ects"], effort=info["effort"], duration=info["duration"], interval=info["interval"],
                       notes=info["notes"], requirements=info["requirements"]).where(
-            Module.number == module.number).execute()
+            UniversityModule.number == module.number).execute()
 
         for event in self.parse_events(soup):
             Event.create(name=event["name"], number=event["number"], url=event["url"], module=module)

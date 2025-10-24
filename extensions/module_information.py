@@ -5,7 +5,7 @@ import discord
 from discord import app_commands, Interaction
 from discord.ext import commands, tasks
 
-from models import Module, Download
+from models import UniversityModule, Download
 
 
 class ModuleInformationNotFoundError(Exception):
@@ -49,7 +49,7 @@ class ModuleInformation(commands.Cog):
                 raise NoCourseChannelError
 
         # At this point we can be sure to have a number. Either passed in from the user as argument or from the channel name
-        if module := Module.get_or_none(Module.number == number):
+        if module := UniversityModule.get_or_none(UniversityModule.number == number):
             return module
         else:
             raise ModuleInformationNotFoundError(f"Zum Modul mit der Nummer {number} konnte ich keine Informationen "
@@ -147,7 +147,7 @@ class ModuleInformation(commands.Cog):
 
         return embed
 
-    async def get_embed(self, module: Module, topic: Topics):
+    async def get_embed(self, module: UniversityModule, topic: Topics):
         if topic == Topics.handbuch:
             return await self.handbook(module)
         elif topic == Topics.leseprobe:

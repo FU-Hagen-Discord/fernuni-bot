@@ -1,0 +1,16 @@
+name: fernuni_discord_bot
+
+services:
+
+  bot:
+    # image: rndintusr/fuh-winfo-discordbot:v0.1.2
+    build:
+      context: .
+      dockerfile: bot.Dockerfile
+    user: appuser:appuser
+    env_file:
+      - docker.env
+    volumes:
+      - ./data:/app/data
+
+

@@ -1,0 +1,15 @@
+name: fernuni_discord_bot
+
+services:
+
+  plotter:
+    # image: rndintusr/fuh-winfo-discordbot-grade-plotter:v1.0.3
+    build:
+      context: .
+      dockerfile: plotter.Dockerfile
+    user: appuser:appuser
+    depends_on:
+      - scraper
+    volumes:
+      - ./data:/app/data  
+      - ./data/plots:/app/plots  

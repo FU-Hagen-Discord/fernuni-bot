@@ -20,6 +20,22 @@
             "program": "${workspaceFolder}/module_scraper.py",
             "console": "integratedTerminal",
             "envFile": "${workspaceFolder}/docker.env"
-        }        
+        },
+        {
+            "name": "Python Debugger: GradeStatisticsScraper Scraper",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/grade_statistics_scraper.py",
+            "console": "integratedTerminal",
+            "envFile": "${workspaceFolder}/docker.env"
+        },
+        {
+            "name": "Python Debugger: GradeStatisticsScraper Plotter",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/grade_statistics_plotter.py",
+            "console": "integratedTerminal",
+            "envFile": "${workspaceFolder}/docker.env"
+        }                  
     ]
 }

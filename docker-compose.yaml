@@ -1,10 +1,35 @@
 name: fernuni_discord_bot
 
 services:
+
   bot:
-    build: .
+    # image: rndintusr/fuh-winfo-discordbot:v1.1.4
+    build:
+      context: .
+      dockerfile: bot.Dockerfile
     user: appuser:appuser
     env_file:
       - docker.env
     volumes:
       - ./data:/app/data
+
+  scraper:
+    # image: rndintusr/fuh-winfo-discordbot-grade-scraper:v1.0.2
+    build:
+      context: .
+      dockerfile: scraper.Dockerfile
+    user: appuser:appuser
+    volumes:
+      - ./data:/app/data
+
+  plotter:
+    # image: rndintusr/fuh-winfo-discordbot-grade-plotter:v1.0.5
+    build:
+      context: .
+      dockerfile: plotter.Dockerfile
+    user: appuser:appuser
+    depends_on:
+      - scraper
+    volumes:
+      - ./data:/app/data  
+      - ./data/plots:/app/plots  
