@@ -52,7 +52,7 @@ class TextCommands(commands.GroupCog, name="commands", description="Text Command
 
     @app_commands.command(name="add",
                           description="Ein neues Text Command hinzufügen, oder zu einem bestehenden einen weiteren Text hinzufügen")
-    @app_commands.describe(cmd="Command. Bsp: \"link\" für das Command \"/link\".",
+    @app_commands.describe(cmd="Command. Bsp: link für das Command /link.",
                            text="Text, der bei Benutzung des Commands ausgegeben werden soll.")
     async def cmd_add(self, interaction: Interaction, cmd: str, text: str):
         if not re.match(r"^[a-z0-9]+(-[a-z0-9]+)*$", cmd):
