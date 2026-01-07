@@ -29,7 +29,5 @@ jobs:
       - name: Deploy Bot
         run: |
           cd repo
-          export UID=$(id -u)
-          export GID=$(id -g)
           docker compose down || true
           docker compose up -d
