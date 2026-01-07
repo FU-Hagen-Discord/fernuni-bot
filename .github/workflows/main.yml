@@ -29,4 +29,5 @@ jobs:
       - name: Deploy Bot
         run: |
           cd repo
+          docker compose down || true
           docker compose up -d
