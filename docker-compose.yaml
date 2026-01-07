@@ -2,7 +2,7 @@ services:
   bot:
     image: fernuni-bot:latest
     container_name: fernuni-bot
-    user: "${UID}:${GID}"
+    user: "${USERID}:${GROUPID}"
     env_file: ${HOME}/.env
     volumes:
       - ${HOME}/data:/app/data
