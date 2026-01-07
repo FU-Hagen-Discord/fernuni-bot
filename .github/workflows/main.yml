@@ -28,5 +28,5 @@ jobs:
       # Deploy with Docker Compose
       - name: Deploy Bot
         run: |
-          cd
+          cd repo
           docker compose up -d

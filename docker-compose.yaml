@@ -2,7 +2,7 @@ services:
   bot:
     image: fernuni-bot:latest
     container_name: fernuni-bot
-    env_file: ../.env
+    env_file: ~/.env
     volumes:
-      - ../data:/app/data
+      - ~/data:/app/data
     restart: unless-stopped
