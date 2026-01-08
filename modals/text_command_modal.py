@@ -5,7 +5,7 @@ from typing import Optional
 import discord as discord
 from discord import ui, TextStyle
 from discord.utils import MISSING
-
+##########
 import models
 import utils
 
@@ -33,7 +33,7 @@ class TextCommandModal(ui.Modal, title='Neues Text Command hinzufügen'):
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.send_message("Verarbeite Command...", ephemeral=True)
 
-        if await self.text_commands.add_command(self.cmd, self.text.value, self.description.value, interaction.guild_id):
+        if await self.text_commands.add_command(self.cmd, self.text.value, self.description.value, interaction.guild_id, interaction.user):
             await interaction.edit_original_response(content="Dein Command wurde erfolgreich hinzugefügt!")
         else:
             await interaction.edit_original_response(

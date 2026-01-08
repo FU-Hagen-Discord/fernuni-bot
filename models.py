@@ -153,7 +153,7 @@ class Appointment(BaseModel):
             embed.add_field(name="Wiederholung", value=f"Alle {self.recurring} Tage", inline=False)
         if len(attendees) > 0:
             embed.add_field(name=f"Teilnehmerinnen ({len(attendees)})",
-                            value=",".join([f"<@{attendee.member_id}>" for attendee in attendees]))
+                            value=f'{",".join([f"<@{attendee.member_id}>" for attendee in attendees[:20]])}{", ..." if len(attendees) > 20 else ""}')
 
         return embed
 

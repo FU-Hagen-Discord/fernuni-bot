@@ -9,7 +9,7 @@ import utils
 from modals.text_command_modal import TextCommandModal
 from models import Command, CommandText
 from views.text_command_view import TextCommandView
-
+########
 
 @app_commands.guild_only()
 class TextCommands(commands.GroupCog, name="commands", description="Text Commands auflisten und verwalten"):
@@ -115,7 +115,7 @@ class TextCommands(commands.GroupCog, name="commands", description="Text Command
         else:
             await interaction.edit_original_response(content=f"Command `{cmd}` nicht vorhanden!")
 
-    async def add_command(self, cmd: str, text: str, description: str, guild_id: int):
+    async def add_command(self, cmd: str, text: str, description: str, guild_id: int, user):
         mod_channel_id = self.bot.get_settings(guild_id).modmail_channel_id
         mod_channel = await self.bot.fetch_channel(mod_channel_id)
         if command := Command.get_or_none(Command.command == cmd):
@@ -132,7 +132,7 @@ class TextCommands(commands.GroupCog, name="commands", description="Text Command
             CommandText.create(text=text, command=command.id)
             await self.register_command(command)
 
-        await mod_channel.send(f"[{cmd}] => [{text}] erfolgreich hinzugefügt.")
+        await mod_channel.send(f"[{cmd}] => [{text}] von {user.mention} erfolgreich hinzugefügt.")
         return True
 
     async def remove_text(self, command, command_texts, id):
@@ -161,12 +161,15 @@ class TextCommands(commands.GroupCog, name="commands", description="Text Command
         @app_commands.command(name=command.command, description=command.description)
         @app_commands.guild_only()
         @app_commands.describe(public="Zeige die Ausgabe des Commands öffentlich, für alle Mitglieder sichtbar.")
-        async def process_command(interaction: Interaction, public: bool = True):
+        async def process_command(interaction: Interaction, public: bool = True, id: int = -1):
             await interaction.response.defer(ephemeral=not public)
             if cmd := Command.get_or_none(Command.command == interaction.command.name):
                 texts = list(cmd.texts)
                 if len(texts) > 0:
-                    await interaction.edit_original_response(content=(random.choice(texts)).text)
+                    if 0 <= id < len(texts):
+                        await interaction.edit_original_response(content=(texts[id]).text)
+                    else:
+                        await interaction.edit_original_response(content=(random.choice(texts)).text)
                     return
 
             await interaction.edit_original_response(content="FEHLER! Command wurde nicht gefunden!")
