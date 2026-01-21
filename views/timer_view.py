@@ -2,11 +2,33 @@ import discord
 from discord import ButtonStyle, Interaction
 from discord.ui import Button, View
 
+VOICY = "timerview:voicy"
+SOUND = "timerview:sound"
+STATS = "timerview:stats"
+MANUAL = "timerview:manual"
+
 SUBSCRIBE = "timerview:subscribe"
-UNSUBSCRIBE = "timerview:unsubscribe"
+RESTART = "timerview:restart"
 SKIP = "timverview:skip"
-RESTART = "timverview:restart"
 STOP = "timverview:stop"
+
+RESTART_YES = "timerview:restart_yes"
+RESTART_NO = "timerview:restart_no"
+
+EDITDROPDOWN = "timer:editselectview:edit_dropdown"
+MANUALDROPDOWN = "timer:manualselectview:manual_dropdowm"
+
+TIME = "timer:edit:time"
+SESSIONS = "timer:edit:sessions"
+
+
+class TimerButton(Button):
+    def __init__(self, emoji, custom_id, row, disabled, callback):
+        super().__init__(emoji=emoji, custom_id=custom_id, row=row, disabled=disabled)
+        self.callback = callback
+
+    async def callback(self, interaction):
+        await self.callback(interaction)
 
 
 class TimerView(View):
@@ -116,3 +138,53 @@ class TimerView(View):
     def disable(self):
         for button in self.children:
             button.disabled = True
+
+
+class EditSelectView(View):
+    def __init__(self, callback, label_list, value_list, further_info=None):
+        super().__init__(timeout=None)
+        self.callback = callback
+        self.label_list = label_list
+        self.value_list = value_list
+        self.further_info = further_info
+
+        select_menu = self.children[0]
+        for i in range(len(label_list)):
+            select_menu.add_option(label=self.value_list[i], value=self.label_list[i])
+
+    @disnake.ui.select(custom_id=EDITDROPDOWN,
+                       placeholder="Wähle aus",
+                       min_values=1,
+                       max_values=1)
+    async def sel_manual(self, option: SelectOption, interaction: MessageInteraction):
+        if self.further_info:
+            await self.callback(option, interaction, self.further_info)
+        else:
+            await self.callback(option, interaction)
+
+
+class StatsEditModal(Modal):
+    def __init__(self, callback, infos):
+
+        time_input = TextInput(label="Gelernte Zeit in Minuten:",
+                               value=f"{infos['time']}",
+                               custom_id=TIME,
+                               style=TextInputStyle.short,
+                               max_length=3)
+
+        session_input = TextInput(label="Anzahl der Sessions:",
+                                   value=f"{infos['sessions']}",
+                                   custom_id=SESSIONS,
+                                   style=TextInputStyle.short,
+                                   max_length=1)
+
+        components = [time_input, session_input]
+
+        super().__init__(title=f"Statistik vom {infos['date']} für {infos['name']}",
+                         custom_id=f"{infos['id']}:{infos['date']}:{infos['name']}",
+                         components=components)
+        self.callback = callback
+        self.infos = infos
+
+    async def callback(self, interaction: disnake.ModalInteraction):
+        await self.callback(interaction=interaction)
