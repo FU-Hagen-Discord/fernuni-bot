@@ -79,6 +79,9 @@ venv/
 # data
 data/
 
+# docs
+docs/
+
 # PyCharm
 .idea
 

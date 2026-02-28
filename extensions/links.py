@@ -18,7 +18,7 @@ class Links(commands.GroupCog, name="links", description="Linkverwaltung für Ka
 
         message = "### __Folgende Links sind in diesem Channel hinterlegt__\n"
         if not models.LinkCategory.has_links(interaction.channel_id):
-            message = "Für diesen Channel sind noch keine Links hinterlegt."
+            message = "Für diesen Kanal sind noch keine Links hinterlegt."
         elif category and not models.LinkCategory.has_links(interaction.channel_id, category=category):
             message = (f"Für die Kategorie `{category}` sind in diesem Channel keine Links hinterlegt. "
                        f"Versuch es noch mal mit einer anderen Kategorie, oder lass dir mit `/links show` alle Links "
@@ -64,7 +64,7 @@ class Links(commands.GroupCog, name="links", description="Linkverwaltung für Ka
     @app_commands.describe(category="Zu bearbeitende Kategorie")
     async def cmd_rename_category(self, interaction: Interaction, category: str):
         if not models.LinkCategory.has_links(interaction.channel_id):
-            await interaction.response.send_message(content="Für diesen Channel sind noch keine Links hinterlegt.",
+            await interaction.response.send_message(content="Für diesen Kanal sind noch keine Links hinterlegt.",
                                                     ephemeral=True)
             return
 
@@ -81,7 +81,7 @@ class Links(commands.GroupCog, name="links", description="Linkverwaltung für Ka
         await interaction.response.defer(ephemeral=True)
 
         if not models.LinkCategory.has_links(interaction.channel_id):
-            await interaction.edit_original_response(content="Für diesen Channel sind noch keine Links hinterlegt.")
+            await interaction.edit_original_response(content="Für diesen Kanal sind noch keine Links hinterlegt.")
             return
         if category_entity := models.LinkCategory.get_or_none(models.LinkCategory.channel == interaction.channel_id,
                                                            models.LinkCategory.name == category):
@@ -100,7 +100,7 @@ class Links(commands.GroupCog, name="links", description="Linkverwaltung für Ka
         await interaction.response.defer(ephemeral=True)
 
         if not models.LinkCategory.has_links(interaction.channel_id):
-            await interaction.edit_original_response(content="Für diesen Channel sind noch keine Links hinterlegt.")
+            await interaction.edit_original_response(content="Für diesen Kanal sind noch keine Links hinterlegt.")
             return
         if category_entity := models.LinkCategory.get_or_none(models.LinkCategory.channel == interaction.channel_id,
                                                            models.LinkCategory.name == category):

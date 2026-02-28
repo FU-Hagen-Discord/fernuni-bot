@@ -52,7 +52,7 @@ class TextCommands(commands.GroupCog, name="commands", description="Text Command
 
     @app_commands.command(name="add",
                           description="Ein neues Text Command hinzufügen, oder zu einem bestehenden einen weiteren Text hinzufügen")
-    @app_commands.describe(cmd="Command. Bsp: \"link\" für das Command \"/link\".",
+    @app_commands.describe(cmd="Command. Bsp: link für das Command /link.",
                            text="Text, der bei Benutzung des Commands ausgegeben werden soll.")
     async def cmd_add(self, interaction: Interaction, cmd: str, text: str):
         if not re.match(r"^[a-z0-9]+(-[a-z0-9]+)*$", cmd):
@@ -80,7 +80,8 @@ class TextCommands(commands.GroupCog, name="commands", description="Text Command
         if command := Command.get_or_none(Command.command == cmd):
             command_texts = list(command.texts)
             if 0 <= id < len(command_texts):
-                CommandText.update(text=text).where(CommandText.id == command_texts[id].id).execute()
+                CommandText.update(text=text).where(
+                    CommandText.id == command_texts[id].id).execute()
                 await interaction.edit_original_response(
                     content=f"Text {id} für Command {cmd} wurde erfolgreich geändert")
             else:
@@ -121,14 +122,17 @@ class TextCommands(commands.GroupCog, name="commands", description="Text Command
         if command := Command.get_or_none(Command.command == cmd):
             CommandText.create(text=text, command=command.id)
             if command.description != description:
-                Command.update(description=description).where(Command.id == command.id).execute()
-                self.bot.tree.get_command(command.command).description = description
+                Command.update(description=description).where(
+                    Command.id == command.id).execute()
+                self.bot.tree.get_command(
+                    command.command).description = description
                 await self.bot.sync_slash_commands_for_guild(command.guild_id)
                 await mod_channel.send(f"Beschreibung von Command `{cmd}` geändert zu `{description}`")
         else:
             if self.exists(cmd):
                 return False
-            command = Command.create(command=cmd, description=description, guild_id=guild_id)
+            command = Command.create(
+                command=cmd, description=description, guild_id=guild_id)
             CommandText.create(text=text, command=command.id)
             await self.register_command(command)
 

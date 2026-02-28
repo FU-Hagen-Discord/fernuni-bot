@@ -22,8 +22,8 @@ class AppointmentView(discord.ui.View):
                 return
             else:
                 Attendee.create(appointment=appointment.id, member_id=interaction.user.id)
-                await interaction.message.edit(embed=appointment.get_embed(1 if appointment.reminder_sent and appointment.reminder > 0 else 0))
-
+                await interaction.message.edit(
+                    embed=appointment.get_embed(1 if appointment.reminder_sent and appointment.reminder > 0 else 0))
         await interaction.response.defer(thinking=False)
 
     @discord.ui.button(label='Abmelden', style=discord.ButtonStyle.red, custom_id='appointment_view:decline', emoji="👎")
@@ -33,7 +33,9 @@ class AppointmentView(discord.ui.View):
             if attendee:
                 attendee = attendee[0]
                 attendee.delete_instance()
-                await interaction.message.edit(embed=appointment.get_embed(1 if appointment.reminder_sent and appointment.reminder > 0 else 0))
+                
+                await interaction.message.edit(
+                    embed=appointment.get_embed(1 if appointment.reminder_sent and appointment.reminder > 0 else 0))
             else:
                 await interaction.response.send_message("Du kannst nur absagen, wenn du vorher zugesagt hast.",
                                                         ephemeral=True)
@@ -51,8 +53,9 @@ class AppointmentView(discord.ui.View):
                 Appointment.update(date_time=new_date_time, reminder_sent=False).where(
                     Appointment.id == appointment.id).execute()
                 updated_appointment = Appointment.get(Appointment.id == appointment.id)
-                await interaction.message.edit(embed=updated_appointment.get_embed(1 if updated_appointment.reminder_sent and updated_appointment.reminder > 0 else 0))
-
+                
+                await interaction.message.edit(embed=updated_appointment.get_embed(
+                    1 if updated_appointment.reminder_sent and updated_appointment.reminder > 0 else 0))                
 
     @discord.ui.button(label='Download .ics', style=discord.ButtonStyle.blurple, custom_id='appointment_view:ics',
                        emoji="📅")

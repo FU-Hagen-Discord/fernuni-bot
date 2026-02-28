@@ -165,18 +165,22 @@ class GradeStatisticsScraper:
                 module_sufficient = 0
                 module_insufficient_grade = 0
                 try:
-                    if row_3[0].strip().isnumeric():
-                        module_participants = int(row_3[0].strip())
-                    if row_3[1].strip().isnumeric():
-                        module_very_good = int(row_3[1].strip())
-                    if row_3[2].strip().isnumeric():
-                        module_good = int(row_3[2].strip())
-                    if row_3[3].strip().isnumeric():
-                        module_satisfactory = int(row_3[3].strip())
-                    if row_3[4].strip().isnumeric():
-                        module_sufficient = int(row_3[4].strip())
-                    if row_3[5].strip().isnumeric():
-                        module_insufficient_grade = int(row_3[5].strip())
+
+                    if "Datenschutz" in row_3[1].strip():
+                        self.logger.info(f"Data privacy notice found for module {module_number} - {module_name} in semester {year} ({'SS' if is_summer_semester else 'WS'}) - {examination_period}. Marking as anonymous.")  
+                    else:
+                        if row_3[0].strip().isnumeric():
+                            module_participants = int(row_3[0].strip())
+                        if row_3[1].strip().isnumeric():
+                            module_very_good = int(row_3[1].strip())                    
+                        if row_3[2].strip().isnumeric():
+                            module_good = int(row_3[2].strip())
+                        if row_3[3].strip().isnumeric():
+                            module_satisfactory = int(row_3[3].strip())
+                        if row_3[4].strip().isnumeric():
+                            module_sufficient = int(row_3[4].strip())
+                        if row_3[5].strip().isnumeric():
+                            module_insufficient_grade = int(row_3[5].strip())
                 except Exception:
                     self.logger.info(f"Error parsing numbers for module {module_number} - {module_name} in semester {year} ({'SS' if is_summer_semester else 'WS'}) - {examination_period}. Skipping this module.")
                     new_extracted.anonyomous = True
@@ -187,9 +191,9 @@ class GradeStatisticsScraper:
                 new_extracted.sufficient = module_sufficient
                 new_extracted.insufficient = module_insufficient_grade
                 # Skip modules with zero participants
-                if new_extracted.get_participant_count() == 0:
-                    self.logger.info(f"Skipping: Module {module_number} - {module_name} for semester {year} ({'SS' if is_summer_semester else 'WS'}) - {examination_period} has zero participants.")
-                    continue
+                # if new_extracted.get_participant_count() == 0 and module_participants == 0: 
+                #     self.logger.info(f"Skipping: Module {module_number} - {module_name} for semester {year} ({'SS' if is_summer_semester else 'WS'}) - {examination_period} has zero participants.")
+                #     continue
                 extracted_grade_statistics.append(new_extracted)
                 self.logger.info(f"Added module: {module_number} - {module_name} for semester {year} ({'SS' if is_summer_semester else 'WS'}) - {examination_period} with {module_participants} participants.")
                 self.logger.info(f"Grades: Very Good: {module_very_good}, Good: {module_good}, Satisfactory: {module_satisfactory}, Sufficient: {module_sufficient}, Insufficient: {module_insufficient_grade}")

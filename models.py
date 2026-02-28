@@ -7,8 +7,13 @@ from discord import Colour
 from peewee import *
 from peewee import ModelSelect
 from playhouse.migrate import *
+from dataclasses import dataclass
+from typing import List
 
-db = SqliteDatabase("data/db.sqlite3")
+
+db = SqliteDatabase("db.sqlite3", pragmas={
+    'journal_mode': 'wal',
+    'cache_size': -1 * 64000})
 
 
 class BaseModel(Model):
@@ -319,9 +324,19 @@ class ExtractedGradeStatistics:
         return participants
 
 
+@dataclass
+class SemesterStatistics:
+    semester: List
+    participants: List
+    very_good: List
+    good: List
+    satisfactory: List
+    sufficient: List
+    insufficient: List
+    no_statistics: List
+    
 # Create all tables
 db.create_tables(
     [Settings, LinkCategory, Link, NewsFeed, NewsArticle, Poll, PollChoice, PollParticipant, Command, CommandText, Appointment,
      Attendee, Course, UniversityModule, Event, Support, Exam, Download, Contact, ModuleGradeStatistics, GradeStatisticsImage], safe=True)
-
 
