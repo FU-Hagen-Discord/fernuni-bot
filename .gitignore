@@ -4,6 +4,8 @@
 *.pyc
 __pycache__
 *.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
 media
 
 # Backup files # 
@@ -66,7 +68,7 @@ coverage.xml
 
 # Jupyter Notebook 
 .ipynb_checkpoints 
-
+:
 # pyenv 
 .python-version 
 
