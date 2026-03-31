@@ -64,7 +64,6 @@ class NewsFeed(BaseModel):
 class NewsArticle(BaseModel):
     news_feed = ForeignKeyField(NewsFeed)
     title = CharField(null=True)
-    description = CharField(null=True)
     link = CharField()
     pub_date = CharField()
 
