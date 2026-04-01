@@ -1,4 +1,4 @@
-aiohttp==3.13.3
+aiohttp==3.13.4
 beautifulsoup4==4.14.3
 defusedxml==0.7.1
 discord.py==2.6.4
