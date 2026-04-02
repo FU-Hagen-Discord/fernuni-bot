@@ -10,16 +10,14 @@ from discord.ext import commands, tasks
 import utils
 from models import Module, Course, ModuleCourse
 from module_scraper import Scraper
+from transformers import ModuleInformationNotFoundError, ModuleTransformer
 
 _log = logging.getLogger(__name__)
 
 
-class ModuleInformationNotFoundError(Exception):
-    pass
-
-
 class NoCourseChannelError(Exception):
     pass
+
 
 
 class ModuleInformation(commands.GroupCog, name="module", description="Modulinformationen von der Fakultätswebseite."):
@@ -55,13 +53,7 @@ class ModuleInformation(commands.GroupCog, name="module", description="Modulinfo
                 raise NoCourseChannelError
 
         # At this point we can be sure to have a number. Either passed in from the user as argument or from the channel name
-        if module := Module.get_or_none(Module.number == number):
-            return module
-        else:
-            raise ModuleInformationNotFoundError(f"Zum Modul mit der Nummer {number} konnte ich keine Informationen "
-                                                 f"finden. Bitte geh sicher, dass dies ein gültiges Modul ist. "
-                                                 f"Ansonsten schreibe mir eine Direktnachricht und ich leite sie "
-                                                 f"weiter an das Mod-Team.")
+        return ModuleTransformer.resolve_module(int(number))
 
     @staticmethod
     async def exams(module):
@@ -126,14 +118,16 @@ class ModuleInformation(commands.GroupCog, name="module", description="Modulinfo
 
     @app_commands.command(name="info",
                           description="Erhalte die Modulinformationen von der Uniwebseite.")
-    @app_commands.describe(module_nr="Nummer des Moduls, das dich interessiert. (In einem Moduilkanal optional).",
+    @app_commands.describe(
+        module_nr="Moduls für das die Informationen angezeigt werden sollen. (In einem Moduilkanal optional).",
                            public="Sichtbarkeit der Ausgabe: für alle Mitglieder oder nur für dich.")
-    async def cmd_module_info(self, interaction: Interaction, module_nr: int = None,
+    async def cmd_module_info(self, interaction: Interaction,
+                              module_nr: app_commands.Transform[Module, ModuleTransformer] = None,
                               public: bool = True):
         await interaction.response.defer(ephemeral=not public)
 
         try:
-            module = await self.find_module(interaction.channel, module_nr)
+            module = module_nr or await self.find_module(interaction.channel, None)
             embed = await self.get_embed(module)
             await interaction.edit_original_response(embed=embed)
         except NoCourseChannelError:
@@ -146,6 +140,18 @@ class ModuleInformation(commands.GroupCog, name="module", description="Modulinfo
             else:
                 await interaction.edit_original_response(
                     content="Leider konnte ich keine Informationen zu diesem Modul/Kurs finden.")
+
+    @cmd_module_info.error
+    async def cmd_module_info_error(self, interaction: Interaction, error: app_commands.AppCommandError):
+        if isinstance(error, ModuleInformationNotFoundError):
+            message = error.args[0] if error.args and error.args[0] else "Ich konnte das gewünschte Modul nicht finden."
+            if interaction.response.is_done():
+                await interaction.edit_original_response(content=message)
+            else:
+                await interaction.response.send_message(content=message, ephemeral=True)
+            return
+
+        raise error
 
     @app_commands.command(name="update", description="Aktualisiert die Moduldaten von der Fakultätswebseite.")
     @utils.mod_only()
