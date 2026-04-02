@@ -2,8 +2,7 @@ import os
 import re
 from datetime import datetime
 
-from discord import ButtonStyle, Embed, User, Member
-from discord.ext.commands import Context
+from discord import ButtonStyle, Embed, User, Member, app_commands
 from dotenv import load_dotenv
 
 from views.dialog_view import DialogView
@@ -11,6 +10,7 @@ from views.dialog_view import DialogView
 load_dotenv()
 DATE_TIME_FMT = os.getenv("DISCORD_DATE_TIME_FORMAT")
 MAX_MESSAGE_LEN = 2000
+
 
 async def send_dm(user, message, embed=None):
     """ Send DM to a user/member """
@@ -25,24 +25,19 @@ async def send_dm(user, message, embed=None):
         print(f"Cannot send DM to {user} with text: {message}")
 
 
-# def is_mod(context_or_member):
-#     if isinstance(context_or_member, Context):
-#         author = context_or_member.author
-#     else:
-#         author = context_or_member
-#     roles = author.roles
-#
-#     for role in roles:
-#         if role.id == int(os.getenv("DISCORD_MOD_ROLE")):
-#             return True
-#
-#     return False
-
-def is_mod(user: Member, bot):
+def is_mod(user: Member):
     if user.get_role(int(os.getenv("DISCORD_MOD_ROLE"))):
         return True
 
     return False
+
+
+def mod_only():
+    def decorator(command):
+        command = app_commands.checks.has_role("Mod")(command)
+        return app_commands.default_permissions(manage_channels=True)(command)
+
+    return decorator
 
 
 def is_valid_time(time):
@@ -65,8 +60,8 @@ def to_minutes(time):
 
 async def confirm(channel, title, description, message="", custom_prefix="", callback=None):
     embed = Embed(title=title,
-                          description=description,
-                          color=19607)
+                  description=description,
+                  color=19607)
     return await channel.send(message, embed=embed, view=DialogView([
         {"emoji": "👍", "custom_id": f"{custom_prefix}_yes", "style": ButtonStyle.green},
         {"emoji": "👎", "custom_id": f"{custom_prefix}_no", "style": ButtonStyle.red},

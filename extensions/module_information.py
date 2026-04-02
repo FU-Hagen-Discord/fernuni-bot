@@ -1,11 +1,17 @@
-import enum
+import asyncio
+import logging
 import re
+from urllib.parse import quote
 
 import discord
 from discord import app_commands, Interaction
 from discord.ext import commands, tasks
 
-from models import Module, Download
+import utils
+from models import Module, Course, ModuleCourse
+from module_scraper import Scraper
+
+_log = logging.getLogger(__name__)
 
 
 class ModuleInformationNotFoundError(Exception):
@@ -16,29 +22,29 @@ class NoCourseChannelError(Exception):
     pass
 
 
-class Topics(enum.Enum):
-    info = 1
-    handbuch = 2
-    leseprobe = 3
-    aufwand = 4
-    mentoriate = 5
-    pruefungen = 6
-
-
-class ModuleInformation(commands.Cog):
+class ModuleInformation(commands.GroupCog, name="module", description="Modulinformationen von der Fakultätswebseite."):
     def __init__(self, bot):
         self.bot = bot
-        # self.update_loop.start()
+        self.scraper = Scraper()
+        self.update_lock = asyncio.Lock()
+        self.update_loop.start()
 
     @tasks.loop(hours=24)
-    # Replace with loop that checks if updates happened or not and send a notification in case it did not.
     async def update_loop(self):
-        pass
-        # await self.refresh_data()
+        await self.update_module_data()
 
     @update_loop.before_loop
     async def before_update_loop(self):
         await self.bot.wait_until_ready()
+
+    async def update_module_data(self) -> bool:
+        async with self.update_lock:
+            try:
+                await self.scraper.scrape()
+                return True
+            except Exception:
+                _log.exception("Module data update failed")
+                return False
 
     @staticmethod
     async def find_module(channel, number):
@@ -58,120 +64,77 @@ class ModuleInformation(commands.Cog):
                                                  f"weiter an das Mod-Team.")
 
     @staticmethod
-    async def download_for(title, module):
-        downloads = [f"- [{download.title}]({download.url})" for download in module.downloads.where(Download.title.contains(title))]
-        if len(downloads) == 0:
-            raise ModuleInformationNotFoundError
-
-        return discord.Embed(title=f"{title} {module.title}",
-                             description="\n".join(downloads),
-                             color=19607, url=module.url)
-
-    async def handbook(self, module):
-        try:
-            return await self.download_for("Modulhandbuch", module)
-        except ModuleInformationNotFoundError:
-            raise ModuleInformationNotFoundError("Leider habe ich kein Modulhandbuch gefunden.")
-
-    async def reading_sample(self, module):
-        try:
-            return await self.download_for("Leseprobe", module)
-        except ModuleInformationNotFoundError:
-            raise ModuleInformationNotFoundError("Leider habe ich keine Leseprobe gefunden.")
-
-    @staticmethod
-    async def info(module):
-        embed = discord.Embed(title=f"Modul {module.title}",
-                             color=19607, url=module.url)
-        embed.add_field(name="Wie viele Credits bekomme ich?", value=f"{module.ects} ECTS", inline=False)
-        embed.add_field(name="Wie lange geht das Modul?", value=module.duration, inline=False)
-        embed.add_field(name="Wie oft wird das Modul angeboten?", value=module.interval, inline=False)
-        embed.add_field(name="\u200b", value="\u200b", inline=False)
-
-        if (requirements := module.requirements) and len(requirements) > 0 and requirements not in  ['keine', "-"]:
-            embed.add_field(name="Inhaltliche Voraussetzungen", value=requirements, inline=False)
-
-        if (notes := module.notes) and len(notes) > 0 and notes != '-':
-            embed.add_field(name="Anmerkunden", value=notes, inline=False)
-
-        if (contacts := module.contacts) and len(contacts) > 0:
-            embed.add_field(name="Ansprechpartner", value=', '.join([f"- {contact.name}" for contact in contacts]), inline=False)
-
-        if (events := module.events) and len(events) > 0:
-            embed.add_field(name="Aktuelles Angebot in der VU", value="\n".join([f"- [{event.name}]({event.url})" for event in events]), inline=False)
-
-        return embed
-
-    @staticmethod
-    async def effort(module):
-        if not module.effort or len(module.effort) == 0:
-            raise ModuleInformationNotFoundError(
-                f"Ich kann leider derzeit nichts über den Aufwand des Moduls {module.number}-{module.title} sagen.")
-
-        effort = re.sub(r': *(\r*\n*)*', ':\n', module.effort)
-        return discord.Embed(title=f"Arbeitsaufwand {module.title}",
-                             description=f"{effort}",
-                             color=19607, url=module.url)
-
-    @staticmethod
-    async def support(module):
-        if len(module.support) == 0:
-            raise ModuleInformationNotFoundError(
-                f"Ich kann leider derzeit keine Mentoriate für das Modul {module.number}-{module.title} finden.")
-
-        return discord.Embed(title=f"Mentoriate {module.title}",
-                             description="\n".join([f"- [{support.title}]({support.url})" for support in module.support]),
-                             color=19607, url=module.url)
-
-    @staticmethod
     async def exams(module):
         if len(module.exams) == 0:
             raise ModuleInformationNotFoundError(
                 f"Ich kann leider derzeit keine Prüfungsinformationen für das Modul {module.number}-{module.title} finden.")
 
+        study_programs = [
+            exam.study_program or exam.name
+            for exam in module.exams
+            if (exam.study_program or exam.name) and len((exam.study_program or exam.name).strip()) > 0
+        ]
+        unique_study_programs = list(dict.fromkeys(study_programs))
+        if len(unique_study_programs) == 0:
+            raise ModuleInformationNotFoundError(
+                f"Ich konnte leider keine Studiengänge für die Prüfung im Modul {module.number}-{module.title} finden.")
+
         embed = discord.Embed(title=f"Prüfungsinformationen {module.title}",
-                             color=19607, url=module.url)
+                              color=19607, url=module.url)
 
-        for exam in module.exams:
-            desc = f"- {exam.type}\n"
-            if exam.weight and len(exam.weight) > 0 and exam.weight != '-':
-                desc += f"- Gewichtung: **{exam.weight}**\n"
-
-            if exam.requirements and len(exam.requirements) > 0 and exam.requirements != 'keine':
-                desc += f"- Inhaltliche Voraussetzungen: \n  - {exam.requirements}\n"
-
-            if exam.hard_requirements and len(exam.hard_requirements) > 0 \
-                    and exam.hard_requirements != 'keine':
-                desc += f"- Formale Voraussetzungen: \n  - {exam.hard_requirements}\n"
-            embed.add_field(name=exam.name, value=desc, inline=False)
+        embed.add_field(
+            name="Studiengänge",
+            value="\n".join([f"- {study_program}" for study_program in unique_study_programs]),
+            inline=False
+        )
 
         return embed
 
-    async def get_embed(self, module: Module, topic: Topics):
-        if topic == Topics.handbuch:
-            return await self.handbook(module)
-        elif topic == Topics.leseprobe:
-            return await self.reading_sample(module)
-        elif topic == Topics.aufwand:
-            return await self.effort(module)
-        elif topic == Topics.mentoriate:
-            return await self.support(module)
-        elif topic == Topics.pruefungen:
-            return await self.exams(module)
-        return await self.info(module)
+    @staticmethod
+    def build_study_program_url(module_url: str, course_short: str) -> str:
+        base_url = module_url.split("?", 1)[0]
+        return f"{base_url}?sg={quote(course_short)}"
 
-    @app_commands.command(name="module",
+    @staticmethod
+    def get_study_programs_for_module(module: Module) -> list[str]:
+        courses = (
+            Course.select(Course.short, Course.name)
+            .join(ModuleCourse)
+            .where(ModuleCourse.module == module)
+            .order_by(Course.name)
+        )
+
+        return [
+            f"[{course.name}]({ModuleInformation.build_study_program_url(module.url, course.short)})"
+            for course in courses
+        ]
+
+    async def get_embed(self, module: Module):
+        embed = discord.Embed(title=f"Modul {module.title}",
+                              color=19607)
+        embed.add_field(name="Modulnummer", value=str(module.number), inline=False)
+
+        study_programs = self.get_study_programs_for_module(module)
+        embed.add_field(
+            name="Studiengänge",
+            value="\n".join(
+                [f"- {program}" for program in study_programs]) if study_programs else "Keine Zuordnung hinterlegt.",
+            inline=False,
+        )
+
+        return embed
+
+    @app_commands.command(name="info",
                           description="Erhalte die Modulinformationen von der Uniwebseite.")
-    @app_commands.describe(topic="Möchtest du eine bestimmte Rubrik abrufen?",
-                           module_nr="Nummer des Moduls, das dich interessiert. (In einem Moduilkanal optional).",
+    @app_commands.describe(module_nr="Nummer des Moduls, das dich interessiert. (In einem Moduilkanal optional).",
                            public="Sichtbarkeit der Ausgabe: für alle Mitglieder oder nur für dich.")
-    async def cmd_module(self, interaction: Interaction, topic: Topics = None, module_nr: int = None,
-                         public: bool = True):
+    async def cmd_module_info(self, interaction: Interaction, module_nr: int = None,
+                              public: bool = True):
         await interaction.response.defer(ephemeral=not public)
 
         try:
             module = await self.find_module(interaction.channel, module_nr)
-            embed = await self.get_embed(module, topic)
+            embed = await self.get_embed(module)
             await interaction.edit_original_response(embed=embed)
         except NoCourseChannelError:
             await interaction.edit_original_response(
@@ -183,6 +146,16 @@ class ModuleInformation(commands.Cog):
             else:
                 await interaction.edit_original_response(
                     content="Leider konnte ich keine Informationen zu diesem Modul/Kurs finden.")
+
+    @app_commands.command(name="update", description="Aktualisiert die Moduldaten von der Fakultätswebseite.")
+    @utils.mod_only()
+    async def cmd_update_modules(self, interaction: Interaction):
+        await interaction.response.defer(ephemeral=True, thinking=True)
+
+        if await self.update_module_data():
+            await interaction.edit_original_response(content="Die Moduldaten wurden erfolgreich aktualisiert.")
+        else:
+            await interaction.edit_original_response(content="Die Aktualisierung der Moduldaten ist fehlgeschlagen.")
 
 
 async def setup(bot: commands.Bot) -> None:

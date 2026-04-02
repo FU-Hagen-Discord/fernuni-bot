@@ -478,7 +478,7 @@ class LearningGroups(commands.GroupCog, name="lg", description="Lerngruppenverwa
         return overwrites
 
     @app_commands.command(name="update", description="Aktualisiert die Lerngruppenliste")
-    @app_commands.checks.has_role("Mod")
+    @utils.mod_only()
     async def cmd_update(self, interaction: Interaction):
         await interaction.response.send_message("Update der Lerngruppenliste gestartet...")
         await self.update_channels()
@@ -490,7 +490,7 @@ class LearningGroups(commands.GroupCog, name="lg", description="Lerngruppenverwa
     @app_commands.describe(
         course="Nummer des Kurses wie von der Fernuni angegeben (ohne führende Nullen z. B. 1142).",
         name="Ein frei wählbarer Text (darf Leerzeichen enthalten).")
-    @app_commands.checks.has_role("Mod")
+    @utils.mod_only()
     async def cmd_add_header(self, interaction: Interaction, course: int, name: str):
         await interaction.response.defer()
 
@@ -546,7 +546,7 @@ class LearningGroups(commands.GroupCog, name="lg", description="Lerngruppenverwa
         semester="Das Semester, für welches diese Lerngruppe erstellt werden soll. sose oder wise gefolgt von der zweistelligen Jahreszahl (z. B. sose22).",
         state="Gibt an ob die Lerngruppe für weitere Lernwillige geöffnet ist (open) oder nicht (private).",
         organizer="Die so erwähnte Benutzerin wird als Organisatorin der Lerngruppe eingesetzt.")
-    @commands.check(utils.is_mod)
+    @utils.mod_only()
     async def cmd_add_group(self, interaction: Interaction, course: int, name: str, semester: str,
                             state: LearningGroupState, organizer: discord.Member):
         await interaction.response.defer(ephemeral=True)

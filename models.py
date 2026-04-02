@@ -68,7 +68,6 @@ class NewsArticle(BaseModel):
     pub_date = CharField()
 
 
-
 class Poll(BaseModel):
     question = CharField()
     author = IntegerField()
@@ -169,7 +168,7 @@ class Appointment(BaseModel):
     def get_start_time(self, state) -> str:
         if state == 0:
             return f"<t:{int(self.date_time.timestamp())}:F>"
-        
+
         return f"<t:{int(self.date_time.timestamp())}:F> (<t:{int(self.date_time.timestamp())}:R>)"
 
     def get_ics_file(self):
@@ -229,49 +228,18 @@ class Module(BaseModel):
     number = IntegerField(primary_key=True)
     title = CharField()
     url = CharField()
-    ects = CharField(null=True)
-    effort = CharField(null=True)
-    duration = CharField(null=True)
-    interval = CharField(null=True)
-    notes = CharField(null=True)
-    requirements = CharField(null=True)
 
 
-class Event(BaseModel):
-    name = CharField()
-    number = CharField()
-    url = CharField()
-    module = ForeignKeyField(Module, backref='events')
+class ModuleCourse(BaseModel):
+    module = ForeignKeyField(Module, backref='course_links', on_delete='CASCADE')
+    course = ForeignKeyField(Course, backref='module_links', on_delete='CASCADE')
 
-
-class Support(BaseModel):
-    title = CharField()
-    city = CharField()
-    url = CharField()
-    module = ForeignKeyField(Module, backref='support')
-
-
-class Exam(BaseModel):
-    name = CharField()
-    type = CharField(null=True)
-    requirements = CharField(null=True)
-    weight = CharField(null=True)
-    hard_requirements = CharField(null=True)
-    module = ForeignKeyField(Module, backref='exams')
-
-
-class Download(BaseModel):
-    title = CharField()
-    url = CharField()
-    module = ForeignKeyField(Module, backref='downloads')
-
-
-class Contact(BaseModel):
-    name = CharField()
-    module = ForeignKeyField(Module, backref='contacts')
+    class Meta:
+        indexes = (
+            (('module', 'course'), True),
+        )
 
 
 db.create_tables(
-    [Settings, LinkCategory, Link, NewsFeed, NewsArticle, Poll, PollChoice, PollParticipant, Command, CommandText, Appointment,
-     Attendee, Course, Module, Event, Support, Exam, Download, Contact], safe=True)
-
+    [Settings, LinkCategory, Link, NewsFeed, NewsArticle, Poll, PollChoice, PollParticipant, Command, CommandText,
+     Appointment, Attendee, Course, Module, ModuleCourse], safe=True)
