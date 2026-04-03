@@ -48,7 +48,7 @@ class ModuleInformation(commands.GroupCog, name="module", description="Modulinfo
     async def find_module(channel, number):
         if not number:
             try:
-                number = re.search(r"^([0-9]*)-", channel.name)[1]
+                number = re.search(r"^(\d*)-", channel.name)[1]
             except TypeError:
                 raise NoCourseChannelError
 

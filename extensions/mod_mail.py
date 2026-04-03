@@ -51,7 +51,7 @@ class ModMail(commands.Cog):
 
         for guild in self.bot.guilds:
             try:
-                member = await guild.fetch_member(user.id)
+                await guild.fetch_member(user.id)
                 guilds.append(guild)
             except discord.errors.NotFound:
                 pass

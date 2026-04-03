@@ -4,8 +4,8 @@ from datetime import timedelta, datetime
 
 import discord
 from discord import Colour
-from peewee import *
-from peewee import ModelSelect
+from peewee import ModelSelect, Model, IntegerField, CharField, SqliteDatabase, ForeignKeyField, DateTimeField, \
+    BooleanField, UUIDField
 
 db = SqliteDatabase("data/db.sqlite3", pragmas={
     'journal_mode': 'wal',
@@ -197,7 +197,7 @@ class Appointment(BaseModel):
                       f"DTSTAMP:{datetime.now().strftime(fmt)}00Z\n" \
                       f"UID:{self.uuid}\n" \
                       f"SUMMARY:{self.title}\n"
-        appointment += f"RRULE:FREQ=DAILY;INTERVAL={self.recurring}\n" if self.recurring else f""
+        appointment += f"RRULE:FREQ=DAILY;INTERVAL={self.recurring}\n" if self.recurring else ""
         appointment += f"DTSTART;TZID=Europe/Berlin:{self.date_time.strftime(fmt)}00\n" \
                        f"DTEND;TZID=Europe/Berlin:{self.date_time.strftime(fmt)}00\n" \
                        f"TRANSP:OPAQUE\n" \

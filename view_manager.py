@@ -74,9 +74,6 @@ class ViewManager:
         func = self.functions[callback_key]
         return DialogView(self.views[view_id]["buttons"], func)
 
-    def add_button(self, config):
-        pass
-
     def prepare_buttons(self, buttons, view_id=None):
         for config in buttons:
             config["custom_id"] = config.get("custom_id", "") + ("" if not view_id else "_" + str(view_id))

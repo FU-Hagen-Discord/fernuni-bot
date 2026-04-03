@@ -33,7 +33,7 @@ class TextCommands(commands.GroupCog, name="commands", description="Text Command
                 if command.texts.count() > 0:
                     items.append(command.command)
 
-        answer = f"Text Commands:\n" if cmd is None else f"Für {cmd} hinterlegte Texte:\n"
+        answer = "Text Commands:\n" if cmd is None else f"Für {cmd} hinterlegte Texte:\n"
         first = True
         for i, item in enumerate(items):
             if len(answer) + len(item) > 2000:
@@ -42,7 +42,7 @@ class TextCommands(commands.GroupCog, name="commands", description="Text Command
                     first = False
                 else:
                     await interaction.followup.send(answer, ephemeral=True)
-                answer = f""
+                answer = ""
 
             answer += f"{i}: {item}\n"
 
@@ -112,7 +112,7 @@ class TextCommands(commands.GroupCog, name="commands", description="Text Command
                     await interaction.edit_original_response(
                         content=f"Text {id} für Command `{cmd}` wurde erfolgreich entfernt")
                 else:
-                    await interaction.edit_original_response(content=f"Ungültiger Index")
+                    await interaction.edit_original_response(content="Ungültiger Index")
         else:
             await interaction.edit_original_response(content=f"Command `{cmd}` nicht vorhanden!")
 

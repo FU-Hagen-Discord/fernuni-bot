@@ -11,15 +11,14 @@ from views.appointment_view import AppointmentView
 
 
 async def send_notification(appointment, channel):
-    message = f"Erinnerung!"
-
-    message += f"\n"
+    message = "Erinnerung!\n"
     message += " ".join([f"<@!{str(attendee.member_id)}>" for attendee in appointment.attendees])
 
     if appointment.reminder_sent:
         return await channel.send(message, embed=appointment.get_embed(2))
 
-    return await channel.send(message, embed=appointment.get_embed(1), view=AppointmentView(can_skip=appointment.recurring > 0))
+    return await channel.send(message, embed=appointment.get_embed(1),
+                              view=AppointmentView(can_skip=appointment.recurring > 0))
 
 
 @app_commands.guild_only()
@@ -80,12 +79,14 @@ class Appointments(commands.GroupCog, name="appointments", description="Handle A
                                                         ephemeral=True)
                 return
             elif reminder < 0:
-                await interaction.response.send_message("Fehler! Du kannst keinen negativen Wert für die Benachrichtigung angeben.",
-                                                        ephemeral=True)
+                await interaction.response.send_message(
+                    "Fehler! Du kannst keinen negativen Wert für die Benachrichtigung angeben.",
+                    ephemeral=True)
                 return
             elif recurring < 0:
-                await interaction.response.send_message("Fehler! Du kannst keinen negativen Wert für die Wiederholung deines Termins angeben.",
-                                                        ephemeral=True)
+                await interaction.response.send_message(
+                    "Fehler! Du kannst keinen negativen Wert für die Wiederholung deines Termins angeben.",
+                    ephemeral=True)
                 return
 
         except ValueError:
@@ -99,7 +100,8 @@ class Appointments(commands.GroupCog, name="appointments", description="Handle A
                                          reminder_sent=reminder == 0, uuid=uuid.uuid4())
         Attendee.create(appointment=appointment, member_id=author_id)
 
-        await interaction.response.send_message(embed=appointment.get_embed(0), view=AppointmentView(can_skip=appointment.recurring > 0))
+        await interaction.response.send_message(embed=appointment.get_embed(0),
+                                                view=AppointmentView(can_skip=appointment.recurring > 0))
         message = await interaction.original_response()
         Appointment.update(message=message.id).where(Appointment.id == appointment.id).execute()
 
@@ -109,7 +111,8 @@ class Appointments(commands.GroupCog, name="appointments", description="Handle A
         """ List (and link) all Appointments in the current channel """
         await interaction.response.defer(ephemeral=not public)
 
-        appointments = Appointment.select().where(Appointment.channel == interaction.channel_id).order_by(Appointment.date_time)
+        appointments = Appointment.select().where(Appointment.channel == interaction.channel_id).order_by(
+            Appointment.date_time)
         if appointments:
             embed = discord.Embed(title="📅 Termine dieses Channels:")
 

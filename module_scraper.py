@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import List, Union
+from typing import List
 from urllib.parse import urljoin
 
 import aiohttp
@@ -39,13 +39,13 @@ class Scraper:
                 )
                 ModuleCourse.get_or_create(module=module, course=course)
 
-    def parse_index_page(self, html: Union[str, bytes]) -> List:
+    def parse_index_page(self, html: bytes) -> List:
         soup = BeautifulSoup(html, "html.parser")
         module_links = [
             link for link in soup.find_all('a')
-            if link.get_text() and re.match(r'^[0-9]{5} ', link.get_text())
+            if link.get_text() and re.match(r'^\d{5} ', link.get_text())
         ]
         return [{"title": module_link.get_text()[6:],
-                 "number": int(re.search('^([0-9]+) ', module_link.get_text())[1]),
+                 "number": int(re.search(r'^\d+ ', module_link.get_text())[1]),
                  "url": urljoin(self.base_url, module_link['href']).split("?")[0]}
                 for module_link in module_links]

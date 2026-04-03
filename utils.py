@@ -1,6 +1,4 @@
 import os
-import re
-from datetime import datetime
 
 from discord import ButtonStyle, Embed, User, Member, app_commands
 from dotenv import load_dotenv
@@ -40,24 +38,6 @@ def mod_only():
     return decorator
 
 
-def is_valid_time(time):
-    return re.match(r"^\d+[mhd]?$", time)
-
-
-def to_minutes(time):
-    if time[-1:] == "m":
-        return int(time[:-1])
-    elif time[-1:] == "h":
-        h = int(time[:-1])
-        return h * 60
-    elif time[-1:] == "d":
-        d = int(time[:-1])
-        h = d * 24
-        return h * 60
-
-    return int(time)
-
-
 async def confirm(channel, title, description, message="", custom_prefix="", callback=None):
     embed = Embed(title=title,
                   description=description,
@@ -66,19 +46,3 @@ async def confirm(channel, title, description, message="", custom_prefix="", cal
         {"emoji": "👍", "custom_id": f"{custom_prefix}_yes", "style": ButtonStyle.green},
         {"emoji": "👎", "custom_id": f"{custom_prefix}_no", "style": ButtonStyle.red},
     ]))
-
-
-def date_to_string(date: datetime):
-    return date.strftime(DATE_TIME_FMT)
-
-
-def date_from_string(date: str):
-    return datetime.strptime(date, DATE_TIME_FMT)
-
-
-async def files_from_attachments(attachments):
-    files = []
-    for attachment in attachments:
-        files.append(await attachment.to_file(spoiler=attachment.is_spoiler()))
-
-    return files
