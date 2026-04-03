@@ -46,6 +46,6 @@ class Scraper:
             if link.get_text() and re.match(r'^\d{5} ', link.get_text())
         ]
         return [{"title": module_link.get_text()[6:],
-                 "number": int(re.search(r'^\d+ ', module_link.get_text())[1]),
+                 "number": int(re.search(r'^(\d+) ', module_link.get_text())[1]),
                  "url": urljoin(self.base_url, module_link['href']).split("?")[0]}
                 for module_link in module_links]

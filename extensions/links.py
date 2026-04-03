@@ -20,6 +20,29 @@ class Links(commands.GroupCog, name="links", description="Linkverwaltung für Ka
             return False
         return True
 
+    async def _autocomplete_category(self, interaction: Interaction, current: str) -> list[app_commands.Choice[str]]:
+        """Bietet Kategorien aus dem aktuellen Kanal als Vorschläge an."""
+        if interaction.channel_id is None:
+            return []
+
+        current_lower = current.lower()
+        choices: list[app_commands.Choice[str]] = []
+        seen: set[str] = set()
+
+        for category in models.LinkCategory.get_categories(interaction.channel_id):
+            name = category.name
+            if name in seen:
+                continue
+            if current and current_lower not in name.lower():
+                continue
+
+            seen.add(name)
+            choices.append(app_commands.Choice[str](name=name, value=name))
+            if len(choices) >= 25:
+                break
+
+        return choices
+
     async def _get_category_or_error(
             self, interaction: Interaction, category_name: str, respond_method="edit"
     ) -> models.LinkCategory | None:
@@ -28,10 +51,17 @@ class Links(commands.GroupCog, name="links", description="Linkverwaltung für Ka
             models.LinkCategory.channel == interaction.channel_id,
             models.LinkCategory.name == category_name
         )
-        if not category:
-            method = getattr(interaction, f"{respond_method}_original_response")
-            await method(content="Ich konnte die Kategorie leider nicht finden.")
-        return category
+        if category:
+            return category
+
+        if respond_method == "send":
+            await interaction.response.send_message(
+                content="Ich konnte die Kategorie leider nicht finden.",
+                ephemeral=True
+            )
+        else:
+            await interaction.edit_original_response(content="Ich konnte die Kategorie leider nicht finden.")
+        return None
 
     async def _get_link_or_error(
             self, interaction: Interaction, title: str, category: models.LinkCategory, respond_method="send_message"
@@ -55,6 +85,7 @@ class Links(commands.GroupCog, name="links", description="Linkverwaltung für Ka
 
     @app_commands.command(name="show", description="Zeige Links für diesen Kanal an.")
     @app_commands.describe(category="Zeige nur Links für diese Kategorie an.", public="Zeige die Linkliste für alle.")
+    @app_commands.autocomplete(category=_autocomplete_category)
     async def cmd_show(self, interaction: Interaction, category: str = None, public: bool = True):
         await interaction.response.defer(ephemeral=not public)
 
@@ -95,6 +126,7 @@ class Links(commands.GroupCog, name="links", description="Linkverwaltung für Ka
     @app_commands.command(name="edit-link", description="Einen bestehenden Link in der Liste bearbeiten.")
     @app_commands.describe(category="Kategorie zu der der zu bearbeitende Link gehört.",
                            title="Titel des zu bearbeitenden Links.")
+    @app_commands.autocomplete(category=_autocomplete_category)
     async def cmd_edit_link(self, interaction: Interaction, category: str, title: str):
         if db_category := await self._get_category_or_error(interaction, category, respond_method="send"):
             if link := await self._get_link_or_error(interaction, title, db_category, respond_method="send_message"):
@@ -104,18 +136,29 @@ class Links(commands.GroupCog, name="links", description="Linkverwaltung für Ka
 
     @app_commands.command(name="rename-category", description="Kategorie bearbeiten.")
     @app_commands.describe(category="Zu bearbeitende Kategorie")
+    @app_commands.autocomplete(category=_autocomplete_category)
     async def cmd_rename_category(self, interaction: Interaction, category: str):
-        await interaction.response.defer(ephemeral=True)
-
-        if not await self._ensure_has_links(interaction):
+        if interaction.channel_id is None:
+            await interaction.response.send_message(
+                content="Ich konnte den aktuellen Kanal leider nicht ermitteln.",
+                ephemeral=True
+            )
             return
 
-        if db_category := await self._get_category_or_error(interaction, category, respond_method="edit"):
-            await interaction.followup.send_modal(LinkCategoryModal(db_category=db_category))
+        if not models.LinkCategory.has_links(interaction.channel_id):
+            await interaction.response.send_message(
+                content="Für diesen Channel sind noch keine Links hinterlegt.",
+                ephemeral=True
+            )
+            return
+
+        if db_category := await self._get_category_or_error(interaction, category, respond_method="send"):
+            await interaction.response.send_modal(LinkCategoryModal(db_category=db_category))
 
     @app_commands.command(name="remove-link", description="Einen Link entfernen.")
     @app_commands.describe(category="Kategorie zu der der zu entfernende Link gehört.",
                            title="Titel des zu entfernenden Links.")
+    @app_commands.autocomplete(category=_autocomplete_category)
     async def cmd_remove_link(self, interaction: Interaction, category: str, title: str):
         await interaction.response.defer(ephemeral=True)
 
@@ -129,6 +172,7 @@ class Links(commands.GroupCog, name="links", description="Linkverwaltung für Ka
 
     @app_commands.command(name="remove-category", description="Eine Kategorie mit allen zugehörigen Links entfernen.")
     @app_commands.describe(category="Zu entfernende Kategorie.")
+    @app_commands.autocomplete(category=_autocomplete_category)
     async def cmd_remove_category(self, interaction: Interaction, category: str):
         await interaction.response.defer(ephemeral=True)
 
