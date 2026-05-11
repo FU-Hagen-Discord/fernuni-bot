@@ -24,6 +24,7 @@ import utils
   DISCORD_LEARNINGGROUPS_FILE - Name der Datei mit Verwaltungsdaten der Lerngruppen (minimaler Inhalt: {"requested": {},"groups": {}})
   DISCORD_LEARNINGGROUPS_COURSE_FILE - Name der Datei welche die Kursnamen für die Lerngruppen-Informationen enthält (minimaler Inhalt: {})
   DISCORD_MOD_ROLE - ID der Moderations-Rolle, die erweiterte Lerngruppen-Aktionen ausführen darf
+  DISCORD_BOT_ROLE - ID der Bot-Rolle, die private Lerngruppen sehen darf
 """
 
 LG_OPEN_SYMBOL = f'🌲'
@@ -70,6 +71,7 @@ class LearningGroups(commands.GroupCog, name="lg", description="Lerngruppenverwa
         self.header_file = os.getenv('DISCORD_LEARNINGGROUPS_COURSE_FILE')
         self.support_channel = os.getenv('DISCORD_SUPPORT_CHANNEL')
         self.mod_role = os.getenv("DISCORD_MOD_ROLE")
+        self.bot_role = os.getenv("DISCORD_BOT_ROLE")
         self.guild_id = os.getenv("DISCORD_GUILD")
         self.groups = {}  # organizer and learninggroup-member ids
         self.channels = {}  # complete channel configs
@@ -453,9 +455,11 @@ class LearningGroups(commands.GroupCog, name="lg", description="Lerngruppenverwa
         group_config = self.groups["groups"].get(str(channel.id))
         guild = await self.bot.fetch_guild(int(self.guild_id))
         mods = guild.get_role(int(self.mod_role))
+        bots = guild.get_role(int(self.bot_role))
 
         overwrites = {
             mods: discord.PermissionOverwrite(read_messages=True),
+            bots: discord.PermissionOverwrite(read_messages=True),
             guild.default_role: discord.PermissionOverwrite(read_messages=False)
         }
 
@@ -780,7 +784,7 @@ class LearningGroups(commands.GroupCog, name="lg", description="Lerngruppenverwa
 
         if group_config["organizer_id"] == interaction.author.id:
             await interaction.edit_original_response(content=
-                                                     "Du kannst nicht aus deiner eigenen Lerngruppe flüchten. Gib erst die Verantwortung ab.")
+                                                     "Du kannst nicht aus deiner eigenen Lerngruppe flüchten. Gib erst die Verantwortung ab. Falls deine Kommilitonys und du den Kanal nicht mehr braucht, dann pinge bitte die Mods (mit `@Mod`) an, damit sie ihn archivieren :door:")
             return
 
         await self.remove_member_from_group(interaction.channel, interaction.user)
