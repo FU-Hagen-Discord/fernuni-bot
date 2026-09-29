@@ -26,6 +26,7 @@ from views.learninggroup_view import GroupRequestView, JoinRequestView, ConfirmV
                                        die nicht aus der Modul-Tabelle kommen (minimaler Inhalt: {})
   DISCORD_SUPPORT_CHANNEL - ID des Kanals, in dem fehlende Überschriften gemeldet werden
   DISCORD_MOD_ROLE - ID der Moderations-Rolle, die erweiterte Lerngruppen-Aktionen ausführen darf
+  DISCORD_BOT_ROLE - ID der Bot-Rolle, die private Lerngruppen sehen darf
 """
 
 LG_OPEN_SYMBOL = f'🌲'
@@ -60,7 +61,7 @@ class LearningGroups(commands.Cog):
         self.bot = bot
         # ratelimit 2 in 10 minutes (305 * 2 = 610 = 10 minutes and 10 seconds)
         self.rename_ratelimit = 305
-        self.msg_max_len = 1900
+        self.msg_max_len = 1950
 
         self.categories = {
             GroupState.OPEN: os.getenv('DISCORD_LEARNINGGROUPS_OPEN'),
@@ -157,6 +158,8 @@ class LearningGroups(commands.Cog):
         return None
 
     async def get_channel(self, channel_id):
+        if not channel_id:
+            return None
         return self.bot.get_channel(int(channel_id)) or await self.bot.fetch_channel(int(channel_id))
 
     def get_group_config(self, channel):
@@ -294,6 +297,12 @@ class LearningGroups(commands.Cog):
                 course_msg += f"\n       **↳** `/lg join id:{lg_channel['channel_id']}`"
             course_msg += "\n"
 
+        if len(msg) + len(course_msg) > self.msg_max_len:
+            message = await channel.send(msg)
+            info_message_ids.append(message.id)
+            msg = course_msg
+            course_msg = ""
+
         msg += course_msg
         message = await channel.send(msg)
         if len(no_headers) > 0:
@@ -354,28 +363,35 @@ class LearningGroups(commands.Cog):
         channel = await category.create_text_channel(self.full_channel_name(channel_config))
         await self.move_channel(channel, category, False)
 
-        await channel.send(f":wave: <@{channel_config['organizer_id']}>, hier ist deine neue Lerngruppe.\n"
-                           "Es gibt offene und private Lerngruppen. Eine offene Lerngruppe ist für jeden sichtbar "
-                           "und jeder kann darin schreiben. Eine private Lerngruppe ist unsichtbar und auf eine "
-                           "Gruppe an Kommilitoninnen beschränkt."
-                           "```"
-                           "Funktionen für Lerngruppenorganisatorinnen:\n"
-                           "/lg add-member: Fügt ein Mitglied zur Lerngruppe hinzu.\n"
-                           "/lg remove-member: Entfernt ein Mitglied aus der Lerngruppe.\n"
-                           "/lg organizer: Übergibt die Organisation der Lerngruppe an eine andere Benutzerin.\n"
-                           "/lg status: Stellt die Lerngruppe auf offen, geschlossen oder privat.\n"
-                           "/lg show: Zeigt eine private Lerngruppe in der Lerngruppenliste an.\n"
-                           "/lg hide: Entfernt eine private Lerngruppe aus der Lerngruppenliste.\n"
-                           "\nKommandos für alle:\n"
-                           "/lg members: Zeigt die Organisatorin und die Mitglieder der Lerngruppe an.\n"
-                           "/lg leave: Du verlässt die Lerngruppe.\n"
-                           "/lg join: Anfrage, um der Lerngruppe beizutreten.\n"
-                           "\nMit dem nachfolgenden Kommando kann eine Kommilitonin darum "
-                           "bitten, in die Lerngruppe aufgenommen zu werden, wenn die Gruppe privat ist.\n"
-                           f"/lg join id:{channel.id}"
-                           "\n(Manche Kommandos werden von Discord eingeschränkt und können nur einmal alle 5 Minuten "
-                           "ausgeführt werden.)"
-                           "```"
+        await channel.send(f"👋 <@{channel_config['organizer_id']}>, hier ist deine neue Lerngruppe!\n"
+                           "\n"
+                           "## Botbefehle für die Organisatorin\n"
+                           "### Lerngruppenstatus und -sichtbarkeit\n"
+                           "Öffentliche Lerngruppen sind für Beitrittsanfragen\n"
+                           "- offen (🌲) oder\n"
+                           "- geschlossen (🛑).\n"
+                           "Ansonsten können sie privat (🚪) sein -> der Lerngruppenkanal ist nur für die Mitglieder "
+                           "(und die Mods) sichtbar.\n"
+                           "\n"
+                           "Befehle zum Statuswechsel:\n"
+                           "- `/lg status`: Stellt die Lerngruppe auf offen, geschlossen oder privat.\n"
+                           f"- `/lg show` / `/lg hide`: Private Lerngruppe wird in der Lerngruppenliste im "
+                           f"<#{self.channel_info}> Kanal aufgenommen / entfernt.\n"
+                           "### Verwaltung der Mitgliedsliste\n"
+                           "- `/lg add-member`: Fügt ein Mitglied zur Lerngruppe hinzu.\n"
+                           "- `/lg remove-member`: Entfernt ein Mitglied aus der Lerngruppe.\n"
+                           "- `/lg organizer`: Übergibt die Organisation der Lerngruppe an eine andere Benutzerin.\n"
+                           "\n"
+                           "## Botbefehle für alle\n"
+                           "- `/lg members`: Zeigt die Organisatorin und die Mitglieder der Lerngruppe an.\n"
+                           "- `/lg leave`: Du verlässt die Lerngruppe.\n"
+                           "- `/lg join`: Sendet eine Anfrage an die Organisatorin der Lerngruppe, um beizutreten.\n"
+                           "\n"
+                           "Mit dem nachfolgenden Kommando kann eine Kommilitonin darum bitten, in die Lerngruppe "
+                           "aufgenommen zu werden, wenn die Gruppe privat ist.\n"
+                           f"`/lg join id:{channel.id}`\n"
+                           "*PS: Manche Kommandos werden von Discord eingeschränkt und können nur einmal alle "
+                           "5 Minuten ausgeführt werden.*\n"
                            )
         self.groups["groups"][str(channel.id)] = {
             "organizer_id": channel_config["organizer_id"],
@@ -439,6 +455,8 @@ class LearningGroups(commands.Cog):
             mods: discord.PermissionOverwrite(read_messages=True),
             guild.default_role: discord.PermissionOverwrite(read_messages=False)
         }
+        if bot_role_id := os.getenv("DISCORD_BOT_ROLE"):
+            overwrites[guild.get_role(int(bot_role_id))] = discord.PermissionOverwrite(read_messages=True)
 
         if not group_config or not group_config.get("organizer_id"):
             return overwrites
@@ -446,7 +464,7 @@ class LearningGroups(commands.Cog):
         user_ids = [group_config["organizer_id"]] + list(group_config.get("users", {}).keys())
         for user_id in user_ids:
             overwrites[discord.Object(id=int(user_id), type=discord.Member)] = discord.PermissionOverwrite(
-                read_messages=True)
+                read_messages=True, create_public_threads=True)
 
         return overwrites
 
@@ -683,7 +701,8 @@ class LearningGroups(commands.Cog):
         if self.is_group_organizer(interaction.channel, interaction.user):
             await interaction.edit_original_response(
                 content="Du kannst nicht aus deiner eigenen Lerngruppe flüchten. Gib erst die Verantwortung mit "
-                        "`/lg organizer` ab.")
+                        "`/lg organizer` ab. Falls deine Kommilitonys und du den Kanal nicht mehr braucht, dann "
+                        "pinge bitte die Mods (mit `@Mod`) an, damit sie ihn archivieren :door:")
             return
         if not self.is_group_member(interaction.channel, interaction.user):
             await interaction.edit_original_response(content="Du bist kein Mitglied dieser Lerngruppe.")
@@ -702,6 +721,20 @@ class LearningGroups(commands.Cog):
         await self.update_channels()
         await self.update_statusmessage()
         await interaction.edit_original_response(content="Die Lerngruppenliste wurde aktualisiert.")
+
+    @lg_admin.command(name="update-permissions",
+                      description="Setzt die Berechtigungen aller privaten Lerngruppen neu.")
+    @utils.mod_only()
+    async def cmd_update_permissions(self, interaction: Interaction):
+        await interaction.response.defer(ephemeral=True)
+        await self.update_channels()
+        private_channels = [channel_config for channel_config in self.channels.values()
+                            if channel_config["state"] == GroupState.PRIVATE]
+        for channel_config in private_channels:
+            channel = await self.get_channel(channel_config["channel_id"])
+            await self.update_permissions(channel, GroupState.PRIVATE)
+        await interaction.edit_original_response(
+            content=f"Die Berechtigungen von {len(private_channels)} privaten Lerngruppen wurden aktualisiert.")
 
     @lg_admin.command(name="header",
                       description="Fügt eine Überschrift für ein Modul in der Lerngruppenliste hinzu oder ändert sie.")
