@@ -5,7 +5,7 @@ discord.py==2.6.4
 emoji==2.15.0
 peewee==3.19.0
 PyNaCl==1.6.2
-python-dotenv==1.2.1
+python-dotenv==1.2.2
 
 aiohappyeyeballs==2.6.1
 aiosignal==1.4.0
