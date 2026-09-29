@@ -1,20 +1,6 @@
 import discord
 
 
-class GroupRequestView(discord.ui.View):
-    def __init__(self, learning_groups):
-        super().__init__(timeout=None)
-        self.learning_groups = learning_groups
-
-    @discord.ui.button(emoji="👍", style=discord.ButtonStyle.green, custom_id="learninggroups:group_yes")
-    async def approve(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self.learning_groups.on_group_request(interaction, confirmed=True)
-
-    @discord.ui.button(emoji="👎", style=discord.ButtonStyle.red, custom_id="learninggroups:group_no")
-    async def decline(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self.learning_groups.on_group_request(interaction, confirmed=False)
-
-
 class JoinRequestView(discord.ui.View):
     def __init__(self, learning_groups):
         super().__init__(timeout=None)

@@ -1,5 +1,5 @@
-import copy
 import json
+import logging
 import os
 import re
 import time
@@ -11,7 +11,7 @@ from discord.ext import commands
 
 import utils
 from models import Module
-from views.learninggroup_view import GroupRequestView, JoinRequestView, ConfirmView
+from views.learninggroup_view import JoinRequestView, ConfirmView
 
 """
   Umgebungsvariablen:
@@ -19,15 +19,17 @@ from views.learninggroup_view import GroupRequestView, JoinRequestView, ConfirmV
   DISCORD_LEARNINGGROUPS_CLOSE - Kategorie-ID der geschlossenen Lerngruppen
   DISCORD_LEARNINGGROUPS_PRIVATE - Kategorie-ID der privaten Lerngruppen
   DISCORD_LEARNINGGROUPS_ARCHIVE - Kategorie-ID der archivierten Lerngruppen
-  DISCORD_LEARNINGGROUPS_REQUEST - ID des Kanals, in dem Anfragen, die über den Bot gestellt wurden, eingetragen werden
   DISCORD_LEARNINGGROUPS_INFO - ID des Kanals, in dem die Lerngruppen-Informationen gepostet/aktualisert werden
-  DISCORD_LEARNINGGROUPS_FILE - Name der Datei mit Verwaltungsdaten der Lerngruppen (minimaler Inhalt: {"requested": {},"groups": {}})
+  DISCORD_LEARNINGGROUPS_FILE - Name der Datei mit Verwaltungsdaten der Lerngruppen (minimaler Inhalt: {"groups": {}})
   DISCORD_LEARNINGGROUPS_COURSE_FILE - Name der Datei, welche Überschriften für die Lerngruppen-Informationen enthält,
                                        die nicht aus der Modul-Tabelle kommen (minimaler Inhalt: {})
-  DISCORD_SUPPORT_CHANNEL - ID des Kanals, in dem fehlende Überschriften gemeldet werden
+  DISCORD_SUPPORT_CHANNEL - ID des Kanals, in dem neue Lerngruppen, Fehler bei der Erstellung und fehlende
+                            Überschriften gemeldet werden
   DISCORD_MOD_ROLE - ID der Moderations-Rolle, die erweiterte Lerngruppen-Aktionen ausführen darf
   DISCORD_BOT_ROLE - ID der Bot-Rolle, die private Lerngruppen sehen darf
 """
+
+_log = logging.getLogger(__name__)
 
 LG_OPEN_SYMBOL = f'🌲'
 LG_CLOSE_SYMBOL = f'🛑'
@@ -74,7 +76,6 @@ class LearningGroups(commands.Cog):
             GroupState.CLOSED: LG_CLOSE_SYMBOL,
             GroupState.PRIVATE: LG_PRIVATE_SYMBOL
         }
-        self.channel_request = os.getenv('DISCORD_LEARNINGGROUPS_REQUEST')
         self.channel_info = os.getenv('DISCORD_LEARNINGGROUPS_INFO')
         self.group_file = os.getenv('DISCORD_LEARNINGGROUPS_FILE')
         self.header_file = os.getenv('DISCORD_LEARNINGGROUPS_COURSE_FILE')
@@ -117,23 +118,14 @@ class LearningGroups(commands.Cog):
             self.groups = json.load(group_file)
         if not self.groups.get("groups"):
             self.groups['groups'] = {}
-        if not self.groups.get("requested"):
-            self.groups['requested'] = {}
         if not self.groups.get("messageids"):
             self.groups['messageids'] = []
-
-        for _, group in self.groups['requested'].items():
-            group["state"] = GroupState[group["state"]]
+        self.groups.pop("requested", None)
 
     async def save_groups(self):
         await self.update_channels()
-        groups = copy.deepcopy(self.groups)
-
-        for _, group in groups['requested'].items():
-            group["state"] = group["state"].name
-
         with open(self.group_file, mode='w') as group_file:
-            json.dump(groups, group_file)
+            json.dump(self.groups, group_file)
 
     # Helper methods
 
@@ -306,11 +298,9 @@ class LearningGroups(commands.Cog):
         msg += course_msg
         message = await channel.send(msg)
         if len(no_headers) > 0:
-            support_channel = await self.get_channel(self.support_channel)
-            if support_channel:
-                await support_channel.send(
-                    f"In der Lerngruppenübersicht fehlen noch Überschriften für die folgenden Module: "
-                    f"**{', '.join(no_headers)}**. Diese können mit `/lg-admin header` ergänzt werden.")
+            await self.send_to_support_channel(
+                f"In der Lerngruppenübersicht fehlen noch Überschriften für die folgenden Module: "
+                f"**{', '.join(no_headers)}**. Diese können mit `/lg-admin header` ergänzt werden.")
         info_message_ids.append(message.id)
         self.groups["messageids"] = info_message_ids
         await self.save_groups()
@@ -358,10 +348,19 @@ class LearningGroups(commands.Cog):
                 return
         await channel.move(category=category, sync_permissions=sync, end=True)
 
-    async def create_group_channel(self, channel_config):
+    async def create_group_channel(self, channel_config) -> discord.TextChannel:
         category = await self.category_of_channel(channel_config["state"])
-        channel = await category.create_text_channel(self.full_channel_name(channel_config))
-        await self.move_channel(channel, category, False)
+        return await category.create_text_channel(self.full_channel_name(channel_config))
+
+    async def setup_group_channel(self, channel: discord.TextChannel, channel_config):
+        self.groups["groups"][str(channel.id)] = {
+            "organizer_id": channel_config["organizer_id"],
+            "last_rename": int(time.time())
+        }
+        await self.save_groups()
+        if channel_config["state"] is GroupState.PRIVATE:
+            await self.update_permissions(channel, GroupState.PRIVATE)
+        await self.move_channel(channel, channel.category, False)
 
         await channel.send(f"👋 <@{channel_config['organizer_id']}>, hier ist deine neue Lerngruppe!\n"
                            "\n"
@@ -393,21 +392,11 @@ class LearningGroups(commands.Cog):
                            "*PS: Manche Kommandos werden von Discord eingeschränkt und können nur einmal alle "
                            "5 Minuten ausgeführt werden.*\n"
                            )
-        self.groups["groups"][str(channel.id)] = {
-            "organizer_id": channel_config["organizer_id"],
-            "last_rename": int(time.time())
-        }
-
-        await self.save_groups()
         await self.update_statusmessage()
-        if channel_config["state"] is GroupState.PRIVATE:
-            await self.update_permissions(channel, GroupState.PRIVATE)
 
-        return channel
-
-    async def remove_group_request(self, message):
-        del self.groups["requested"][str(message.id)]
-        await self.save_groups()
+    async def send_to_support_channel(self, message: str):
+        if support_channel := await self.get_channel(self.support_channel):
+            await support_channel.send(message, allowed_mentions=discord.AllowedMentions.none())
 
     async def remove_group(self, channel):
         del self.groups["groups"][str(channel.id)]
@@ -470,7 +459,7 @@ class LearningGroups(commands.Cog):
 
     # Commands for everyone
 
-    @lg.command(name="request", description="Stellt eine Anfrage für einen neuen Lerngruppenkanal.")
+    @lg.command(name="create", description="Erstellt einen neuen Lerngruppenkanal.")
     @app_commands.describe(
         module="Nummer des Moduls, wie von der FernUni angegeben (ohne führende Nullen).",
         name="Ein frei wählbarer Name für die Lerngruppe.",
@@ -478,8 +467,8 @@ class LearningGroups(commands.Cog):
                  "zweistelligen Jahreszahl (z. B. sose22).",
         state="Gibt an, ob die Lerngruppe für weitere Lernwillige geöffnet ist (offen) oder nicht (geschlossen) oder "
               "ob es sich um eine private Lerngruppe handelt (privat).")
-    async def cmd_request(self, interaction: Interaction, module: app_commands.Range[int, 1], name: str,
-                          semester: str, state: LearningGroupState):
+    async def cmd_create(self, interaction: Interaction, module: app_commands.Range[int, 1], name: str,
+                         semester: str, state: LearningGroupState):
         await interaction.response.defer(ephemeral=True)
         channel_config = {"organizer_id": interaction.user.id, "course": str(module),
                           "name": self.normalize_name(name), "semester": self.normalize_semester(semester),
@@ -489,17 +478,34 @@ class LearningGroups(commands.Cog):
             await interaction.edit_original_response(content=error)
             return
 
-        channel = await self.get_channel(self.channel_request)
-        embed = discord.Embed(title="Lerngruppenanfrage",
-                              description=f"{interaction.user.mention} möchte gerne die Lerngruppe "
-                                          f"**#{self.full_channel_name(channel_config)}** eröffnen.",
-                              color=19607)
-        message = await channel.send(embed=embed, view=GroupRequestView(self))
-        self.groups["requested"][str(message.id)] = channel_config
-        await self.save_groups()
-        await interaction.edit_original_response(content="Deine Lerngruppenanfrage wurde an die Moderatorinnen zur "
-                                                         "Genehmigung weitergeleitet. Du erhältst eine Nachricht, "
-                                                         "wenn über deine Anfrage entschieden wurde.")
+        channel_name = self.full_channel_name(channel_config)
+        try:
+            channel = await self.create_group_channel(channel_config)
+        except Exception as error:
+            _log.exception(f"Creating learning group #{channel_name} failed")
+            await interaction.edit_original_response(
+                content="Die Lerngruppe konnte leider nicht erstellt werden. Das Mod-Team wurde informiert und "
+                        "meldet sich bei dir.")
+            await self.send_to_support_channel(
+                f"⚠️ Die Lerngruppe **#{channel_name}** von {interaction.user.mention} konnte nicht erstellt "
+                f"werden:\n```{str(error)[:1500]}```")
+            return
+
+        try:
+            await self.setup_group_channel(channel, channel_config)
+        except Exception as error:
+            _log.exception(f"Setting up learning group {channel.name} ({channel.id}) failed")
+            await interaction.edit_original_response(
+                content=f"Die Lerngruppe {channel.mention} wurde erstellt, aber bei der Einrichtung ist ein Fehler "
+                        f"aufgetreten. Das Mod-Team wurde informiert und kümmert sich darum.")
+            await self.send_to_support_channel(
+                f"⚠️ Die Lerngruppe {channel.mention} von {interaction.user.mention} wurde erstellt, aber die "
+                f"Einrichtung ist fehlgeschlagen:\n```{str(error)[:1500]}```")
+            return
+
+        await interaction.edit_original_response(content=f"Deine Lerngruppe {channel.mention} wurde erstellt.")
+        await self.send_to_support_channel(
+            f"{interaction.user.mention} hat die Lerngruppe {channel.mention} erstellt.")
 
     @lg.command(name="show", description="Zeigt eine private Lerngruppe in der Lerngruppenliste an.")
     async def cmd_show(self, interaction: Interaction):
@@ -749,29 +755,6 @@ class LearningGroups(commands.Cog):
         await self.update_statusmessage()
         await interaction.edit_original_response(content=f"Überschrift **{module} - {name}** gespeichert.")
 
-    @lg_admin.command(name="add", description="Legt direkt einen neuen Lerngruppenkanal an.")
-    @app_commands.describe(
-        module="Nummer des Moduls, wie von der FernUni angegeben (ohne führende Nullen).",
-        name="Ein frei wählbarer Name für die Lerngruppe.",
-        semester="Das Semester, für welches diese Lerngruppe erstellt werden soll. sose oder wise gefolgt von der "
-                 "zweistelligen Jahreszahl (z. B. sose22).",
-        state="Gibt an, ob die Lerngruppe offen, geschlossen oder privat ist.",
-        organizer="Die Organisatorin der Lerngruppe.")
-    @utils.mod_only()
-    async def cmd_add(self, interaction: Interaction, module: app_commands.Range[int, 1], name: str, semester: str,
-                      state: LearningGroupState, organizer: discord.Member):
-        await interaction.response.defer(ephemeral=True)
-        channel_config = {"organizer_id": organizer.id, "course": str(module), "name": self.normalize_name(name),
-                          "semester": self.normalize_semester(semester), "state": GroupState(state.value),
-                          "is_listed": False}
-
-        if error := self.validate_channel_config(channel_config):
-            await interaction.edit_original_response(content=error)
-            return
-
-        channel = await self.create_group_channel(channel_config)
-        await interaction.edit_original_response(content=f"Die Lerngruppe {channel.mention} wurde angelegt.")
-
     @lg_admin.command(name="rename", description="Ändert den Namen des Lerngruppenkanals, in dem du dich befindest.")
     @app_commands.describe(name="Der neue Name der Lerngruppe.")
     @utils.mod_only()
@@ -814,32 +797,6 @@ class LearningGroups(commands.Cog):
 
     # Button handlers
 
-    async def on_group_request(self, interaction: Interaction, confirmed: bool):
-        message = interaction.message
-        member = interaction.user
-        request = self.groups["requested"].get(str(message.id))
-
-        if not request:
-            await interaction.response.send_message("Diese Anfrage existiert nicht mehr.", ephemeral=True)
-            return
-        if not (utils.is_mod(member) or (not confirmed and request["organizer_id"] == member.id)):
-            await interaction.response.send_message(NO_PERMISSION, ephemeral=True)
-            return
-
-        await interaction.response.defer(ephemeral=True, thinking=True)
-        if confirmed:
-            channel = await self.create_group_channel(request)
-            await interaction.followup.send(f"Die Lerngruppe {channel.mention} wurde angelegt.", ephemeral=True)
-        else:
-            if request["organizer_id"] != member.id:
-                user = self.bot.get_user(request["organizer_id"]) or await self.bot.fetch_user(request["organizer_id"])
-                await utils.send_dm(user, f"Deine Lerngruppenanfrage für #{self.full_channel_name(request)} "
-                                          f"wurde abgelehnt.")
-            await interaction.followup.send("Die Anfrage wurde abgelehnt.", ephemeral=True)
-
-        await self.remove_group_request(message)
-        await message.delete()
-
     async def on_join_request(self, interaction: Interaction, confirmed: bool):
         channel = interaction.channel
         message = interaction.message
@@ -874,5 +831,4 @@ class LearningGroups(commands.Cog):
 async def setup(bot: commands.Bot) -> None:
     learning_groups = LearningGroups(bot)
     await bot.add_cog(learning_groups)
-    bot.add_view(GroupRequestView(learning_groups))
     bot.add_view(JoinRequestView(learning_groups))
