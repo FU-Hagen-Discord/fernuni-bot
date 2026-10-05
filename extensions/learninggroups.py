@@ -655,15 +655,20 @@ class LearningGroups(commands.Cog):
             content=f"{member.mention} wurde aus der Lerngruppe {channel.mention} entfernt.")
 
     @lg.command(name="members", description="Zeigt die Organisatorin und die Mitglieder der Lerngruppe an.")
-    async def cmd_members(self, interaction: Interaction):
-        await interaction.response.defer(ephemeral=True)
+    @app_commands.describe(public="Sichtbarkeit der Ausgabe: für alle Mitglieder oder nur für dich.")
+    async def cmd_members(self, interaction: Interaction, public: bool = False):
+        await interaction.response.defer(ephemeral=not public)
         if not await self.ensure_group_channel(interaction):
             return
 
+        def member_name(user_id) -> str:
+            member = interaction.guild.get_member(int(user_id))
+            return discord.utils.escape_markdown(f"@{member.name}") if member else f"Unbekannt ({user_id})"
+
         group_config = self.get_group_config(interaction.channel)
         organizer_id = group_config.get("organizer_id")
-        organizer = f"<@{organizer_id}>" if organizer_id else "Keine"
-        members = [f"<@{user_id}>" for user_id in group_config.get("users", {})]
+        organizer = member_name(organizer_id) if organizer_id else "Keine"
+        members = [member_name(user_id) for user_id in group_config.get("users", {})]
 
         await interaction.edit_original_response(
             content=f"Organisatorin: **{organizer}**\nMitglieder: {', '.join(members) if members else 'Keine'}",
@@ -749,7 +754,7 @@ class LearningGroups(commands.Cog):
         name="Ein frei wählbarer Text (darf Leerzeichen enthalten).")
     @utils.mod_only()
     async def cmd_header(self, interaction: Interaction, module: app_commands.Range[int, 1], name: str):
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.defer()
         self.header[str(module)] = f"{module} - {name}"
         self.save_header()
         await self.update_statusmessage()
