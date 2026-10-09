@@ -836,8 +836,7 @@ class LearningGroups(commands.Cog):
         elif confirmed:
             await self.add_member_to_group(channel, requester)
             await self.update_permissions(channel)
-            await interaction.followup.send(f"{requester.mention} wurde in die Lerngruppe aufgenommen.",
-                                            ephemeral=True)
+            await interaction.followup.send(f"{requester.mention} wurde in die Lerngruppe aufgenommen.")
         else:
             await utils.send_dm(requester, f"Deine Anfrage für die Lerngruppe **#{channel.name}** wurde abgelehnt.")
             await interaction.followup.send(f"Die Anfrage von {requester.mention} wurde abgelehnt.", ephemeral=True)
