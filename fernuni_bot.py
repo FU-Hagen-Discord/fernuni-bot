@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 from typing import List
@@ -18,8 +19,9 @@ GUILD_ID = int(os.getenv('DISCORD_GUILD'))
 ACTIVITY = os.getenv('DISCORD_ACTIVITY')
 OWNER = int(os.getenv('DISCORD_OWNER'))
 PIN_EMOJI = "📌"
+THREAD_NOTIFICATION_RETRIES = 5
 
-intents = Intents.all()
+intents = Intents.default()
 extensions = ["welcome", "xkcd", "mod_mail", "module_information", "links", "appointments", "text_commands", "news",
               "learninggroups"]
         # ["polls", "timer", "voice"]
@@ -114,9 +116,21 @@ async def on_raw_reaction_remove(payload):
 
 @bot.event
 async def on_thread_create(thread: Thread) -> None:
+    """ Pings the notification role in new threads. Discord rejects messages in a thread until the starter message of
+    the thread creator was sent, which might happen after this event, so sending is retried a few times. """
+
     thread_notification_role_id = bot.get_settings(thread.guild.id).thread_notification_role_id
-    msg = await thread.send(f"<@&{thread_notification_role_id}>")
-    await msg.delete()
+    for attempt in range(THREAD_NOTIFICATION_RETRIES):
+        try:
+            msg = await thread.send(f"<@&{thread_notification_role_id}>")
+        except discord.HTTPException as e:
+            _log.debug("Thread notification for %s failed (attempt %d): %s", thread.id, attempt + 1, e)
+            await asyncio.sleep(attempt + 1)
+        else:
+            await msg.delete()
+            return
+
+    _log.warning("Thread notification for %s failed after %d attempts", thread.id, THREAD_NOTIFICATION_RETRIES)
 
 
 bot.run(TOKEN)

@@ -154,6 +154,18 @@ class LearningGroups(commands.Cog):
             return None
         return self.bot.get_channel(int(channel_id)) or await self.bot.fetch_channel(int(channel_id))
 
+    @staticmethod
+    async def get_member(guild, member_id: int):
+        """ Returns the member from the cache or fetches it via API, since the member cache is not populated without
+        the privileged members intent. Returns None, if the user is not a member of the guild (anymore). """
+
+        if member := guild.get_member(member_id):
+            return member
+        try:
+            return await guild.fetch_member(member_id)
+        except discord.NotFound:
+            return None
+
     def get_group_config(self, channel):
         return self.groups["groups"].get(str(channel.id))
 
@@ -661,14 +673,14 @@ class LearningGroups(commands.Cog):
         if not await self.ensure_group_channel(interaction):
             return
 
-        def member_name(user_id) -> str:
-            member = interaction.guild.get_member(int(user_id))
+        async def member_name(user_id) -> str:
+            member = await self.get_member(interaction.guild, int(user_id))
             return discord.utils.escape_markdown(f"@{member.name}") if member else f"Unbekannt ({user_id})"
 
         group_config = self.get_group_config(interaction.channel)
         organizer_id = group_config.get("organizer_id")
-        organizer = member_name(organizer_id) if organizer_id else "Keine"
-        members = [member_name(user_id) for user_id in group_config.get("users", {})]
+        organizer = await member_name(organizer_id) if organizer_id else "Keine"
+        members = [await member_name(user_id) for user_id in group_config.get("users", {})]
 
         await interaction.edit_original_response(
             content=f"Organisatorin: **{organizer}**\nMitglieder: {', '.join(members) if members else 'Keine'}",
@@ -816,7 +828,7 @@ class LearningGroups(commands.Cog):
 
         await interaction.response.defer(ephemeral=True, thinking=True)
         requester_id = int(re.sub(r"[^0-9]", "", message.embeds[0].fields[0].value))
-        requester = channel.guild.get_member(requester_id)
+        requester = await self.get_member(channel.guild, requester_id)
 
         if not requester:
             await interaction.followup.send("Die anfragende Benutzerin ist nicht mehr auf dem Server.",
